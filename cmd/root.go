@@ -7,6 +7,7 @@ import (
 
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/annotate-go"
+	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/discover"
 	"github.com/koki-develop/ghasec/parser"
 	"github.com/spf13/cobra"
@@ -26,13 +27,22 @@ var rootCmd = &cobra.Command{
 
 		var hasErrors bool
 		for _, f := range files {
-			if _, err := parser.Parse(f); err != nil {
+			astFile, err := parser.Parse(f)
+			if err != nil {
 				hasErrors = true
 				printParseError(f, err)
+				continue
+			}
+			errs := analyzer.Analyze(astFile)
+			if len(errs) > 0 {
+				hasErrors = true
+				for _, e := range errs {
+					printParseError(f, e)
+				}
 			}
 		}
 		if hasErrors {
-			return errors.New("parse errors found")
+			return errors.New("validation errors found")
 		}
 		return nil
 	},
