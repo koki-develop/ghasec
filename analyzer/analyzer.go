@@ -2,40 +2,41 @@ package analyzer
 
 import (
 	"github.com/goccy/go-yaml/ast"
-	"github.com/goccy/go-yaml/token"
+	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/rules"
 )
 
-type DiagnosticError struct {
-	Token   *token.Token
-	Message string
+type Analyzer struct {
+	rules []rules.Rule
 }
 
-func (e *DiagnosticError) Error() string          { return e.Message }
-func (e *DiagnosticError) GetToken() *token.Token { return e.Token }
-func (e *DiagnosticError) GetMessage() string     { return e.Message }
+func New(rr ...rules.Rule) *Analyzer {
+	return &Analyzer{rules: rr}
+}
 
-func Analyze(f *ast.File) []*DiagnosticError {
+func (a *Analyzer) Analyze(f *ast.File) []*diagnostic.Error {
 	if len(f.Docs) == 0 || f.Docs[0] == nil || f.Docs[0].Body == nil {
 		return nil
 	}
 
-	mapping := topLevelMapping(f.Docs[0])
-	if mapping == nil {
-		return []*DiagnosticError{{
-			Token:   f.Docs[0].Body.GetToken(),
-			Message: "workflow must be a mapping",
-		}}
+	var requiredErrs []*diagnostic.Error
+	var nonRequiredRules []rules.Rule
+
+	for _, r := range a.rules {
+		if r.Required() {
+			requiredErrs = append(requiredErrs, r.Check(f)...)
+		} else {
+			nonRequiredRules = append(nonRequiredRules, r)
+		}
 	}
 
-	var errs []*DiagnosticError
-	errs = append(errs, checkOn(mapping)...)
-
-	jobsMapping, jobsErrs := checkJobs(mapping)
-	errs = append(errs, jobsErrs...)
-
-	if jobsMapping != nil {
-		errs = append(errs, checkJobEntries(jobsMapping)...)
+	if len(requiredErrs) > 0 {
+		return requiredErrs
 	}
 
+	var errs []*diagnostic.Error
+	for _, r := range nonRequiredRules {
+		errs = append(errs, r.Check(f)...)
+	}
 	return errs
 }

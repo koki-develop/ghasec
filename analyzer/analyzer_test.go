@@ -1,15 +1,25 @@
 package analyzer_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/goccy/go-yaml/ast"
 	yamlparser "github.com/goccy/go-yaml/parser"
 	"github.com/koki-develop/ghasec/analyzer"
+	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type mockRule struct {
+	id       string
+	required bool
+	check    func(file *ast.File) []*diagnostic.Error
+}
+
+func (r *mockRule) ID() string                               { return r.id }
+func (r *mockRule) Required() bool                           { return r.required }
+func (r *mockRule) Check(file *ast.File) []*diagnostic.Error { return r.check(file) }
 
 func parseYAML(t *testing.T, src string) *ast.File {
 	t.Helper()
@@ -18,205 +28,65 @@ func parseYAML(t *testing.T, src string) *ast.File {
 	return f
 }
 
-func TestAnalyze_ValidWorkflow(t *testing.T) {
-	f := parseYAML(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := analyzer.Analyze(f)
-	assert.Empty(t, errs)
-}
-
-func TestAnalyze_MissingOn(t *testing.T) {
-	f := parseYAML(t, "jobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "on")
-}
-
-func TestAnalyze_InvalidOnType(t *testing.T) {
-	f := parseYAML(t, "on: 123\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "on")
-}
-
-func TestAnalyze_MissingJobs(t *testing.T) {
-	f := parseYAML(t, "on: push\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "jobs")
-}
-
-func TestAnalyze_EmptyJobs(t *testing.T) {
-	f := parseYAML(t, "on: push\njobs:\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "jobs")
-}
-
-func TestAnalyze_InvalidJobsType(t *testing.T) {
-	f := parseYAML(t, "on: push\njobs: hello\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "jobs")
-}
-
-func TestAnalyze_ValidOnTypes(t *testing.T) {
-	tests := []struct {
-		name string
-		src  string
-	}{
-		{"string", "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"},
-		{"sequence", "on: [push, pull_request]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"},
-		{"mapping", "on:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			f := parseYAML(t, tt.src)
-			errs := analyzer.Analyze(f)
-			assert.Empty(t, errs)
-		})
-	}
-}
-
-func TestAnalyze_JobMissingRunsOnAndUses(t *testing.T) {
-	f := parseYAML(t, "on: push\njobs:\n  build:\n    steps:\n      - run: echo hi\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "runs-on")
-	assert.Contains(t, errs[0].Message, "uses")
-}
-
-func TestAnalyze_JobHasBothRunsOnAndUses(t *testing.T) {
-	f := parseYAML(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    uses: org/repo/.github/workflows/ci.yml@main\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "runs-on")
-	assert.Contains(t, errs[0].Message, "uses")
-}
-
-func TestAnalyze_JobHasBothUsesAndSteps(t *testing.T) {
-	f := parseYAML(t, "on: push\njobs:\n  build:\n    uses: org/repo/.github/workflows/ci.yml@main\n    steps:\n      - run: echo hi\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "uses")
-	assert.Contains(t, errs[0].Message, "steps")
-}
-
-func TestAnalyze_ValidReusableWorkflowJob(t *testing.T) {
-	f := parseYAML(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
-	errs := analyzer.Analyze(f)
-	assert.Empty(t, errs)
-}
-
-func TestAnalyze_InvalidRunsOnType(t *testing.T) {
-	f := parseYAML(t, "on: push\njobs:\n  build:\n    runs-on: 123\n    steps:\n      - run: echo hi\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "runs-on")
-}
-
-func TestAnalyze_ValidRunsOnTypes(t *testing.T) {
-	tests := []struct {
-		name string
-		src  string
-	}{
-		{"string", "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"},
-		{"sequence", "on: push\njobs:\n  build:\n    runs-on: [self-hosted, linux]\n    steps:\n      - run: echo hi\n"},
-		{"mapping", "on: push\njobs:\n  build:\n    runs-on:\n      group: my-group\n    steps:\n      - run: echo hi\n"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			f := parseYAML(t, tt.src)
-			errs := analyzer.Analyze(f)
-			assert.Empty(t, errs)
-		})
-	}
-}
-
-func TestAnalyze_InvalidStepsType(t *testing.T) {
-	f := parseYAML(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps: not-a-sequence\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "steps")
-}
-
-func TestAnalyze_InvalidUsesType(t *testing.T) {
-	f := parseYAML(t, "on: push\njobs:\n  call:\n    uses: [not, a, string]\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "uses")
-}
-
-func TestAnalyze_MultipleErrors(t *testing.T) {
-	f := parseYAML(t, "name: test\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 2)
-	assert.Contains(t, errs[0].Message, "on")
-	assert.Contains(t, errs[1].Message, "jobs")
-}
-
-func TestAnalyze_MultipleJobErrors(t *testing.T) {
-	src := "on: push\njobs:\n  job1:\n    steps:\n      - run: echo\n  job2:\n    runs-on: ubuntu-latest\n    uses: org/repo/.github/workflows/ci.yml@main\n"
-	f := parseYAML(t, src)
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 2)
-}
-
-func TestAnalyze_StepActionPinnedToFullSHA(t *testing.T) {
-	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29\n"
-	f := parseYAML(t, src)
-	errs := analyzer.Analyze(f)
-	assert.Empty(t, errs)
-}
-
-func TestAnalyze_StepActionNotPinned(t *testing.T) {
-	tests := []struct {
-		name string
-		uses string
-	}{
-		{"tag", "actions/checkout@v4"},
-		{"branch", "actions/checkout@main"},
-		{"short sha", "actions/checkout@abc1234"},
-		{"no ref", "actions/checkout"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
-			f := parseYAML(t, src)
-			errs := analyzer.Analyze(f)
-			require.Len(t, errs, 1)
-			assert.Contains(t, errs[0].Message, "pinned to a full length commit SHA")
-		})
-	}
-}
-
-func TestAnalyze_StepActionLocalAndDocker(t *testing.T) {
-	tests := []struct {
-		name string
-		uses string
-	}{
-		{"local action", "./path/to/action"},
-		{"docker action", "docker://alpine:3.8"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
-			f := parseYAML(t, src)
-			errs := analyzer.Analyze(f)
-			assert.Empty(t, errs)
-		})
-	}
-}
-
-func TestAnalyze_EmptyDocument(t *testing.T) {
+func TestAnalyzer_EmptyDocument(t *testing.T) {
+	called := false
+	r := &mockRule{id: "test", required: true, check: func(file *ast.File) []*diagnostic.Error {
+		called = true
+		return nil
+	}}
+	a := analyzer.New(r)
 	f, err := yamlparser.ParseBytes([]byte(""), 0)
 	require.NoError(t, err)
-	errs := analyzer.Analyze(f)
+	errs := a.Analyze(f)
+	assert.Empty(t, errs)
+	assert.False(t, called)
+}
+
+func TestAnalyzer_RequiredRuleError_SkipsNonRequired(t *testing.T) {
+	reqRule := &mockRule{id: "req", required: true, check: func(file *ast.File) []*diagnostic.Error {
+		return []*diagnostic.Error{{Message: "required error"}}
+	}}
+	lintCalled := false
+	lintRule := &mockRule{id: "lint", required: false, check: func(file *ast.File) []*diagnostic.Error {
+		lintCalled = true
+		return []*diagnostic.Error{{Message: "lint error"}}
+	}}
+	a := analyzer.New(reqRule, lintRule)
+	f := parseYAML(t, "key: value")
+	errs := a.Analyze(f)
+	require.Len(t, errs, 1)
+	assert.Equal(t, "required error", errs[0].Message)
+	assert.False(t, lintCalled)
+}
+
+func TestAnalyzer_RequiredRulePass_RunsNonRequired(t *testing.T) {
+	reqRule := &mockRule{id: "req", required: true, check: func(file *ast.File) []*diagnostic.Error {
+		return nil
+	}}
+	lintRule := &mockRule{id: "lint", required: false, check: func(file *ast.File) []*diagnostic.Error {
+		return []*diagnostic.Error{{Message: "lint error"}}
+	}}
+	a := analyzer.New(reqRule, lintRule)
+	f := parseYAML(t, "key: value")
+	errs := a.Analyze(f)
+	require.Len(t, errs, 1)
+	assert.Equal(t, "lint error", errs[0].Message)
+}
+
+func TestAnalyzer_NoRules(t *testing.T) {
+	a := analyzer.New()
+	f := parseYAML(t, "key: value")
+	errs := a.Analyze(f)
 	assert.Empty(t, errs)
 }
 
-func TestAnalyze_NonMappingDocument(t *testing.T) {
-	f := parseYAML(t, "- item1\n- item2\n")
-	errs := analyzer.Analyze(f)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "mapping")
+func TestAnalyzer_AllPass(t *testing.T) {
+	noErr := func(file *ast.File) []*diagnostic.Error { return nil }
+	a := analyzer.New(
+		&mockRule{id: "req", required: true, check: noErr},
+		&mockRule{id: "lint", required: false, check: noErr},
+	)
+	f := parseYAML(t, "key: value")
+	errs := a.Analyze(f)
+	assert.Empty(t, errs)
 }

@@ -8,8 +8,11 @@ import (
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/annotate-go"
 	"github.com/koki-develop/ghasec/analyzer"
+	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/discover"
 	"github.com/koki-develop/ghasec/parser"
+	"github.com/koki-develop/ghasec/rules/shapin"
+	"github.com/koki-develop/ghasec/rules/workflow"
 	"github.com/spf13/cobra"
 )
 
@@ -25,6 +28,11 @@ var rootCmd = &cobra.Command{
 			return errors.New("no workflow files found")
 		}
 
+		a := analyzer.New(
+			&workflow.Rule{},
+			&shapin.Rule{},
+		)
+
 		var hasErrors bool
 		for _, f := range files {
 			astFile, err := parser.Parse(f)
@@ -33,11 +41,11 @@ var rootCmd = &cobra.Command{
 				printParseError(f, err)
 				continue
 			}
-			errs := analyzer.Analyze(astFile)
+			errs := a.Analyze(astFile)
 			if len(errs) > 0 {
 				hasErrors = true
 				for _, e := range errs {
-					printParseError(f, e)
+					printDiagnosticError(f, e)
 				}
 			}
 		}
@@ -55,31 +63,39 @@ func resolveFiles(args []string) ([]string, error) {
 	return discover.Discover(".")
 }
 
+// yamlError は goccy/go-yaml のパースエラーが実装する interface。
+// パースエラーのソースアノテーション表示に使用する。
 type yamlError interface {
 	GetToken() *token.Token
 	GetMessage() string
 }
 
 func printParseError(path string, err error) {
-	var yErr yamlError
-	if e, ok := err.(yamlError); ok {
-		yErr = e
-	}
-
-	if yErr == nil {
+	yErr, ok := err.(yamlError)
+	if !ok {
 		fmt.Fprintf(os.Stderr, "%s: %s\n", path, err)
 		return
 	}
-
 	tk := yErr.GetToken()
 	if tk == nil || tk.Position == nil {
 		fmt.Fprintf(os.Stderr, "%s: %s\n", path, err)
 		return
 	}
+	printAnnotatedError(path, tk, yErr.GetMessage())
+}
 
+func printDiagnosticError(path string, e *diagnostic.Error) {
+	if e.Token == nil || e.Token.Position == nil {
+		fmt.Fprintf(os.Stderr, "%s: %s\n", path, e.Message)
+		return
+	}
+	printAnnotatedError(path, e.Token, e.Message)
+}
+
+func printAnnotatedError(path string, tk *token.Token, message string) {
 	src, readErr := os.ReadFile(path)
 	if readErr != nil {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", path, err)
+		fmt.Fprintf(os.Stderr, "%s: %s\n", path, message)
 		return
 	}
 
@@ -99,7 +115,7 @@ func printParseError(path string, err error) {
 		{
 			Span:   span,
 			Marker: annotate.MarkerCaret,
-			Text:   yErr.GetMessage(),
+			Text:   message,
 			Style:  annotate.LabelStyleError,
 		},
 	}
@@ -107,7 +123,7 @@ func printParseError(path string, err error) {
 	r := annotate.New(annotate.WithStyle(annotate.DefaultStyle))
 	output, renderErr := r.Render(src, labels)
 	if renderErr != nil {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", path, err)
+		fmt.Fprintf(os.Stderr, "%s: %s\n", path, message)
 		return
 	}
 
