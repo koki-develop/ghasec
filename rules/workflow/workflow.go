@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/rules"
 )
@@ -28,10 +29,12 @@ func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
 		}}
 	}
 
-	var errs []*diagnostic.Error
-	errs = append(errs, checkOn(mapping)...)
+	fileStart := firstToken(f.Docs[0].Body.GetToken())
 
-	jobsMapping, jobsErrs := checkJobs(mapping)
+	var errs []*diagnostic.Error
+	errs = append(errs, checkOn(mapping, fileStart)...)
+
+	jobsMapping, jobsErrs := checkJobs(mapping, fileStart)
 	errs = append(errs, jobsErrs...)
 
 	if jobsMapping != nil {
@@ -41,11 +44,11 @@ func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
 	return errs
 }
 
-func checkOn(mapping *ast.MappingNode) []*diagnostic.Error {
+func checkOn(mapping *ast.MappingNode, fileStart *token.Token) []*diagnostic.Error {
 	kv := rules.FindKey(mapping, "on")
 	if kv == nil {
 		return []*diagnostic.Error{{
-			Token:   mapping.GetToken(),
+			Token:   fileStart,
 			Message: "\"on\" is required",
 		}}
 	}
@@ -65,11 +68,11 @@ func checkOn(mapping *ast.MappingNode) []*diagnostic.Error {
 	}
 }
 
-func checkJobs(mapping *ast.MappingNode) (*ast.MappingNode, []*diagnostic.Error) {
+func checkJobs(mapping *ast.MappingNode, fileStart *token.Token) (*ast.MappingNode, []*diagnostic.Error) {
 	kv := rules.FindKey(mapping, "jobs")
 	if kv == nil {
 		return nil, []*diagnostic.Error{{
-			Token:   mapping.GetToken(),
+			Token:   fileStart,
 			Message: "\"jobs\" is required",
 		}}
 	}
@@ -188,4 +191,13 @@ func checkUses(jobID string, kv *ast.MappingValueNode) []*diagnostic.Error {
 			Message: fmt.Sprintf("job %q \"uses\" must be a string, but got %s", jobID, kv.Value.Type()),
 		}}
 	}
+}
+
+func firstToken(tk *token.Token) *token.Token {
+	for tk.Prev != nil {
+		tk = tk.Prev
+	}
+	cp := *tk
+	cp.Value = string(tk.Value[0])
+	return &cp
 }
