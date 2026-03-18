@@ -105,7 +105,7 @@ func printParseError(path string, err error) error {
 	if tk == nil || tk.Position == nil {
 		return fmt.Errorf("parse error without position for %s: %s", path, yErr.GetMessage())
 	}
-	return printAnnotatedError(path, tk, yErr.GetMessage(), "")
+	return printAnnotatedError(path, tk, yErr.GetMessage(), "", nil)
 }
 
 func printDiagnosticError(path string, e *diagnostic.Error) error {
@@ -124,10 +124,17 @@ func printDiagnosticError(path string, e *diagnostic.Error) error {
 			ruleRef = fmt.Sprintf("  %s %s", annotate.Dim("Ref:"), annotate.ComposeStyles(annotate.Dim, annotate.Italic)(url))
 		}
 	}
-	return printAnnotatedError(path, e.Token, message, ruleRef)
+	var before *int
+	if e.ContextToken != nil && e.ContextToken.Position != nil {
+		n := e.Token.Position.Line - e.ContextToken.Position.Line
+		if n > 0 {
+			before = &n
+		}
+	}
+	return printAnnotatedError(path, e.Token, message, ruleRef, before)
 }
 
-func printAnnotatedError(path string, tk *token.Token, message string, ruleRef string) error {
+func printAnnotatedError(path string, tk *token.Token, message string, ruleRef string, before *int) error {
 	src, readErr := os.ReadFile(path)
 	if readErr != nil {
 		return fmt.Errorf("failed to read source file %s: %w", path, readErr)
@@ -152,6 +159,7 @@ func printAnnotatedError(path string, tk *token.Token, message string, ruleRef s
 		Span:   span,
 		Marker: annotate.MarkerCaret,
 		Text:   message,
+		Before: before,
 	}
 	if !noColor {
 		label.Style = annotate.LabelStyle{

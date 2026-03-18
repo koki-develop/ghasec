@@ -90,14 +90,20 @@ func checkStep(step *ast.MappingNode) *diagnostic.Error {
 	if ok {
 		return nil
 	}
+
+	usesToken := usesKV.Value.GetToken()
 	if errToken == nil {
-		errToken = usesKV.Value.GetToken()
+		errToken = usesToken
 	}
 
-	return &diagnostic.Error{
+	e := &diagnostic.Error{
 		Token:   errToken,
 		Message: `actions/checkout must be configured with "persist-credentials: false"`,
 	}
+	if errToken != usesToken {
+		e.ContextToken = usesToken
+	}
+	return e
 }
 
 func isCheckoutAction(uses string) bool {
