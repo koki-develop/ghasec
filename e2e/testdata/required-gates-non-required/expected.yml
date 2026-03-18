@@ -4,9 +4,6 @@ stderr: |
   {{.Dir}}/ci.yml:
   1 | jobs:
     | ^ "on" is required
-  2 |   build:
-  3 |     runs-on: ubuntu-latest
-  4 |     steps:
-  5 |       - uses: actions/checkout@v6
+  ...
 
   Error: validation errors found
