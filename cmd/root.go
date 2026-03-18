@@ -13,6 +13,7 @@ import (
 	"github.com/koki-develop/ghasec/discover"
 	"github.com/koki-develop/ghasec/parser"
 	checkoutpersistcredentials "github.com/koki-develop/ghasec/rules/checkout-persist-credentials"
+	defaultpermissions "github.com/koki-develop/ghasec/rules/default-permissions"
 	invalidworkflow "github.com/koki-develop/ghasec/rules/invalid-workflow"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	"github.com/spf13/cobra"
@@ -37,6 +38,7 @@ var rootCmd = &cobra.Command{
 			&invalidworkflow.Rule{},
 			&unpinnedaction.Rule{},
 			&checkoutpersistcredentials.Rule{},
+			&defaultpermissions.Rule{},
 		)
 
 		var errorCount int

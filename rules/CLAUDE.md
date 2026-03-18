@@ -9,6 +9,7 @@
 - `rules/invalid-workflow/` — **Required** rule (`package invalidworkflow`). Validates workflow structure (requires `on` and `jobs`, validates job fields like `runs-on`/`uses`/`steps`).
 - `rules/unpinned-action/` — **Non-required** rule (`package unpinnedaction`). Checks that third-party action references are pinned to full-length commit SHAs.
 - `rules/checkout-persist-credentials/` — **Non-required** rule (`package checkoutpersistcredentials`). Checks that `actions/checkout` steps include `persist-credentials: false`.
+- `rules/default-permissions/` — **Non-required** rule (`package defaultpermissions`). Checks that workflow-level `permissions` is set to `{}`.
 
 ## Key Design Decisions
 
