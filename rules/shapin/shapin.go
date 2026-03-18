@@ -16,7 +16,7 @@ var fullSHAPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
 
 type Rule struct{}
 
-func (r *Rule) ID() string    { return id }
+func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 
 func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
