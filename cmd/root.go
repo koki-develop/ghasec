@@ -38,16 +38,20 @@ var rootCmd = &cobra.Command{
 		for _, f := range files {
 			astFile, err := parser.Parse(f)
 			if err != nil {
+				if err := printParseError(f, err); err != nil {
+					return err
+				}
 				hasErrors = true
-				printParseError(f, err)
 				continue
 			}
 			errs := a.Analyze(astFile)
 			if len(errs) > 0 {
-				hasErrors = true
 				for _, e := range errs {
-					printDiagnosticError(f, e)
+					if err := printDiagnosticError(f, e); err != nil {
+						return err
+					}
 				}
+				hasErrors = true
 			}
 		}
 		if hasErrors {
@@ -71,33 +75,29 @@ type yamlError interface {
 	GetMessage() string
 }
 
-func printParseError(path string, err error) {
+func printParseError(path string, err error) error {
 	yErr, ok := err.(yamlError)
 	if !ok {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", path, err)
-		return
+		return fmt.Errorf("unexpected parse error type for %s: %w", path, err)
 	}
 	tk := yErr.GetToken()
 	if tk == nil || tk.Position == nil {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", path, err)
-		return
+		return fmt.Errorf("parse error without position for %s: %s", path, yErr.GetMessage())
 	}
-	printAnnotatedError(path, tk, yErr.GetMessage())
+	return printAnnotatedError(path, tk, yErr.GetMessage())
 }
 
-func printDiagnosticError(path string, e *diagnostic.Error) {
+func printDiagnosticError(path string, e *diagnostic.Error) error {
 	if e.Token == nil || e.Token.Position == nil {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", path, e.Message)
-		return
+		return fmt.Errorf("diagnostic error without position for %s: %s", path, e.Message)
 	}
-	printAnnotatedError(path, e.Token, e.Message)
+	return printAnnotatedError(path, e.Token, e.Message)
 }
 
-func printAnnotatedError(path string, tk *token.Token, message string) {
+func printAnnotatedError(path string, tk *token.Token, message string) error {
 	src, readErr := os.ReadFile(path)
 	if readErr != nil {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", path, message)
-		return
+		return fmt.Errorf("failed to read source file %s: %w", path, readErr)
 	}
 	if len(bytes.TrimSpace(src)) == 0 {
 		src = []byte(" \n")
@@ -137,11 +137,15 @@ func printAnnotatedError(path string, tk *token.Token, message string) {
 	r := annotate.New(opts...)
 	output, renderErr := r.Render(src, []annotate.Label{label})
 	if renderErr != nil {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", path, message)
-		return
+		return fmt.Errorf("failed to render annotation for %s: %w", path, renderErr)
 	}
 
-	fmt.Fprintf(os.Stderr, "%s:\n%s\n", path, output)
+	displayPath := path
+	if !noColor {
+		displayPath = annotate.Bold(path)
+	}
+	fmt.Fprintf(os.Stderr, "%s:\n%s\n", displayPath, output)
+	return nil
 }
 
 func Execute() error {
