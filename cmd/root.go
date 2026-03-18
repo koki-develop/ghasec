@@ -17,9 +17,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var errValidationFailed = errors.New("validation errors found")
+
 var rootCmd = &cobra.Command{
-	Use:          "ghasec [files...]",
-	SilenceUsage: true,
+	Use:           "ghasec [files...]",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		files, err := resolveFiles(args)
 		if err != nil {
@@ -34,14 +37,16 @@ var rootCmd = &cobra.Command{
 			&shapin.Rule{},
 		)
 
-		var hasErrors bool
+		var errorCount int
+		var errorFileCount int
 		for _, f := range files {
 			astFile, err := parser.Parse(f)
 			if err != nil {
 				if err := printParseError(f, err); err != nil {
 					return err
 				}
-				hasErrors = true
+				errorCount++
+				errorFileCount++
 				continue
 			}
 			errs := a.Analyze(astFile)
@@ -51,12 +56,17 @@ var rootCmd = &cobra.Command{
 						return err
 					}
 				}
-				hasErrors = true
+				errorCount += len(errs)
+				errorFileCount++
 			}
 		}
-		if hasErrors {
-			return errors.New("validation errors found")
+		if errorCount > 0 {
+			fmt.Fprintf(os.Stderr, "%d %s found in %d %s\n",
+				errorCount, pluralize("error", errorCount),
+				errorFileCount, pluralize("file", errorFileCount))
+			return errValidationFailed
 		}
+		fmt.Fprintln(os.Stderr, "No errors found.")
 		return nil
 	},
 }
@@ -148,6 +158,17 @@ func printAnnotatedError(path string, tk *token.Token, message string) error {
 	return nil
 }
 
+func pluralize(word string, count int) string {
+	if count == 1 {
+		return word
+	}
+	return word + "s"
+}
+
 func Execute() error {
-	return rootCmd.Execute()
+	err := rootCmd.Execute()
+	if err != nil && !errors.Is(err, errValidationFailed) {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+	}
+	return err
 }

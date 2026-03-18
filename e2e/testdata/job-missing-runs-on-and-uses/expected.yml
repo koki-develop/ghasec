@@ -7,4 +7,4 @@ stderr: |
     |          ^ job "build" must have either "runs-on" or "uses"
   ...
 
-  Error: validation errors found
+  1 error found in 1 file

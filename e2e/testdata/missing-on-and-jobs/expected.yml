@@ -9,4 +9,4 @@ stderr: |
   1 | name: CI
     | ^ "jobs" is required
 
-  Error: validation errors found
+  2 errors found in 1 file

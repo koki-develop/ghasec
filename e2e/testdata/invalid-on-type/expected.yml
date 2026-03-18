@@ -6,4 +6,4 @@ stderr: |
     |     ^^^ "on" must be a string, sequence, or mapping, but got Integer
   ...
 
-  Error: validation errors found
+  1 error found in 1 file

@@ -6,4 +6,4 @@ stderr: |
     | ^ workflow must be a mapping
   ...
 
-  Error: validation errors found
+  1 error found in 1 file

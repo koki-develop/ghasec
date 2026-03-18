@@ -6,4 +6,4 @@ stderr: |
   5 |     steps: "not a sequence"
     |            ^^^^^^^^^^^^^^ job "build" "steps" must be a sequence, but got String
 
-  Error: validation errors found
+  1 error found in 1 file

@@ -6,4 +6,4 @@ stderr: |
     | ^ "on" is required
   ...
 
-  Error: validation errors found
+  1 error found in 1 file

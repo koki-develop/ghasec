@@ -6,4 +6,4 @@ stderr: |
   2 | jobs:
     | ^^^^ "jobs" must not be empty
 
-  Error: validation errors found
+  1 error found in 1 file
