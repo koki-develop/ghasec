@@ -238,7 +238,9 @@ func TestRule_TokenPosition(t *testing.T) {
 	f := parseYAML(t, src)
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
-	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].Token.Value)
+	assert.Equal(t, "v4", errs[0].Token.Value)
+	require.NotNil(t, errs[0].BeforeToken)
+	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].BeforeToken.Value)
 }
 
 func TestRule_MultipleSteps(t *testing.T) {

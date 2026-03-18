@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/rules"
 )
@@ -134,18 +135,36 @@ func (r *Rule) checkStep(step *ast.MappingNode) []*diagnostic.Error {
 	owner := parts[0]
 	repo := parts[1]
 
+	// Build a token pointing at just the tag text.
+	// The comment token's Offset points to '#', and Value contains the text after '#'.
+	// So the tag starts at Offset + 1 (skip '#') + leading whitespace.
+	rawComment := tk.Next
+	leading := len(rawComment.Value) - len(tag)
+	skip := 1 + leading // 1 for '#', then leading whitespace
+	tagTk := &token.Token{
+		Type:  rawComment.Type,
+		Value: tag,
+		Position: &token.Position{
+			Line:   rawComment.Position.Line,
+			Column: rawComment.Position.Column + skip,
+			Offset: rawComment.Position.Offset + skip,
+		},
+	}
+
 	resolvedSHA, err := r.Resolver.ResolveTagSHA(context.Background(), owner, repo, tag)
 	if err != nil {
 		return []*diagnostic.Error{{
-			Token:   tk,
-			Message: fmt.Sprintf("failed to resolve tag %q for action %q: %v", tag, usesValue, err),
+			Token:       tagTk,
+			BeforeToken: tk,
+			Message:     fmt.Sprintf("failed to resolve tag %q for action %q: %v", tag, usesValue, err),
 		}}
 	}
 
 	if resolvedSHA != sha {
 		return []*diagnostic.Error{{
-			Token:   tk,
-			Message: fmt.Sprintf("action %q references tag %q, but the tag points to commit %q", usesValue, tag, resolvedSHA),
+			Token:       tagTk,
+			BeforeToken: tk,
+			Message:     fmt.Sprintf("action %q references tag %q, but the tag points to commit %q", usesValue, tag, resolvedSHA),
 		}}
 	}
 
