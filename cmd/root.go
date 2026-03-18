@@ -13,10 +13,12 @@ import (
 	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/discover"
+	ghclient "github.com/koki-develop/ghasec/github"
 	"github.com/koki-develop/ghasec/parser"
 	checkoutpersistcredentials "github.com/koki-develop/ghasec/rules/checkout-persist-credentials"
 	defaultpermissions "github.com/koki-develop/ghasec/rules/default-permissions"
 	invalidworkflow "github.com/koki-develop/ghasec/rules/invalid-workflow"
+	mismatchedshatag "github.com/koki-develop/ghasec/rules/mismatched-sha-tag"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	"github.com/spf13/cobra"
 )
@@ -36,11 +38,18 @@ var rootCmd = &cobra.Command{
 			return errors.New("no workflow files found")
 		}
 
+		var ghOpts []ghclient.Option
+		if baseURL := os.Getenv("GHASEC_GITHUB_API_URL"); baseURL != "" {
+			ghOpts = append(ghOpts, ghclient.WithBaseURL(baseURL))
+		}
+		gh := ghclient.NewClient(ghOpts...)
+
 		a := analyzer.New(
 			&invalidworkflow.Rule{},
 			&unpinnedaction.Rule{},
 			&checkoutpersistcredentials.Rule{},
 			&defaultpermissions.Rule{},
+			&mismatchedshatag.Rule{Resolver: gh},
 		)
 
 		var errorCount int

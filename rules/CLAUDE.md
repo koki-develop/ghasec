@@ -10,6 +10,7 @@
 - `rules/unpinned-action/` — **Non-required** rule (`package unpinnedaction`). Checks that third-party action references are pinned to full-length commit SHAs.
 - `rules/checkout-persist-credentials/` — **Non-required** rule (`package checkoutpersistcredentials`). Checks that `actions/checkout` steps include `persist-credentials: false`.
 - `rules/default-permissions/` — **Non-required** rule (`package defaultpermissions`). Checks that workflow-level `permissions` is set to `{}`.
+- `rules/mismatched-sha-tag/` — **Non-required** rule (`package mismatchedshatag`). Verifies that a commit SHA pinned in an action reference matches the tag in its inline comment via the GitHub API.
 
 ## Key Design Decisions
 

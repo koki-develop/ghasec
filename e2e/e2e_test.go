@@ -3,7 +3,10 @@ package e2e_test
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,13 +72,54 @@ func TestE2E(t *testing.T) {
 	}
 }
 
+// mockGitHubTags maps test case names to their mock GitHub API tag data.
+// Key format: "/repos/{owner}/{repo}/git/ref/tags/{tag}".
+var mockGitHubTags = map[string]map[string]mockGitRef{
+	"mismatched-sha-tag": {
+		"/repos/actions/checkout/git/ref/tags/v4": {
+			Ref: "refs/tags/v4",
+			Object: mockGitObject{
+				Type: "commit",
+				SHA:  "de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+			},
+		},
+	},
+}
+
+type mockGitRef struct {
+	Ref    string        `json:"ref"`
+	Object mockGitObject `json:"object"`
+}
+
+type mockGitObject struct {
+	Type string `json:"type"`
+	SHA  string `json:"sha"`
+}
+
 func runTestCase(t *testing.T, name string) {
 	t.Helper()
 
 	tmpDir := t.TempDir()
 	files := writeWorkflows(t, name, tmpDir)
 
-	stdout, stderr, exitCode := runGhasec(t, files)
+	var extraEnv []string
+	if tags, ok := mockGitHubTags[name]; ok {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ref, ok := tags[r.URL.Path]
+			if !ok {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNotFound)
+				_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(ref)
+		}))
+		t.Cleanup(srv.Close)
+		extraEnv = append(extraEnv, "GHASEC_GITHUB_API_URL="+srv.URL)
+	}
+
+	stdout, stderr, exitCode := runGhasec(t, files, extraEnv...)
 
 	exp := loadExpected(t, name, tmpDir)
 	assert.Equal(t, exp.ExitCode, exitCode, "exit code mismatch")
@@ -106,11 +150,12 @@ func writeWorkflows(t *testing.T, name, tmpDir string) []string {
 	return files
 }
 
-func runGhasec(t *testing.T, files []string) (stdout, stderr string, exitCode int) {
+func runGhasec(t *testing.T, files []string, extraEnv ...string) (stdout, stderr string, exitCode int) {
 	t.Helper()
 
 	cmd := exec.Command(binaryPath, files...)
 	cmd.Env = append(os.Environ(), "NO_COLOR=")
+	cmd.Env = append(cmd.Env, extraEnv...)
 
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
