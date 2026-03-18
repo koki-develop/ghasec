@@ -1,4 +1,4 @@
-package shapin_test
+package unpinnedaction_test
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	yamlparser "github.com/goccy/go-yaml/parser"
-	"github.com/koki-develop/ghasec/rules/shapin"
+	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,17 +19,17 @@ func parseYAML(t *testing.T, src string) *ast.File {
 }
 
 func TestRule_ID(t *testing.T) {
-	r := &shapin.Rule{}
+	r := &unpinnedaction.Rule{}
 	assert.Equal(t, "unpinned-action", r.ID())
 }
 
 func TestRule_Required(t *testing.T) {
-	r := &shapin.Rule{}
+	r := &unpinnedaction.Rule{}
 	assert.False(t, r.Required())
 }
 
 func TestRule_PinnedToFullSHA(t *testing.T) {
-	r := &shapin.Rule{}
+	r := &unpinnedaction.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
 	f := parseYAML(t, src)
 	errs := r.Check(f)
@@ -46,7 +46,7 @@ func TestRule_NotPinned(t *testing.T) {
 		{"short sha", "actions/checkout@de0fac"},
 		{"no ref", "actions/checkout"},
 	}
-	r := &shapin.Rule{}
+	r := &unpinnedaction.Rule{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
@@ -66,7 +66,7 @@ func TestRule_LocalAndDockerActions(t *testing.T) {
 		{"local action", "./path/to/action"},
 		{"docker action", "docker://alpine:3.8"},
 	}
-	r := &shapin.Rule{}
+	r := &unpinnedaction.Rule{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
@@ -78,14 +78,14 @@ func TestRule_LocalAndDockerActions(t *testing.T) {
 }
 
 func TestRule_NoSteps(t *testing.T) {
-	r := &shapin.Rule{}
+	r := &unpinnedaction.Rule{}
 	f := parseYAML(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
 	errs := r.Check(f)
 	assert.Empty(t, errs)
 }
 
 func TestRule_EmptyDocument(t *testing.T) {
-	r := &shapin.Rule{}
+	r := &unpinnedaction.Rule{}
 	f, err := yamlparser.ParseBytes([]byte(""), 0)
 	require.NoError(t, err)
 	errs := r.Check(f)

@@ -1,11 +1,11 @@
-package workflow_test
+package invalidworkflow_test
 
 import (
 	"testing"
 
 	"github.com/goccy/go-yaml/ast"
 	yamlparser "github.com/goccy/go-yaml/parser"
-	"github.com/koki-develop/ghasec/rules/workflow"
+	invalidworkflow "github.com/koki-develop/ghasec/rules/invalid-workflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,24 +18,24 @@ func parseYAML(t *testing.T, src string) *ast.File {
 }
 
 func TestRule_ID(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	assert.Equal(t, "invalid-workflow", r.ID())
 }
 
 func TestRule_Required(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	assert.True(t, r.Required())
 }
 
 func TestRule_ValidWorkflow(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
 	errs := r.Check(f)
 	assert.Empty(t, errs)
 }
 
 func TestRule_EmptyDocument(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f, err := yamlparser.ParseBytes([]byte(""), 0)
 	require.NoError(t, err)
 	errs := r.Check(f)
@@ -45,7 +45,7 @@ func TestRule_EmptyDocument(t *testing.T) {
 }
 
 func TestRule_NonMappingDocument(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "- item1\n- item2\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -53,7 +53,7 @@ func TestRule_NonMappingDocument(t *testing.T) {
 }
 
 func TestRule_MissingOn(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "jobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -61,7 +61,7 @@ func TestRule_MissingOn(t *testing.T) {
 }
 
 func TestRule_InvalidOnType(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: 123\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -77,7 +77,7 @@ func TestRule_ValidOnTypes(t *testing.T) {
 		{"sequence", "on: [push, pull_request]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"},
 		{"mapping", "on:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"},
 	}
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := parseYAML(t, tt.src)
@@ -88,7 +88,7 @@ func TestRule_ValidOnTypes(t *testing.T) {
 }
 
 func TestRule_MissingJobs(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -96,7 +96,7 @@ func TestRule_MissingJobs(t *testing.T) {
 }
 
 func TestRule_EmptyJobs(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\njobs:\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -104,7 +104,7 @@ func TestRule_EmptyJobs(t *testing.T) {
 }
 
 func TestRule_InvalidJobsType(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\njobs: hello\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -112,7 +112,7 @@ func TestRule_InvalidJobsType(t *testing.T) {
 }
 
 func TestRule_JobMissingRunsOnAndUses(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\njobs:\n  build:\n    steps:\n      - run: echo hi\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -121,7 +121,7 @@ func TestRule_JobMissingRunsOnAndUses(t *testing.T) {
 }
 
 func TestRule_JobHasBothRunsOnAndUses(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    uses: org/repo/.github/workflows/ci.yml@main\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -130,7 +130,7 @@ func TestRule_JobHasBothRunsOnAndUses(t *testing.T) {
 }
 
 func TestRule_JobHasBothUsesAndSteps(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\njobs:\n  build:\n    uses: org/repo/.github/workflows/ci.yml@main\n    steps:\n      - run: echo hi\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -139,14 +139,14 @@ func TestRule_JobHasBothUsesAndSteps(t *testing.T) {
 }
 
 func TestRule_ValidReusableWorkflowJob(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
 	errs := r.Check(f)
 	assert.Empty(t, errs)
 }
 
 func TestRule_InvalidRunsOnType(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\njobs:\n  build:\n    runs-on: 123\n    steps:\n      - run: echo hi\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -162,7 +162,7 @@ func TestRule_ValidRunsOnTypes(t *testing.T) {
 		{"sequence", "on: push\njobs:\n  build:\n    runs-on: [self-hosted, linux]\n    steps:\n      - run: echo hi\n"},
 		{"mapping", "on: push\njobs:\n  build:\n    runs-on:\n      group: my-group\n    steps:\n      - run: echo hi\n"},
 	}
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := parseYAML(t, tt.src)
@@ -173,7 +173,7 @@ func TestRule_ValidRunsOnTypes(t *testing.T) {
 }
 
 func TestRule_InvalidStepsType(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps: not-a-sequence\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -181,7 +181,7 @@ func TestRule_InvalidStepsType(t *testing.T) {
 }
 
 func TestRule_InvalidUsesType(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "on: push\njobs:\n  call:\n    uses: [not, a, string]\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
@@ -189,7 +189,7 @@ func TestRule_InvalidUsesType(t *testing.T) {
 }
 
 func TestRule_MultipleErrors(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	f := parseYAML(t, "name: test\n")
 	errs := r.Check(f)
 	require.Len(t, errs, 2)
@@ -198,7 +198,7 @@ func TestRule_MultipleErrors(t *testing.T) {
 }
 
 func TestRule_MultipleJobErrors(t *testing.T) {
-	r := &workflow.Rule{}
+	r := &invalidworkflow.Rule{}
 	src := "on: push\njobs:\n  job1:\n    steps:\n      - run: echo\n  job2:\n    runs-on: ubuntu-latest\n    uses: org/repo/.github/workflows/ci.yml@main\n"
 	f := parseYAML(t, src)
 	errs := r.Check(f)

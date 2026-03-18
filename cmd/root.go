@@ -12,8 +12,8 @@ import (
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/discover"
 	"github.com/koki-develop/ghasec/parser"
-	"github.com/koki-develop/ghasec/rules/shapin"
-	"github.com/koki-develop/ghasec/rules/workflow"
+	invalidworkflow "github.com/koki-develop/ghasec/rules/invalid-workflow"
+	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	"github.com/spf13/cobra"
 )
 
@@ -33,8 +33,8 @@ var rootCmd = &cobra.Command{
 		}
 
 		a := analyzer.New(
-			&workflow.Rule{},
-			&shapin.Rule{},
+			&invalidworkflow.Rule{},
+			&unpinnedaction.Rule{},
 		)
 
 		var errorCount int

@@ -18,7 +18,7 @@ go run .                      # Auto-discover .github/workflows/*.yml|yaml
 
 # Test
 go test ./...                 # All tests (unit + E2E)
-go test ./rules/shapin/...    # Single package
+go test ./rules/unpinned-action/...  # Single package
 go test -run TestName ./pkg/  # Single test
 go test ./e2e/...             # E2E tests only
 ```
@@ -32,8 +32,8 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 - `parser/` — Thin wrapper around `goccy/go-yaml/parser` to parse YAML into AST.
 - `analyzer/` — Takes a list of `rules.Rule` and runs them against a parsed AST file. Required rules run first; if any fail, non-required rules are skipped entirely.
 - `rules/` — Defines the `Rule` interface (`ID()`, `Required()`, `Check()`). Helper functions `TopLevelMapping` and `FindKey` for navigating the `goccy/go-yaml` AST.
-  - `rules/workflow/` — **Required** rule. Validates workflow structure (requires `on` and `jobs`, validates job fields like `runs-on`/`uses`/`steps`).
-  - `rules/shapin/` — **Non-required** rule. Checks that third-party action references are pinned to full-length commit SHAs.
+  - `rules/invalid-workflow/` — **Required** rule (`package invalidworkflow`). Validates workflow structure (requires `on` and `jobs`, validates job fields like `runs-on`/`uses`/`steps`).
+  - `rules/unpinned-action/` — **Non-required** rule (`package unpinnedaction`). Checks that third-party action references are pinned to full-length commit SHAs.
 - `diagnostic/` — `Error` type carrying a `token.Token` (for source location) and message.
 - `e2e/` — E2E tests. Builds binary once in `TestMain`, runs each `testdata/` subdirectory as a test case. Each case has `workflows/` (input YAML) and `expected.yml` (expected exit code, stdout, stderr). Test data is embedded via `go:embed`. Adding a test case only requires adding a new directory — no Go code changes needed.
 
