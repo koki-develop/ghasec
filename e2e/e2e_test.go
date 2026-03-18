@@ -72,6 +72,22 @@ func TestE2E(t *testing.T) {
 	}
 }
 
+// extraCLIArgs maps test case names to additional CLI flags.
+var extraCLIArgs = map[string][]string{
+	"mismatched-sha-tag": {"--online"},
+}
+
+// extraEnvVars maps test case names to additional environment variables.
+var extraEnvVars = map[string][]string{
+	"offline-warning-disabled": {"GHASEC_DISABLE_OFFLINE_WARNING="},
+}
+
+// suppressOfflineWarning lists test cases that do NOT want the offline warning
+// suppressed by default (i.e., they intentionally test offline-warning behavior).
+var suppressOfflineWarningExclude = map[string]bool{
+	"offline-warning": true,
+}
+
 // mockGitHubTags maps test case names to their mock GitHub API tag data.
 // Key format: "/repos/{owner}/{repo}/git/ref/tags/{tag}".
 var mockGitHubTags = map[string]map[string]mockGitRef{
@@ -102,6 +118,11 @@ func runTestCase(t *testing.T, name string) {
 	tmpDir := t.TempDir()
 	files := writeWorkflows(t, name, tmpDir)
 
+	var extraArgs []string
+	if args, ok := extraCLIArgs[name]; ok {
+		extraArgs = args
+	}
+
 	var extraEnv []string
 	if tags, ok := mockGitHubTags[name]; ok {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -118,8 +139,16 @@ func runTestCase(t *testing.T, name string) {
 		t.Cleanup(srv.Close)
 		extraEnv = append(extraEnv, "GHASEC_GITHUB_API_URL="+srv.URL)
 	}
+	if envs, ok := extraEnvVars[name]; ok {
+		extraEnv = append(extraEnv, envs...)
+	}
+	// Suppress the offline warning by default for all test cases that are not
+	// explicitly testing offline-warning behavior.
+	if !suppressOfflineWarningExclude[name] {
+		extraEnv = append(extraEnv, "GHASEC_DISABLE_OFFLINE_WARNING=")
+	}
 
-	stdout, stderr, exitCode := runGhasec(t, files, extraEnv...)
+	stdout, stderr, exitCode := runGhasec(t, files, extraArgs, extraEnv...)
 
 	exp := loadExpected(t, name, tmpDir)
 	assert.Equal(t, exp.ExitCode, exitCode, "exit code mismatch")
@@ -150,10 +179,13 @@ func writeWorkflows(t *testing.T, name, tmpDir string) []string {
 	return files
 }
 
-func runGhasec(t *testing.T, files []string, extraEnv ...string) (stdout, stderr string, exitCode int) {
+func runGhasec(t *testing.T, files []string, extraArgs []string, extraEnv ...string) (stdout, stderr string, exitCode int) {
 	t.Helper()
 
-	cmd := exec.Command(binaryPath, files...)
+	args := make([]string, 0, len(extraArgs)+len(files))
+	args = append(args, extraArgs...)
+	args = append(args, files...)
+	cmd := exec.Command(binaryPath, args...)
 	cmd.Env = append(os.Environ(), "NO_COLOR=")
 	cmd.Env = append(cmd.Env, extraEnv...)
 

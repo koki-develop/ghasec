@@ -216,14 +216,12 @@ func TestResolveTagSHA_Singleflight(t *testing.T) {
 
 	ctx := context.Background()
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 10 {
+		wg.Go(func() {
 			got, err := c.ResolveTagSHA(ctx, "actions", "checkout", "v4")
 			assert.NoError(t, err)
 			assert.Equal(t, sha, got)
-		}()
+		})
 	}
 	wg.Wait()
 

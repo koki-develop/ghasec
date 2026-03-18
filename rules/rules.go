@@ -8,6 +8,7 @@ import (
 type Rule interface {
 	ID() string
 	Required() bool
+	Online() bool
 	Check(file *ast.File) []*diagnostic.Error
 }
 

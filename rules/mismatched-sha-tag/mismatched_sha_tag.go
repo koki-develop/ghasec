@@ -28,6 +28,7 @@ type Rule struct {
 
 func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
+func (r *Rule) Online() bool   { return true }
 
 func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
 	if r.Resolver == nil {
@@ -231,7 +232,7 @@ func isValidGitRef(ref string) bool {
 	}
 
 	// No slash-separated component can begin with a dot.
-	for _, component := range strings.Split(ref, "/") {
+	for component := range strings.SplitSeq(ref, "/") {
 		if strings.HasPrefix(component, ".") {
 			return false
 		}

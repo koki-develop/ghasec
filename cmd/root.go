@@ -15,6 +15,7 @@ import (
 	"github.com/koki-develop/ghasec/discover"
 	ghclient "github.com/koki-develop/ghasec/github"
 	"github.com/koki-develop/ghasec/parser"
+	"github.com/koki-develop/ghasec/rules"
 	checkoutpersistcredentials "github.com/koki-develop/ghasec/rules/checkout-persist-credentials"
 	defaultpermissions "github.com/koki-develop/ghasec/rules/default-permissions"
 	invalidworkflow "github.com/koki-develop/ghasec/rules/invalid-workflow"
@@ -24,6 +25,12 @@ import (
 )
 
 var errValidationFailed = errors.New("validation errors found")
+
+var online bool
+
+func init() {
+	rootCmd.Flags().BoolVar(&online, "online", false, "enable rules that require network access")
+}
 
 var rootCmd = &cobra.Command{
 	Use:           "ghasec [files...]",
@@ -44,13 +51,34 @@ var rootCmd = &cobra.Command{
 		}
 		gh := ghclient.NewClient(ghOpts...)
 
-		a := analyzer.New(
+		allRules := []rules.Rule{
 			&invalidworkflow.Rule{},
 			&unpinnedaction.Rule{},
 			&checkoutpersistcredentials.Rule{},
 			&defaultpermissions.Rule{},
 			&mismatchedshatag.Rule{Resolver: gh},
-		)
+		}
+
+		var activeRules []rules.Rule
+		var skippedOnline int
+		for _, r := range allRules {
+			if r.Online() && !online {
+				skippedOnline++
+				continue
+			}
+			activeRules = append(activeRules, r)
+		}
+
+		if skippedOnline > 0 {
+			defer func() {
+				if _, disabled := os.LookupEnv("GHASEC_DISABLE_OFFLINE_WARNING"); !disabled {
+					fmt.Fprintf(os.Stderr, "Warning: %d online %s skipped. Use --online to enable them.\n",
+						skippedOnline, pluralize("rule", skippedOnline))
+				}
+			}()
+		}
+
+		a := analyzer.New(activeRules...)
 
 		var errorCount int
 		var errorFileCount int

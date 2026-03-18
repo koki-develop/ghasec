@@ -15,6 +15,7 @@ type Rule struct{}
 
 func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
+func (r *Rule) Online() bool   { return false }
 
 func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
 	if len(f.Docs) == 0 || f.Docs[0] == nil || f.Docs[0].Body == nil {

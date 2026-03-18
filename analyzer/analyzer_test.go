@@ -19,6 +19,7 @@ type mockRule struct {
 
 func (r *mockRule) ID() string                               { return r.id }
 func (r *mockRule) Required() bool                           { return r.required }
+func (r *mockRule) Online() bool                             { return false }
 func (r *mockRule) Check(file *ast.File) []*diagnostic.Error { return r.check(file) }
 
 func parseYAML(t *testing.T, src string) *ast.File {
