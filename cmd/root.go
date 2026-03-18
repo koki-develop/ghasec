@@ -120,7 +120,11 @@ func printAnnotatedError(path string, tk *token.Token, message string) {
 		Text:   message,
 	}
 	if !noColor {
-		label.Style = annotate.LabelStyleError
+		label.Style = annotate.LabelStyle{
+			SpanCode:  annotate.Bold,
+			Marker:    annotate.FgRed,
+			LabelText: annotate.ComposeStyles(annotate.FgRed, annotate.Bold),
+		}
 	}
 
 	var opts []annotate.Option
