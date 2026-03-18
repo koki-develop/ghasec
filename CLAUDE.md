@@ -17,9 +17,10 @@ go run . [files...]           # Lint specific files
 go run .                      # Auto-discover .github/workflows/*.yml|yaml
 
 # Test
-go test ./...                 # All tests
+go test ./...                 # All tests (unit + E2E)
 go test ./rules/shapin/...    # Single package
 go test -run TestName ./pkg/  # Single test
+go test ./e2e/...             # E2E tests only
 ```
 
 ## Architecture
@@ -34,6 +35,7 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
   - `rules/workflow/` — **Required** rule. Validates workflow structure (requires `on` and `jobs`, validates job fields like `runs-on`/`uses`/`steps`).
   - `rules/shapin/` — **Non-required** rule. Checks that third-party action references are pinned to full-length commit SHAs.
 - `diagnostic/` — `Error` type carrying a `token.Token` (for source location) and message.
+- `e2e/` — E2E tests. Builds binary once in `TestMain`, runs each `testdata/` subdirectory as a test case. Each case has `workflows/` (input YAML) and `expected.yml` (expected exit code, stdout, stderr). Test data is embedded via `go:embed`. Adding a test case only requires adding a new directory — no Go code changes needed.
 
 ## Key Design Decisions
 
@@ -41,3 +43,4 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 - Rules are two-phase: required rules (structural validation) gate non-required rules (lint checks). This prevents noisy lint errors on malformed files.
 - New rules: implement `rules.Rule` interface and register in `cmd/root.go`'s `analyzer.New(...)` call.
 - Tests use `github.com/stretchr/testify` (assert/require).
+- Supports `NO_COLOR` environment variable to disable ANSI styling ([no-color.org](https://no-color.org) compliant).
