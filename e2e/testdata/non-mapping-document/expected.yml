@@ -1,0 +1,9 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  {{.Dir}}/ci.yml:
+  1 | - foo
+    | ^ workflow must be a mapping
+  ...
+
+  Error: validation errors found

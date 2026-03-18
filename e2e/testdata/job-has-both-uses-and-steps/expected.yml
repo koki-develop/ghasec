@@ -1,0 +1,10 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  {{.Dir}}/ci.yml:
+  ...
+  4 |     uses: octo-org/this-repo/.github/workflows/workflow.yml@main
+    |         ^ job "build" cannot have both "uses" and "steps"
+  ...
+
+  Error: validation errors found

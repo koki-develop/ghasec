@@ -1,0 +1,10 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  {{.Dir}}/ci.yml:
+  ...
+  4 |     runs-on: ubuntu-latest
+    |            ^ job "build" cannot have both "runs-on" and "uses"
+  ...
+
+  Error: validation errors found

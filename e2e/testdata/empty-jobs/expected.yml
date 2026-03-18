@@ -1,0 +1,9 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  {{.Dir}}/ci.yml:
+  ...
+  2 | jobs:
+    | ^^^^ "jobs" must not be empty
+
+  Error: validation errors found

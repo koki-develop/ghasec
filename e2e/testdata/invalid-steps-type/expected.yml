@@ -1,0 +1,9 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  {{.Dir}}/ci.yml:
+  ...
+  5 |     steps: "not a sequence"
+    |            ^^^^^^^^^^^^^^ job "build" "steps" must be a sequence, but got String
+
+  Error: validation errors found

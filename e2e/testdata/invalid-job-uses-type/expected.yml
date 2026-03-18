@@ -1,0 +1,9 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  {{.Dir}}/ci.yml:
+  ...
+  5 |       - something
+    |       ^ job "build" "uses" must be a string, but got Sequence
+
+  Error: validation errors found

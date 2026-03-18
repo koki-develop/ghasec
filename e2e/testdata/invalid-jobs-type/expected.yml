@@ -1,0 +1,10 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  {{.Dir}}/ci.yml:
+  ...
+  3 |   - build
+    |   ^ "jobs" must be a mapping
+  ...
+
+  Error: validation errors found

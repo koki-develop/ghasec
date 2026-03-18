@@ -1,0 +1,6 @@
+on: push
+jobs:
+  build:
+    uses: octo-org/this-repo/.github/workflows/workflow.yml@main
+    steps:
+      - run: echo hi

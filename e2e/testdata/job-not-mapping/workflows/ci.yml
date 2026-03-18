@@ -1,0 +1,3 @@
+on: push
+jobs:
+  build: "not a mapping"

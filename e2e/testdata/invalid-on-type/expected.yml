@@ -1,0 +1,9 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  {{.Dir}}/ci.yml:
+  1 | on: 123
+    |     ^^^ "on" must be a string, sequence, or mapping, but got Integer
+  ...
+
+  Error: validation errors found
