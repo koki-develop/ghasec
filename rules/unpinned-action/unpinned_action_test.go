@@ -11,11 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func parseYAML(t *testing.T, src string) *ast.File {
+func parseMapping(t *testing.T, src string) *ast.MappingNode {
 	t.Helper()
 	f, err := yamlparser.ParseBytes([]byte(src), 0)
 	require.NoError(t, err)
-	return f
+	require.NotEmpty(t, f.Docs)
+	m, ok := f.Docs[0].Body.(*ast.MappingNode)
+	require.True(t, ok)
+	return m
 }
 
 func TestRule_ID(t *testing.T) {
@@ -31,8 +34,8 @@ func TestRule_Required(t *testing.T) {
 func TestRule_PinnedToFullSHA(t *testing.T) {
 	r := &unpinnedaction.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	assert.Empty(t, errs)
 }
 
@@ -50,8 +53,8 @@ func TestRule_NotPinned(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
-			f := parseYAML(t, src)
-			errs := r.Check(f)
+			m := parseMapping(t, src)
+			errs := r.Check(m)
 			require.Len(t, errs, 1)
 			assert.Contains(t, errs[0].Message, "pinned to a full length commit SHA")
 		})
@@ -70,8 +73,8 @@ func TestRule_LocalAndDockerActions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
-			f := parseYAML(t, src)
-			errs := r.Check(f)
+			m := parseMapping(t, src)
+			errs := r.Check(m)
 			assert.Empty(t, errs)
 		})
 	}
@@ -79,15 +82,7 @@ func TestRule_LocalAndDockerActions(t *testing.T) {
 
 func TestRule_NoSteps(t *testing.T) {
 	r := &unpinnedaction.Rule{}
-	f := parseYAML(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
-	errs := r.Check(f)
-	assert.Empty(t, errs)
-}
-
-func TestRule_EmptyDocument(t *testing.T) {
-	r := &unpinnedaction.Rule{}
-	f, err := yamlparser.ParseBytes([]byte(""), 0)
-	require.NoError(t, err)
-	errs := r.Check(f)
+	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
+	errs := r.Check(m)
 	assert.Empty(t, errs)
 }

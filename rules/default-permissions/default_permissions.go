@@ -17,17 +17,8 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
-func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
-	if len(f.Docs) == 0 || f.Docs[0] == nil || f.Docs[0].Body == nil {
-		return nil
-	}
-
-	mapping := rules.TopLevelMapping(f.Docs[0])
-	if mapping == nil {
-		return nil
-	}
-
-	fileStart := firstToken(f.Docs[0].Body.GetToken())
+func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
+	fileStart := rules.FirstToken(mapping.GetToken())
 
 	permKV := rules.FindKey(mapping, "permissions")
 	if permKV == nil {
@@ -46,15 +37,6 @@ func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
 		AfterToken: lastValueToken(permKV.Value),
 		Message:    message,
 	}}
-}
-
-func firstToken(tk *token.Token) *token.Token {
-	for tk.Prev != nil {
-		tk = tk.Prev
-	}
-	cp := *tk
-	cp.Value = string(tk.Value[0])
-	return &cp
 }
 
 func lastValueToken(node ast.Node) *token.Token {

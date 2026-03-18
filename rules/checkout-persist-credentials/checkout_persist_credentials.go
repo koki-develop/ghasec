@@ -17,69 +17,19 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
-func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
-	if len(f.Docs) == 0 || f.Docs[0] == nil || f.Docs[0].Body == nil {
-		return nil
-	}
-
-	mapping := rules.TopLevelMapping(f.Docs[0])
-	if mapping == nil {
-		return nil
-	}
-
-	jobsKV := rules.FindKey(mapping, "jobs")
-	if jobsKV == nil {
-		return nil
-	}
-
-	jobsMapping, ok := jobsKV.Value.(*ast.MappingNode)
-	if !ok {
-		return nil
-	}
-
+func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
 	var errs []*diagnostic.Error
-	for _, jobEntry := range jobsMapping.Values {
-		jobMapping, ok := jobEntry.Value.(*ast.MappingNode)
-		if !ok {
-			continue
+	rules.EachStep(mapping, func(step *ast.MappingNode) {
+		if err := checkStep(step); err != nil {
+			errs = append(errs, err)
 		}
-
-		stepsKV := rules.FindKey(jobMapping, "steps")
-		if stepsKV == nil {
-			continue
-		}
-
-		seq, ok := stepsKV.Value.(*ast.SequenceNode)
-		if !ok {
-			continue
-		}
-
-		for _, step := range seq.Values {
-			stepMapping, ok := step.(*ast.MappingNode)
-			if !ok {
-				continue
-			}
-			if err := checkStep(stepMapping); err != nil {
-				errs = append(errs, err)
-			}
-		}
-	}
+	})
 	return errs
 }
 
 func checkStep(step *ast.MappingNode) *diagnostic.Error {
-	usesKV := rules.FindKey(step, "uses")
-	if usesKV == nil {
-		return nil
-	}
-
-	var usesValue string
-	switch v := usesKV.Value.(type) {
-	case *ast.StringNode:
-		usesValue = v.Value
-	case *ast.LiteralNode:
-		usesValue = v.Value.Value
-	default:
+	usesValue, usesToken, ok := rules.StepUsesValue(step)
+	if !ok {
 		return nil
 	}
 
@@ -87,12 +37,11 @@ func checkStep(step *ast.MappingNode) *diagnostic.Error {
 		return nil
 	}
 
-	errToken, ok := findPersistCredentialsError(step)
-	if ok {
+	errToken, found := findPersistCredentialsError(step)
+	if found {
 		return nil
 	}
 
-	usesToken := usesKV.Value.GetToken()
 	if errToken == nil {
 		errToken = usesToken
 	}

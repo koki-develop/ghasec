@@ -3,13 +3,7 @@ stdout: ""
 stderr: |
   --> {{.Dir}}/empty-file.yml:1:1
   1 | {{" "}}
-    | ^ "on" is required (invalid-workflow)
-    Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
-
-  --> {{.Dir}}/empty-file.yml:1:1
-  1 | {{" "}}
-    | ^ "jobs" is required (invalid-workflow)
-    Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+    | ^ workflow must be a YAML mapping
 
   --> {{.Dir}}/empty-jobs.yml:2:1
   ...
@@ -100,8 +94,7 @@ stderr: |
 
   --> {{.Dir}}/non-mapping-document.yml:1:1
   1 | - foo
-    | ^ workflow must be a mapping (invalid-workflow)
+    | ^ workflow must be a YAML mapping
   ...
-    Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
-  17 errors found in 15 files
+  16 errors found in 15 files

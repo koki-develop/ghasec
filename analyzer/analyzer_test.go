@@ -14,13 +14,13 @@ import (
 type mockRule struct {
 	id       string
 	required bool
-	check    func(file *ast.File) []*diagnostic.Error
+	check    func(mapping *ast.MappingNode) []*diagnostic.Error
 }
 
-func (r *mockRule) ID() string                               { return r.id }
-func (r *mockRule) Required() bool                           { return r.required }
-func (r *mockRule) Online() bool                             { return false }
-func (r *mockRule) Check(file *ast.File) []*diagnostic.Error { return r.check(file) }
+func (r *mockRule) ID() string                                         { return r.id }
+func (r *mockRule) Required() bool                                     { return r.required }
+func (r *mockRule) Online() bool                                       { return false }
+func (r *mockRule) Check(mapping *ast.MappingNode) []*diagnostic.Error { return r.check(mapping) }
 
 func parseYAML(t *testing.T, src string) *ast.File {
 	t.Helper()
@@ -30,25 +30,28 @@ func parseYAML(t *testing.T, src string) *ast.File {
 }
 
 func TestAnalyzer_EmptyDocument(t *testing.T) {
-	called := false
-	r := &mockRule{id: "test", required: true, check: func(file *ast.File) []*diagnostic.Error {
-		called = true
-		return nil
-	}}
-	a := analyzer.New(r)
 	f, err := yamlparser.ParseBytes([]byte(""), 0)
 	require.NoError(t, err)
+	a := analyzer.New()
 	errs := a.Analyze(f)
-	assert.Empty(t, errs)
-	assert.True(t, called)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "mapping")
+}
+
+func TestAnalyzer_NonMappingDocument(t *testing.T) {
+	f := parseYAML(t, "- item1\n- item2\n")
+	a := analyzer.New()
+	errs := a.Analyze(f)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "mapping")
 }
 
 func TestAnalyzer_RequiredRuleError_SkipsNonRequired(t *testing.T) {
-	reqRule := &mockRule{id: "req", required: true, check: func(file *ast.File) []*diagnostic.Error {
+	reqRule := &mockRule{id: "req", required: true, check: func(mapping *ast.MappingNode) []*diagnostic.Error {
 		return []*diagnostic.Error{{Message: "required error"}}
 	}}
 	lintCalled := false
-	lintRule := &mockRule{id: "lint", required: false, check: func(file *ast.File) []*diagnostic.Error {
+	lintRule := &mockRule{id: "lint", required: false, check: func(mapping *ast.MappingNode) []*diagnostic.Error {
 		lintCalled = true
 		return []*diagnostic.Error{{Message: "lint error"}}
 	}}
@@ -62,10 +65,10 @@ func TestAnalyzer_RequiredRuleError_SkipsNonRequired(t *testing.T) {
 }
 
 func TestAnalyzer_RequiredRulePass_RunsNonRequired(t *testing.T) {
-	reqRule := &mockRule{id: "req", required: true, check: func(file *ast.File) []*diagnostic.Error {
+	reqRule := &mockRule{id: "req", required: true, check: func(mapping *ast.MappingNode) []*diagnostic.Error {
 		return nil
 	}}
-	lintRule := &mockRule{id: "lint", required: false, check: func(file *ast.File) []*diagnostic.Error {
+	lintRule := &mockRule{id: "lint", required: false, check: func(mapping *ast.MappingNode) []*diagnostic.Error {
 		return []*diagnostic.Error{{Message: "lint error"}}
 	}}
 	a := analyzer.New(reqRule, lintRule)
@@ -84,7 +87,7 @@ func TestAnalyzer_NoRules(t *testing.T) {
 }
 
 func TestAnalyzer_AllPass(t *testing.T) {
-	noErr := func(file *ast.File) []*diagnostic.Error { return nil }
+	noErr := func(mapping *ast.MappingNode) []*diagnostic.Error { return nil }
 	a := analyzer.New(
 		&mockRule{id: "req", required: true, check: noErr},
 		&mockRule{id: "lint", required: false, check: noErr},

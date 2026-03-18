@@ -10,11 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func parseYAML(t *testing.T, src string) *ast.File {
+func parseMapping(t *testing.T, src string) *ast.MappingNode {
 	t.Helper()
 	f, err := yamlparser.ParseBytes([]byte(src), 0)
 	require.NoError(t, err)
-	return f
+	require.NotEmpty(t, f.Docs)
+	m, ok := f.Docs[0].Body.(*ast.MappingNode)
+	require.True(t, ok)
+	return m
 }
 
 func TestRule_ID(t *testing.T) {
@@ -30,16 +33,16 @@ func TestRule_Required(t *testing.T) {
 func TestRule_PermissionsEmptyMapping(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\npermissions: {}\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	assert.Empty(t, errs)
 }
 
 func TestRule_MissingPermissions(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `permissions`)
 }
@@ -47,8 +50,8 @@ func TestRule_MissingPermissions(t *testing.T) {
 func TestRule_MissingPermissions_TokenPointsToDocStart(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, 1, errs[0].Token.Position.Line)
 }
@@ -56,8 +59,8 @@ func TestRule_MissingPermissions_TokenPointsToDocStart(t *testing.T) {
 func TestRule_PermissionsNonEmptyMapping(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\npermissions:\n  contents: read\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `permissions`)
 }
@@ -65,8 +68,8 @@ func TestRule_PermissionsNonEmptyMapping(t *testing.T) {
 func TestRule_PermissionsNonEmptyMapping_TokenPointsToKey(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\npermissions:\n  contents: read\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "permissions", errs[0].Token.Value)
 }
@@ -88,8 +91,8 @@ func TestRule_PermissionsString(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := parseYAML(t, tt.src)
-			errs := r.Check(f)
+			m := parseMapping(t, tt.src)
+			errs := r.Check(m)
 			require.Len(t, errs, 1)
 			assert.Contains(t, errs[0].Message, `permissions`)
 		})
@@ -99,8 +102,8 @@ func TestRule_PermissionsString(t *testing.T) {
 func TestRule_PermissionsString_TokenPointsToKey(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\npermissions: read-all\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "permissions", errs[0].Token.Value)
 }
@@ -108,16 +111,8 @@ func TestRule_PermissionsString_TokenPointsToKey(t *testing.T) {
 func TestRule_PermissionsNull(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\npermissions:\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `permissions`)
-}
-
-func TestRule_EmptyDocument(t *testing.T) {
-	r := &defaultpermissions.Rule{}
-	f, err := yamlparser.ParseBytes([]byte(""), 0)
-	require.NoError(t, err)
-	errs := r.Check(f)
-	assert.Empty(t, errs)
 }

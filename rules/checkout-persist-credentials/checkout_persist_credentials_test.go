@@ -11,11 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func parseYAML(t *testing.T, src string) *ast.File {
+func parseMapping(t *testing.T, src string) *ast.MappingNode {
 	t.Helper()
 	f, err := yamlparser.ParseBytes([]byte(src), 0)
 	require.NoError(t, err)
-	return f
+	require.NotEmpty(t, f.Docs)
+	m, ok := f.Docs[0].Body.(*ast.MappingNode)
+	require.True(t, ok)
+	return m
 }
 
 func TestRule_ID(t *testing.T) {
@@ -45,8 +48,8 @@ func TestRule_PersistCredentialsFalse(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := parseYAML(t, tt.src)
-			errs := r.Check(f)
+			m := parseMapping(t, tt.src)
+			errs := r.Check(m)
 			assert.Empty(t, errs)
 		})
 	}
@@ -77,8 +80,8 @@ func TestRule_MissingPersistCredentials(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := parseYAML(t, tt.src)
-			errs := r.Check(f)
+			m := parseMapping(t, tt.src)
+			errs := r.Check(m)
 			require.Len(t, errs, 1)
 			assert.Contains(t, errs[0].Message, "persist-credentials: false")
 		})
@@ -88,8 +91,8 @@ func TestRule_MissingPersistCredentials(t *testing.T) {
 func TestRule_PersistCredentialsTrue_TokenPointsToValue(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n        with:\n          persist-credentials: true\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "true", errs[0].Token.Value)
 	require.NotNil(t, errs[0].BeforeToken)
@@ -99,8 +102,8 @@ func TestRule_PersistCredentialsTrue_TokenPointsToValue(t *testing.T) {
 func TestRule_MissingPersistCredentials_TokenPointsToUses(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].Token.Value)
 	assert.Nil(t, errs[0].BeforeToken)
@@ -109,8 +112,8 @@ func TestRule_MissingPersistCredentials_TokenPointsToUses(t *testing.T) {
 func TestRule_NonCheckoutAction(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/setup-go@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	assert.Empty(t, errs)
 }
 
@@ -128,23 +131,15 @@ func TestRule_MixedSteps(t *testing.T) {
 		"      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd",
 		"      - uses: actions/setup-go@de0fac2e4500dabe0009e67214ff5f5447ce83dd",
 	)
-	f := parseYAML(t, src)
-	errs := r.Check(f)
+	m := parseMapping(t, src)
+	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "persist-credentials: false")
 }
 
-func TestRule_EmptyDocument(t *testing.T) {
-	r := &checkoutpersistcredentials.Rule{}
-	f, err := yamlparser.ParseBytes([]byte(""), 0)
-	require.NoError(t, err)
-	errs := r.Check(f)
-	assert.Empty(t, errs)
-}
-
 func TestRule_NoSteps(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
-	f := parseYAML(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
-	errs := r.Check(f)
+	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
+	errs := r.Check(m)
 	assert.Empty(t, errs)
 }

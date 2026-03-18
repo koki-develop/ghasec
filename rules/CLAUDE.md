@@ -2,7 +2,13 @@
 
 ## Overview
 
-`rules/` package defines the `Rule` interface (`ID()`, `Required()`, `Online()`, `Check()`). Helper functions `TopLevelMapping` and `FindKey` navigate the `goccy/go-yaml` AST.
+`rules/` package defines the `Rule` interface (`ID()`, `Required()`, `Online()`, `Check()`). `Check` receives an `*ast.MappingNode` (the top-level workflow mapping, extracted by the analyzer). Helper functions navigate the AST and extract common patterns:
+
+- `FindKey` — finds a key in a mapping node.
+- `EachStep` — iterates over all steps across all jobs.
+- `StepUsesValue` — extracts the string value and token from a step's `uses` key.
+- `IsLocalAction` / `IsDockerAction` — classify action reference types.
+- `FirstToken` — walks the token chain to the first token in the file.
 
 ## Existing Rules
 
@@ -14,7 +20,7 @@
 
 ## Key Design Decisions
 
-- Uses `goccy/go-yaml` AST (not `gopkg.in/yaml.v3`) — all rule checks operate on `ast.MappingNode`, `ast.SequenceNode`, etc.
+- Uses `goccy/go-yaml` AST (not `gopkg.in/yaml.v3`) — all rule checks operate on `ast.MappingNode`, `ast.SequenceNode`, etc. The analyzer extracts the top-level mapping from `*ast.File` and passes it to each rule's `Check(*ast.MappingNode)` method; rules never see `*ast.File` directly.
 - Rules are two-phase: required rules (structural validation) gate non-required rules (lint checks). This prevents noisy lint errors on malformed files.
 - Online rules (`Online() == true`) require network access and are disabled by default. They run only when `--online` is passed. Currently only `mismatched-sha-tag` is an online rule.
 - New rules: implement `rules.Rule` interface and register in `cmd/root.go`'s `analyzer.New(...)` call. Rule IDs are flat kebab-case names describing the violation they detect (e.g., `invalid-workflow`, `unpinned-action`).

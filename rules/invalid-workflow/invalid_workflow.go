@@ -17,31 +17,8 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return true }
 func (r *Rule) Online() bool   { return false }
 
-func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
-	if len(f.Docs) == 0 || f.Docs[0] == nil || f.Docs[0].Body == nil {
-		tk := &token.Token{
-			Position: &token.Position{
-				Line:   1,
-				Column: 1,
-				Offset: 1,
-			},
-			Value: " ",
-		}
-		return []*diagnostic.Error{
-			{Token: tk, Message: "\"on\" is required"},
-			{Token: tk, Message: "\"jobs\" is required"},
-		}
-	}
-
-	mapping := rules.TopLevelMapping(f.Docs[0])
-	if mapping == nil {
-		return []*diagnostic.Error{{
-			Token:   f.Docs[0].Body.GetToken(),
-			Message: "workflow must be a mapping",
-		}}
-	}
-
-	fileStart := firstToken(f.Docs[0].Body.GetToken())
+func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
+	fileStart := rules.FirstToken(mapping.GetToken())
 
 	var errs []*diagnostic.Error
 	errs = append(errs, checkOn(mapping, fileStart)...)
@@ -203,13 +180,4 @@ func checkUses(jobID string, kv *ast.MappingValueNode) []*diagnostic.Error {
 			Message: fmt.Sprintf("job %q \"uses\" must be a string, but got %s", jobID, kv.Value.Type()),
 		}}
 	}
-}
-
-func firstToken(tk *token.Token) *token.Token {
-	for tk.Prev != nil {
-		tk = tk.Prev
-	}
-	cp := *tk
-	cp.Value = string(tk.Value[0])
-	return &cp
 }
