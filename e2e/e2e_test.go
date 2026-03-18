@@ -32,14 +32,14 @@ func TestMain(m *testing.M) {
 	cmd := exec.Command("go", "build", "-o", bin, "..")
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		os.RemoveAll(tmp)
+		_ = os.RemoveAll(tmp)
 		fmt.Fprintf(os.Stderr, "failed to build ghasec: %v\n", err)
 		os.Exit(1)
 	}
 	binaryPath = bin
 
 	code := m.Run()
-	os.RemoveAll(tmp)
+	_ = os.RemoveAll(tmp)
 	os.Exit(code)
 }
 
