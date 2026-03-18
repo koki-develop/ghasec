@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/alecthomas/chroma/v2/quick"
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/annotate-go"
 	"github.com/koki-develop/ghasec/analyzer"
@@ -181,6 +183,13 @@ func printAnnotatedError(path string, tk *token.Token, message string, ruleRef s
 	var opts []annotate.Option
 	if !noColor {
 		opts = append(opts, annotate.WithStyle(annotate.DefaultStyle))
+		opts = append(opts, annotate.WithSourceStyle(func(s string) string {
+			var buf strings.Builder
+			if err := quick.Highlight(&buf, s, "yaml", "terminal256", "github-dark"); err != nil {
+				return s
+			}
+			return buf.String()
+		}))
 	}
 	r := annotate.New(opts...)
 	output, renderErr := r.Render(src, []annotate.Label{label})
