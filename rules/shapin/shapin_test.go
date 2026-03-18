@@ -20,7 +20,7 @@ func parseYAML(t *testing.T, src string) *ast.File {
 
 func TestRule_ID(t *testing.T) {
 	r := &shapin.Rule{}
-	assert.Equal(t, "sha-pinning", r.ID())
+	assert.Equal(t, "unpinned-action", r.ID())
 }
 
 func TestRule_Required(t *testing.T) {

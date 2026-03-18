@@ -41,6 +41,6 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 
 - Uses `goccy/go-yaml` AST (not `gopkg.in/yaml.v3`) — all rule checks operate on `ast.MappingNode`, `ast.SequenceNode`, etc.
 - Rules are two-phase: required rules (structural validation) gate non-required rules (lint checks). This prevents noisy lint errors on malformed files.
-- New rules: implement `rules.Rule` interface and register in `cmd/root.go`'s `analyzer.New(...)` call.
+- New rules: implement `rules.Rule` interface and register in `cmd/root.go`'s `analyzer.New(...)` call. Rule IDs are flat kebab-case names describing the violation they detect (e.g., `invalid-workflow`, `unpinned-action`).
 - Tests use `github.com/stretchr/testify` (assert/require).
 - Supports `NO_COLOR` environment variable to disable ANSI styling ([no-color.org](https://no-color.org) compliant).

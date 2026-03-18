@@ -3,10 +3,10 @@ stdout: ""
 stderr: |
   {{.Dir}}/ci.yml:
   1 | {{" "}}
-    | ^ "on" is required (workflow)
+    | ^ "on" is required (invalid-workflow)
 
   {{.Dir}}/ci.yml:
   1 | {{" "}}
-    | ^ "jobs" is required (workflow)
+    | ^ "jobs" is required (invalid-workflow)
 
   2 errors found in 1 file

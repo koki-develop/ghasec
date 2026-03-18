@@ -4,6 +4,6 @@ stderr: |
   {{.Dir}}/ci.yml:
   ...
   6 |       - uses: actions/checkout@v6
-    |               ^^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (sha-pinning)
+    |               ^^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
 
   1 error found in 1 file

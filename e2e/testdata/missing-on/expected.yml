@@ -3,7 +3,7 @@ stdout: ""
 stderr: |
   {{.Dir}}/ci.yml:
   1 | jobs:
-    | ^ "on" is required (workflow)
+    | ^ "on" is required (invalid-workflow)
   ...
 
   1 error found in 1 file

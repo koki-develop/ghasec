@@ -9,7 +9,7 @@ import (
 	"github.com/koki-develop/ghasec/rules"
 )
 
-const id = "workflow"
+const id = "invalid-workflow"
 
 type Rule struct{}
 

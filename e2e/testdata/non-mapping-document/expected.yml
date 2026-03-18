@@ -3,7 +3,7 @@ stdout: ""
 stderr: |
   {{.Dir}}/ci.yml:
   1 | - foo
-    | ^ workflow must be a mapping (workflow)
+    | ^ workflow must be a mapping (invalid-workflow)
   ...
 
   1 error found in 1 file

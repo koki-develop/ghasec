@@ -19,7 +19,7 @@ func parseYAML(t *testing.T, src string) *ast.File {
 
 func TestRule_ID(t *testing.T) {
 	r := &workflow.Rule{}
-	assert.Equal(t, "workflow", r.ID())
+	assert.Equal(t, "invalid-workflow", r.ID())
 }
 
 func TestRule_Required(t *testing.T) {

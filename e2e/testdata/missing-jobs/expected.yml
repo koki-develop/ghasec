@@ -3,7 +3,7 @@ stdout: ""
 stderr: |
   {{.Dir}}/ci.yml:
   1 | on: push
-    | ^ "jobs" is required (workflow)
+    | ^ "jobs" is required (invalid-workflow)
   ...
 
   1 error found in 1 file

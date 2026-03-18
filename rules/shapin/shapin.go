@@ -10,7 +10,7 @@ import (
 	"github.com/koki-develop/ghasec/rules"
 )
 
-const id = "sha-pinning"
+const id = "unpinned-action"
 
 var fullSHAPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
 
