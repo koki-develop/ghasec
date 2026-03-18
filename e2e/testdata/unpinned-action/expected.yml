@@ -8,6 +8,6 @@ stderr: |
   4 |     runs-on: ubuntu-latest
   5 |     steps:
   6 |       - uses: actions/checkout@v6
-    |                ^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA
+    |               ^^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA
 
   Error: validation errors found
