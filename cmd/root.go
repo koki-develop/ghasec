@@ -99,10 +99,7 @@ func printAnnotatedError(path string, tk *token.Token, message string) {
 		return
 	}
 
-	end := tk.Position.Offset + len(tk.Origin)
-	if end > len(src) {
-		end = len(src)
-	}
+	end := min(tk.Position.Offset+len(tk.Origin), len(src))
 	span := annotate.Span{
 		Start: tk.Position.Offset,
 		End:   end,
