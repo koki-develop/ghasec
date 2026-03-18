@@ -10,7 +10,7 @@ stderr: |
 
   --> {{.Dir}}/ci.yml:
   ...
-  7 |       - uses: actions/setup-go@v5
+  9 |       - uses: actions/setup-go@v5
     |               ^^^^^^^^^^^^^^^^^^^ action "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
   ...
     Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md

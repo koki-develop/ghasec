@@ -3,7 +3,7 @@ pre-commit:
     fmt:
       stage_fixed: true
       glob: "**/*.go"
-      run: go fmt {staged_files}
+      run: go fmt ./...
     lint:
       glob: "**/*.go"
       run: golangci-lint run
