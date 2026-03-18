@@ -1,0 +1,13 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  {{.Dir}}/b.yml:
+  1 | on: push
+  2 | jobs:
+  3 |   build:
+  4 |     runs-on: ubuntu-latest
+  5 |     steps:
+  6 |       - uses: actions/checkout@v6
+    |                ^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA
+
+  Error: validation errors found

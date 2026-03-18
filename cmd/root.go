@@ -108,17 +108,23 @@ func printAnnotatedError(path string, tk *token.Token, message string) {
 		span.End = span.Start + 1
 	}
 
-	labels := []annotate.Label{
-		{
-			Span:   span,
-			Marker: annotate.MarkerCaret,
-			Text:   message,
-			Style:  annotate.LabelStyleError,
-		},
+	_, noColor := os.LookupEnv("NO_COLOR")
+
+	label := annotate.Label{
+		Span:   span,
+		Marker: annotate.MarkerCaret,
+		Text:   message,
+	}
+	if !noColor {
+		label.Style = annotate.LabelStyleError
 	}
 
-	r := annotate.New(annotate.WithStyle(annotate.DefaultStyle))
-	output, renderErr := r.Render(src, labels)
+	var opts []annotate.Option
+	if !noColor {
+		opts = append(opts, annotate.WithStyle(annotate.DefaultStyle))
+	}
+	r := annotate.New(opts...)
+	output, renderErr := r.Render(src, []annotate.Label{label})
 	if renderErr != nil {
 		fmt.Fprintf(os.Stderr, "%s: %s\n", path, message)
 		return
