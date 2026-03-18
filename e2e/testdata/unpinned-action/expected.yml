@@ -1,7 +1,7 @@
 exit_code: 1
 stdout: ""
 stderr: |
-  --> {{.Dir}}/ci.yml:
+  --> {{.Dir}}/ci.yml:6:15
   ...
   6 |       - uses: actions/checkout@v6
     |               ^^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)

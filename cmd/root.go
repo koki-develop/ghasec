@@ -171,15 +171,15 @@ func printAnnotatedError(path string, tk *token.Token, message string, ruleRef s
 	}
 
 	arrow := "-->"
-	displayPath := path
+	displayPath := fmt.Sprintf("%s:%d:%d", path, tk.Position.Line, tk.Position.Column)
 	if !noColor {
 		arrow = annotate.ComposeStyles(annotate.FgCyan, annotate.Bold)("-->")
-		displayPath = annotate.Bold(path)
+		displayPath = annotate.Bold(displayPath)
 	}
 	if ruleRef != "" {
-		fmt.Fprintf(os.Stderr, "%s %s:\n%s%s\n\n", arrow, displayPath, output, ruleRef)
+		fmt.Fprintf(os.Stderr, "%s %s\n%s%s\n\n", arrow, displayPath, output, ruleRef)
 	} else {
-		fmt.Fprintf(os.Stderr, "%s %s:\n%s\n", arrow, displayPath, output)
+		fmt.Fprintf(os.Stderr, "%s %s\n%s\n", arrow, displayPath, output)
 	}
 	return nil
 }

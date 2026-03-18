@@ -1,7 +1,7 @@
 exit_code: 1
 stdout: ""
 stderr: |
-  --> {{.Dir}}/ci.yml:
+  --> {{.Dir}}/ci.yml:3:3
   ...
   3 |   - build
     |   ^ "jobs" must be a mapping (invalid-workflow)

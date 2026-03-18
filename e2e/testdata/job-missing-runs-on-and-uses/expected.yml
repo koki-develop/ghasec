@@ -1,7 +1,7 @@
 exit_code: 1
 stdout: ""
 stderr: |
-  --> {{.Dir}}/ci.yml:
+  --> {{.Dir}}/ci.yml:4:10
   ...
   4 |     steps:
     |          ^ job "build" must have either "runs-on" or "uses" (invalid-workflow)

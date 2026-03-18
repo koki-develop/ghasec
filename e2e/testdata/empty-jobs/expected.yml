@@ -1,7 +1,7 @@
 exit_code: 1
 stdout: ""
 stderr: |
-  --> {{.Dir}}/ci.yml:
+  --> {{.Dir}}/ci.yml:2:1
   ...
   2 | jobs:
     | ^^^^ "jobs" must not be empty (invalid-workflow)

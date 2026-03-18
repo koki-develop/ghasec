@@ -1,7 +1,7 @@
 exit_code: 1
 stdout: ""
 stderr: |
-  --> {{.Dir}}/ci.yml:
+  --> {{.Dir}}/ci.yml:1:1
   1 | jobs:
     | ^ "on" is required (invalid-workflow)
   ...

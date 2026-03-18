@@ -1,14 +1,14 @@
 exit_code: 1
 stdout: ""
 stderr: |
-  --> {{.Dir}}/a.yml:
+  --> {{.Dir}}/a.yml:6:15
   ...
   6 |       - uses: actions/checkout@v6
     |               ^^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
   ...
     Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
-  --> {{.Dir}}/b.yml:
+  --> {{.Dir}}/b.yml:6:15
   ...
   6 |       - uses: actions/setup-go@v5
     |               ^^^^^^^^^^^^^^^^^^^ action "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)

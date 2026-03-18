@@ -1,7 +1,7 @@
 exit_code: 1
 stdout: ""
 stderr: |
-  --> {{.Dir}}/ci.yml:
+  --> {{.Dir}}/ci.yml:8:32
   ...
   8 |           persist-credentials: true
     |                                ^^^^ actions/checkout must be configured with "persist-credentials: false" (checkout-persist-credentials)

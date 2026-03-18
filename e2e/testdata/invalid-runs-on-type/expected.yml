@@ -1,7 +1,7 @@
 exit_code: 1
 stdout: ""
 stderr: |
-  --> {{.Dir}}/ci.yml:
+  --> {{.Dir}}/ci.yml:4:14
   ...
   4 |     runs-on: 123
     |              ^^^ job "build" "runs-on" must be a string, sequence, or mapping, but got Integer (invalid-workflow)
