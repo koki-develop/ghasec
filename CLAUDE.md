@@ -33,7 +33,7 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 - `analyzer/` — Takes a list of `rules.Rule` and runs them against a parsed AST file. Required rules run first; if any fail, non-required rules are skipped entirely.
 - `rules/` — See `rules/CLAUDE.md` for details.
 - `diagnostic/` — `Error` type carrying a `token.Token` (for source location) and message.
-- `e2e/` — E2E tests. Builds binary once in `TestMain`, runs each `testdata/` subdirectory as a test case. Each case has `workflows/` (input YAML) and `expected.yml` (expected exit code, stdout, stderr). Test data is embedded via `go:embed`. Adding a test case only requires adding a new directory — no Go code changes needed.
+- `e2e/` — E2E tests. See `e2e/CLAUDE.md` for details.
 
 ## Key Design Decisions
 
