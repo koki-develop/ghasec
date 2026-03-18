@@ -2,6 +2,8 @@ package analyzer
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/goccy/go-yaml/ast"
 )
@@ -129,12 +131,57 @@ func checkRunsOn(jobID string, kv *ast.MappingValueNode) []*DiagnosticError {
 }
 
 func checkSteps(jobID string, kv *ast.MappingValueNode) []*DiagnosticError {
-	if _, ok := kv.Value.(*ast.SequenceNode); !ok {
+	seq, ok := kv.Value.(*ast.SequenceNode)
+	if !ok {
 		return []*DiagnosticError{{
 			Token:   kv.Value.GetToken(),
 			Message: fmt.Sprintf("job %q \"steps\" must be a sequence, but got %s", jobID, kv.Value.Type()),
 		}}
 	}
+
+	var errs []*DiagnosticError
+	for _, step := range seq.Values {
+		stepMapping, ok := step.(*ast.MappingNode)
+		if !ok {
+			continue
+		}
+		errs = append(errs, checkStepAction(stepMapping)...)
+	}
+	return errs
+}
+
+var fullSHAPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
+
+func checkStepAction(step *ast.MappingNode) []*DiagnosticError {
+	usesKV := findKey(step, "uses")
+	if usesKV == nil {
+		return nil
+	}
+
+	var usesValue string
+	switch v := usesKV.Value.(type) {
+	case *ast.StringNode:
+		usesValue = v.Value
+	case *ast.LiteralNode:
+		usesValue = v.Value.Value
+	default:
+		return nil
+	}
+
+	// Skip local actions and Docker actions
+	if strings.HasPrefix(usesValue, "./") || strings.HasPrefix(usesValue, "docker://") {
+		return nil
+	}
+
+	// Remote action: must be pinned to a full commit SHA
+	atIdx := strings.LastIndex(usesValue, "@")
+	if atIdx == -1 || !fullSHAPattern.MatchString(usesValue[atIdx+1:]) {
+		return []*DiagnosticError{{
+			Token:   usesKV.Value.GetToken(),
+			Message: fmt.Sprintf("action %q must be pinned to a full length commit SHA", usesValue),
+		}}
+	}
+
 	return nil
 }
 

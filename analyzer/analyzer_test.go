@@ -1,6 +1,7 @@
 package analyzer_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/goccy/go-yaml/ast"
@@ -158,6 +159,52 @@ func TestAnalyze_MultipleJobErrors(t *testing.T) {
 	f := parseYAML(t, src)
 	errs := analyzer.Analyze(f)
 	require.Len(t, errs, 2)
+}
+
+func TestAnalyze_StepActionPinnedToFullSHA(t *testing.T) {
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29\n"
+	f := parseYAML(t, src)
+	errs := analyzer.Analyze(f)
+	assert.Empty(t, errs)
+}
+
+func TestAnalyze_StepActionNotPinned(t *testing.T) {
+	tests := []struct {
+		name string
+		uses string
+	}{
+		{"tag", "actions/checkout@v4"},
+		{"branch", "actions/checkout@main"},
+		{"short sha", "actions/checkout@abc1234"},
+		{"no ref", "actions/checkout"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
+			f := parseYAML(t, src)
+			errs := analyzer.Analyze(f)
+			require.Len(t, errs, 1)
+			assert.Contains(t, errs[0].Message, "pinned to a full length commit SHA")
+		})
+	}
+}
+
+func TestAnalyze_StepActionLocalAndDocker(t *testing.T) {
+	tests := []struct {
+		name string
+		uses string
+	}{
+		{"local action", "./path/to/action"},
+		{"docker action", "docker://alpine:3.8"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
+			f := parseYAML(t, src)
+			errs := analyzer.Analyze(f)
+			assert.Empty(t, errs)
+		})
+	}
 }
 
 func TestAnalyze_EmptyDocument(t *testing.T) {
