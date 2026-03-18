@@ -73,6 +73,15 @@ var rootCmd = &cobra.Command{
 
 func resolveFiles(args []string) ([]string, error) {
 	if len(args) > 0 {
+		for _, arg := range args {
+			info, err := os.Stat(arg)
+			if err != nil {
+				return nil, err
+			}
+			if info.IsDir() {
+				return nil, fmt.Errorf("%s is a directory; specify workflow files directly", arg)
+			}
+		}
 		return args, nil
 	}
 	return discover.Discover(".")
