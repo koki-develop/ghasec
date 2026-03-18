@@ -1,0 +1,12 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  --> {{.Dir}}/ci.yml:2:1
+  ...
+  2 | permissions:
+    | ^^^^^^^^^^^ workflow-level "permissions" must be set to {}; grant permissions per job instead (default-permissions)
+  3 |   contents: read
+  ...
+    Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
+
+  1 error found in 1 file

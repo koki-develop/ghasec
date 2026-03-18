@@ -92,8 +92,8 @@ func TestRule_PersistCredentialsTrue_TokenPointsToValue(t *testing.T) {
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "true", errs[0].Token.Value)
-	require.NotNil(t, errs[0].ContextToken)
-	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].ContextToken.Value)
+	require.NotNil(t, errs[0].BeforeToken)
+	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].BeforeToken.Value)
 }
 
 func TestRule_MissingPersistCredentials_TokenPointsToUses(t *testing.T) {
@@ -103,7 +103,7 @@ func TestRule_MissingPersistCredentials_TokenPointsToUses(t *testing.T) {
 	errs := r.Check(f)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].Token.Value)
-	assert.Nil(t, errs[0].ContextToken)
+	assert.Nil(t, errs[0].BeforeToken)
 }
 
 func TestRule_NonCheckoutAction(t *testing.T) {

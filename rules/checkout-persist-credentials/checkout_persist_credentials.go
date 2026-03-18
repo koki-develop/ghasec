@@ -101,7 +101,7 @@ func checkStep(step *ast.MappingNode) *diagnostic.Error {
 		Message: `actions/checkout must be configured with "persist-credentials: false"`,
 	}
 	if errToken != usesToken {
-		e.ContextToken = usesToken
+		e.BeforeToken = usesToken
 	}
 	return e
 }

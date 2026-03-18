@@ -41,8 +41,9 @@ func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
 	}
 
 	return []*diagnostic.Error{{
-		Token:   permKV.Key.GetToken(),
-		Message: message,
+		Token:      permKV.Key.GetToken(),
+		AfterToken: lastValueToken(permKV.Value),
+		Message:    message,
 	}}
 }
 
@@ -53,6 +54,15 @@ func firstToken(tk *token.Token) *token.Token {
 	cp := *tk
 	cp.Value = string(tk.Value[0])
 	return &cp
+}
+
+func lastValueToken(node ast.Node) *token.Token {
+	m, ok := node.(*ast.MappingNode)
+	if !ok || len(m.Values) == 0 {
+		return node.GetToken()
+	}
+	last := m.Values[len(m.Values)-1]
+	return last.Value.GetToken()
 }
 
 func isEmptyMapping(node ast.Node) bool {
