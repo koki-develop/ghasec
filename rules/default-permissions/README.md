@@ -6,8 +6,6 @@ Checks that the workflow-level `permissions` is set to `{}` (empty) to enforce l
 
 By default, GitHub Actions grants a broad set of permissions to the `GITHUB_TOKEN`. If a workflow does not explicitly restrict permissions at the top level, every job inherits these broad defaults. A compromised or malicious step can then use the token to push code, modify releases, or access sensitive resources.
 
-Setting `permissions: {}` at the workflow level revokes all permissions by default, forcing each job to declare only the permissions it actually needs.
-
 ## Examples
 
 **Bad** :x:
@@ -44,3 +42,5 @@ jobs:
     steps:
       - run: echo hi
 ```
+
+Setting `permissions: {}` at the workflow level revokes all permissions by default, forcing each job to declare only the permissions it actually needs.

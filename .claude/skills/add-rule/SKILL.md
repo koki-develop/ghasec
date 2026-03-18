@@ -125,7 +125,7 @@ Create `rules/<rule-id>/README.md` following the existing pattern:
 
 ## Risk
 
-<Why this matters — security/reliability impact>
+<Brief risk description — what can go wrong>
 
 ## Examples
 
@@ -140,6 +140,8 @@ Create `rules/<rule-id>/README.md` following the existing pattern:
 \`\`\`yaml
 <correct example>
 \`\`\`
+
+<Detailed explanation — how the fix mitigates the risk>
 ```
 
 ## Phase 4: E2E Test Updates

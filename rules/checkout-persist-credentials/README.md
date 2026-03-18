@@ -6,8 +6,6 @@ Checks that `actions/checkout` is configured with `persist-credentials: false`.
 
 By default, `actions/checkout` persists the `GITHUB_TOKEN` in the local git config. Subsequent steps — including third-party actions — can extract this token and use it to push code, create releases, or access other repositories the token has access to.
 
-Setting `persist-credentials: false` removes the token from git config after checkout, limiting the blast radius of a compromised downstream step.
-
 ## Examples
 
 **Bad** :x:
@@ -32,3 +30,5 @@ steps:
     with:
       persist-credentials: false
 ```
+
+Setting `persist-credentials: false` removes the token from git config after checkout, limiting the blast radius of a compromised downstream step.
