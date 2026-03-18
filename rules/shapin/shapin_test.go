@@ -30,7 +30,7 @@ func TestRule_Required(t *testing.T) {
 
 func TestRule_PinnedToFullSHA(t *testing.T) {
 	r := &shapin.Rule{}
-	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29\n"
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
 	f := parseYAML(t, src)
 	errs := r.Check(f)
 	assert.Empty(t, errs)
@@ -41,9 +41,9 @@ func TestRule_NotPinned(t *testing.T) {
 		name string
 		uses string
 	}{
-		{"tag", "actions/checkout@v4"},
+		{"tag", "actions/checkout@v6"},
 		{"branch", "actions/checkout@main"},
-		{"short sha", "actions/checkout@abc1234"},
+		{"short sha", "actions/checkout@de0fac"},
 		{"no ref", "actions/checkout"},
 	}
 	r := &shapin.Rule{}
