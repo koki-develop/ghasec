@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/goccy/go-yaml v1.19.2
-	github.com/koki-develop/annotate-go v0.2.0
+	github.com/koki-develop/annotate-go v0.3.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 )
