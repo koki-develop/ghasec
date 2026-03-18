@@ -1,0 +1,12 @@
+version: "1.0"
+
+defaults:
+  base_dir: ../worktrees/ghasec
+
+hooks:
+  post_create:
+    - type: copy
+      from: .claude
+      to: .claude
+    - type: command
+      command: mise trust
