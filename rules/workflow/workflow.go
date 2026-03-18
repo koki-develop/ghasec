@@ -18,7 +18,18 @@ func (r *Rule) Required() bool { return true }
 
 func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
 	if len(f.Docs) == 0 || f.Docs[0] == nil || f.Docs[0].Body == nil {
-		return nil
+		tk := &token.Token{
+			Position: &token.Position{
+				Line:   1,
+				Column: 1,
+				Offset: 1,
+			},
+			Value: " ",
+		}
+		return []*diagnostic.Error{
+			{Token: tk, Message: "\"on\" is required"},
+			{Token: tk, Message: "\"jobs\" is required"},
+		}
 	}
 
 	mapping := rules.TopLevelMapping(f.Docs[0])

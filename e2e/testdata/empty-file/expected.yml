@@ -1,0 +1,12 @@
+exit_code: 1
+stdout: ""
+stderr: |
+  {{.Dir}}/ci.yml:
+  1 | {{" "}}
+    | ^ "on" is required
+
+  {{.Dir}}/ci.yml:
+  1 | {{" "}}
+    | ^ "jobs" is required
+
+  Error: validation errors found

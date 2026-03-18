@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -97,6 +98,9 @@ func printAnnotatedError(path string, tk *token.Token, message string) {
 	if readErr != nil {
 		fmt.Fprintf(os.Stderr, "%s: %s\n", path, message)
 		return
+	}
+	if len(bytes.TrimSpace(src)) == 0 {
+		src = []byte(" \n")
 	}
 
 	start := tk.Position.Offset - 1

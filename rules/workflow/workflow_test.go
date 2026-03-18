@@ -39,7 +39,9 @@ func TestRule_EmptyDocument(t *testing.T) {
 	f, err := yamlparser.ParseBytes([]byte(""), 0)
 	require.NoError(t, err)
 	errs := r.Check(f)
-	assert.Empty(t, errs)
+	require.Len(t, errs, 2)
+	assert.Equal(t, "\"on\" is required", errs[0].Message)
+	assert.Equal(t, "\"jobs\" is required", errs[1].Message)
 }
 
 func TestRule_NonMappingDocument(t *testing.T) {

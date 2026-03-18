@@ -39,7 +39,7 @@ func TestAnalyzer_EmptyDocument(t *testing.T) {
 	require.NoError(t, err)
 	errs := a.Analyze(f)
 	assert.Empty(t, errs)
-	assert.False(t, called)
+	assert.True(t, called)
 }
 
 func TestAnalyzer_RequiredRuleError_SkipsNonRequired(t *testing.T) {

@@ -15,10 +15,6 @@ func New(rr ...rules.Rule) *Analyzer {
 }
 
 func (a *Analyzer) Analyze(f *ast.File) []*diagnostic.Error {
-	if len(f.Docs) == 0 || f.Docs[0] == nil || f.Docs[0].Body == nil {
-		return nil
-	}
-
 	var requiredErrs []*diagnostic.Error
 	var nonRequiredRules []rules.Rule
 
