@@ -103,7 +103,7 @@ func printParseError(path string, err error) error {
 	if tk == nil || tk.Position == nil {
 		return fmt.Errorf("parse error without position for %s: %s", path, yErr.GetMessage())
 	}
-	return printAnnotatedError(path, tk, yErr.GetMessage())
+	return printAnnotatedError(path, tk, yErr.GetMessage(), "")
 }
 
 func printDiagnosticError(path string, e *diagnostic.Error) error {
@@ -111,13 +111,21 @@ func printDiagnosticError(path string, e *diagnostic.Error) error {
 		return fmt.Errorf("diagnostic error without position for %s: %s", path, e.Message)
 	}
 	message := e.Message
+	var ruleRef string
 	if e.RuleID != "" {
 		message = fmt.Sprintf("%s (%s)", e.Message, e.RuleID)
+		_, noColor := os.LookupEnv("NO_COLOR")
+		url := fmt.Sprintf("https://github.com/koki-develop/ghasec/blob/main/rules/%s/README.md", e.RuleID)
+		if noColor {
+			ruleRef = fmt.Sprintf("  Ref: %s", url)
+		} else {
+			ruleRef = fmt.Sprintf("  %s %s", annotate.Dim("Ref:"), annotate.ComposeStyles(annotate.Dim, annotate.Italic)(url))
+		}
 	}
-	return printAnnotatedError(path, e.Token, message)
+	return printAnnotatedError(path, e.Token, message, ruleRef)
 }
 
-func printAnnotatedError(path string, tk *token.Token, message string) error {
+func printAnnotatedError(path string, tk *token.Token, message string, ruleRef string) error {
 	src, readErr := os.ReadFile(path)
 	if readErr != nil {
 		return fmt.Errorf("failed to read source file %s: %w", path, readErr)
@@ -160,11 +168,17 @@ func printAnnotatedError(path string, tk *token.Token, message string) error {
 		return fmt.Errorf("failed to render annotation for %s: %w", path, renderErr)
 	}
 
+	arrow := "-->"
 	displayPath := path
 	if !noColor {
+		arrow = annotate.ComposeStyles(annotate.FgCyan, annotate.Bold)("-->")
 		displayPath = annotate.Bold(path)
 	}
-	fmt.Fprintf(os.Stderr, "%s:\n%s\n", displayPath, output)
+	if ruleRef != "" {
+		fmt.Fprintf(os.Stderr, "%s %s:\n%s%s\n\n", arrow, displayPath, output, ruleRef)
+	} else {
+		fmt.Fprintf(os.Stderr, "%s %s:\n%s\n", arrow, displayPath, output)
+	}
 	return nil
 }
 

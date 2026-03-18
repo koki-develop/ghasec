@@ -1,12 +1,14 @@
 exit_code: 1
 stdout: ""
 stderr: |
-  {{.Dir}}/ci.yml:
+  --> {{.Dir}}/ci.yml:
   1 | {{" "}}
     | ^ "on" is required (invalid-workflow)
+    Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
-  {{.Dir}}/ci.yml:
+  --> {{.Dir}}/ci.yml:
   1 | {{" "}}
     | ^ "jobs" is required (invalid-workflow)
+    Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
   2 errors found in 1 file
