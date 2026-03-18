@@ -56,6 +56,7 @@ func TestAnalyzer_RequiredRuleError_SkipsNonRequired(t *testing.T) {
 	errs := a.Analyze(f)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "required error", errs[0].Message)
+	assert.Equal(t, "req", errs[0].RuleID)
 	assert.False(t, lintCalled)
 }
 
@@ -71,6 +72,7 @@ func TestAnalyzer_RequiredRulePass_RunsNonRequired(t *testing.T) {
 	errs := a.Analyze(f)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "lint error", errs[0].Message)
+	assert.Equal(t, "lint", errs[0].RuleID)
 }
 
 func TestAnalyzer_NoRules(t *testing.T) {

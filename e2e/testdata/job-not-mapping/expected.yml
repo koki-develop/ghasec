@@ -4,6 +4,6 @@ stderr: |
   {{.Dir}}/ci.yml:
   ...
   3 |   build: "not a mapping"
-    |          ^^^^^^^^^^^^^ job "build" must be a mapping
+    |          ^^^^^^^^^^^^^ job "build" must be a mapping (workflow)
 
   1 error found in 1 file

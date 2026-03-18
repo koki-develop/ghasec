@@ -4,7 +4,7 @@ stderr: |
   {{.Dir}}/ci.yml:
   ...
   4 |     steps:
-    |          ^ job "build" must have either "runs-on" or "uses"
+    |          ^ job "build" must have either "runs-on" or "uses" (workflow)
   ...
 
   1 error found in 1 file

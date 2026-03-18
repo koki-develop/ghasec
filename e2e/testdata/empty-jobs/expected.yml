@@ -4,6 +4,6 @@ stderr: |
   {{.Dir}}/ci.yml:
   ...
   2 | jobs:
-    | ^^^^ "jobs" must not be empty
+    | ^^^^ "jobs" must not be empty (workflow)
 
   1 error found in 1 file

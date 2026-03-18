@@ -3,10 +3,10 @@ stdout: ""
 stderr: |
   {{.Dir}}/ci.yml:
   1 | name: CI
-    | ^ "on" is required
+    | ^ "on" is required (workflow)
 
   {{.Dir}}/ci.yml:
   1 | name: CI
-    | ^ "jobs" is required
+    | ^ "jobs" is required (workflow)
 
   2 errors found in 1 file

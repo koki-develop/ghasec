@@ -4,7 +4,7 @@ stderr: |
   {{.Dir}}/ci.yml:
   ...
   4 |     runs-on: ubuntu-latest
-    |            ^ job "build" cannot have both "runs-on" and "uses"
+    |            ^ job "build" cannot have both "runs-on" and "uses" (workflow)
   ...
 
   1 error found in 1 file

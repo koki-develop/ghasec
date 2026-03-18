@@ -4,6 +4,7 @@ import "github.com/goccy/go-yaml/token"
 
 type Error struct {
 	Token   *token.Token
+	RuleID  string
 	Message string
 }
 

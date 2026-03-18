@@ -20,7 +20,10 @@ func (a *Analyzer) Analyze(f *ast.File) []*diagnostic.Error {
 
 	for _, r := range a.rules {
 		if r.Required() {
-			requiredErrs = append(requiredErrs, r.Check(f)...)
+			for _, e := range r.Check(f) {
+				e.RuleID = r.ID()
+				requiredErrs = append(requiredErrs, e)
+			}
 		} else {
 			nonRequiredRules = append(nonRequiredRules, r)
 		}
@@ -32,7 +35,10 @@ func (a *Analyzer) Analyze(f *ast.File) []*diagnostic.Error {
 
 	var errs []*diagnostic.Error
 	for _, r := range nonRequiredRules {
-		errs = append(errs, r.Check(f)...)
+		for _, e := range r.Check(f) {
+			e.RuleID = r.ID()
+			errs = append(errs, e)
+		}
 	}
 	return errs
 }

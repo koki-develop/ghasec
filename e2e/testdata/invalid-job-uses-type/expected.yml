@@ -4,6 +4,6 @@ stderr: |
   {{.Dir}}/ci.yml:
   ...
   5 |       - something
-    |       ^ job "build" "uses" must be a string, but got Sequence
+    |       ^ job "build" "uses" must be a string, but got Sequence (workflow)
 
   1 error found in 1 file

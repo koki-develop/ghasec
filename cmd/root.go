@@ -110,7 +110,11 @@ func printDiagnosticError(path string, e *diagnostic.Error) error {
 	if e.Token == nil || e.Token.Position == nil {
 		return fmt.Errorf("diagnostic error without position for %s: %s", path, e.Message)
 	}
-	return printAnnotatedError(path, e.Token, e.Message)
+	message := e.Message
+	if e.RuleID != "" {
+		message = fmt.Sprintf("%s (%s)", e.Message, e.RuleID)
+	}
+	return printAnnotatedError(path, e.Token, message)
 }
 
 func printAnnotatedError(path string, tk *token.Token, message string) error {

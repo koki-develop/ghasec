@@ -4,7 +4,7 @@ stderr: |
   {{.Dir}}/ci.yml:
   ...
   4 |     uses: octo-org/this-repo/.github/workflows/workflow.yml@main
-    |         ^ job "build" cannot have both "uses" and "steps"
+    |         ^ job "build" cannot have both "uses" and "steps" (workflow)
   ...
 
   1 error found in 1 file

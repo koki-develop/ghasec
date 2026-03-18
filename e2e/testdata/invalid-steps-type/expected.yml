@@ -4,6 +4,6 @@ stderr: |
   {{.Dir}}/ci.yml:
   ...
   5 |     steps: "not a sequence"
-    |            ^^^^^^^^^^^^^^ job "build" "steps" must be a sequence, but got String
+    |            ^^^^^^^^^^^^^^ job "build" "steps" must be a sequence, but got String (workflow)
 
   1 error found in 1 file
