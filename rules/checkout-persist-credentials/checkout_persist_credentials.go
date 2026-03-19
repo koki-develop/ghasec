@@ -47,14 +47,16 @@ func checkStep(step workflow.StepMapping) *diagnostic.Error {
 		errToken = usesToken
 	}
 
-	e := &diagnostic.Error{
-		Token:   errToken,
-		Message: `actions/checkout must be configured with "persist-credentials: false"`,
-	}
+	ctx := []*token.Token{step.JobsKeyToken(), step.JobKeyToken()}
 	if errToken != usesToken {
-		e.BeforeToken = usesToken
+		ctx = append(ctx, usesToken)
 	}
-	return e
+
+	return &diagnostic.Error{
+		Token:         errToken,
+		ContextTokens: ctx,
+		Message:       `actions/checkout must be configured with "persist-credentials: false"`,
+	}
 }
 
 func isCheckoutAction(uses string) bool {

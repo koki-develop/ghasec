@@ -41,7 +41,7 @@ expected:
   stdout: ""
   stderr: |
     --> {{.Dir}}/default-permissions-non-empty-mapping.yml:2:1
-    ...
+    1 | on: push
     2 | permissions:
       | ^^^^^^^^^^^ workflow-level "permissions" must be set to {}; grant permissions per job instead (default-permissions)
     3 |   contents: read
@@ -49,7 +49,7 @@ expected:
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
 
     --> {{.Dir}}/default-permissions-non-empty.yml:2:1
-    ...
+    1 | on: push
     2 | permissions: read-all
       | ^^^^^^^^^^^ workflow-level "permissions" must be set to {}; grant permissions per job instead (default-permissions)
     ...

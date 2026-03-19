@@ -51,9 +51,9 @@ func checkOn(mapping workflow.Mapping, fileStart *token.Token) []*diagnostic.Err
 		return nil
 	default:
 		return []*diagnostic.Error{{
-			Token:       kv.Value.GetToken(),
-			BeforeToken: kv.Key.GetToken(),
-			Message:     fmt.Sprintf("\"on\" must be a string, sequence, or mapping, but got %s", kv.Value.Type()),
+			Token:         kv.Value.GetToken(),
+			ContextTokens: []*token.Token{kv.Key.GetToken()},
+			Message:       fmt.Sprintf("\"on\" must be a string, sequence, or mapping, but got %s", kv.Value.Type()),
 		}}
 	}
 }
@@ -77,9 +77,9 @@ func checkJobs(mapping workflow.Mapping, fileStart *token.Token) (*ast.MappingNo
 	jobsMapping, ok := kv.Value.(*ast.MappingNode)
 	if !ok {
 		return nil, []*diagnostic.Error{{
-			Token:       kv.Value.GetToken(),
-			BeforeToken: kv.Key.GetToken(),
-			Message:     "\"jobs\" must be a mapping",
+			Token:         kv.Value.GetToken(),
+			ContextTokens: []*token.Token{kv.Key.GetToken()},
+			Message:       "\"jobs\" must be a mapping",
 		}}
 	}
 
@@ -92,9 +92,9 @@ func checkJobEntries(jobs *ast.MappingNode) []*diagnostic.Error {
 		jobMapping, ok := jobEntry.Value.(*ast.MappingNode)
 		if !ok {
 			errs = append(errs, &diagnostic.Error{
-				Token:       jobEntry.Value.GetToken(),
-				BeforeToken: jobEntry.Key.GetToken(),
-				Message:     fmt.Sprintf("job %q must be a mapping", jobEntry.Key.GetToken().Value),
+				Token:         jobEntry.Value.GetToken(),
+				ContextTokens: []*token.Token{jobEntry.Key.GetToken()},
+				Message:       fmt.Sprintf("job %q must be a mapping", jobEntry.Key.GetToken().Value),
 			})
 			continue
 		}
@@ -159,9 +159,9 @@ func checkRunsOn(jobID string, jobKey *token.Token, kv *ast.MappingValueNode) []
 		return nil
 	default:
 		return []*diagnostic.Error{{
-			Token:       kv.Value.GetToken(),
-			BeforeToken: jobKey,
-			Message:     fmt.Sprintf("job %q \"runs-on\" must be a string, sequence, or mapping, but got %s", jobID, kv.Value.Type()),
+			Token:         kv.Value.GetToken(),
+			ContextTokens: []*token.Token{jobKey},
+			Message:       fmt.Sprintf("job %q \"runs-on\" must be a string, sequence, or mapping, but got %s", jobID, kv.Value.Type()),
 		}}
 	}
 }
@@ -170,9 +170,9 @@ func checkSteps(jobID string, jobKey *token.Token, kv *ast.MappingValueNode) []*
 	_, ok := kv.Value.(*ast.SequenceNode)
 	if !ok {
 		return []*diagnostic.Error{{
-			Token:       kv.Value.GetToken(),
-			BeforeToken: jobKey,
-			Message:     fmt.Sprintf("job %q \"steps\" must be a sequence, but got %s", jobID, kv.Value.Type()),
+			Token:         kv.Value.GetToken(),
+			ContextTokens: []*token.Token{jobKey},
+			Message:       fmt.Sprintf("job %q \"steps\" must be a sequence, but got %s", jobID, kv.Value.Type()),
 		}}
 	}
 	return nil
@@ -184,9 +184,9 @@ func checkUses(jobID string, jobKey *token.Token, kv *ast.MappingValueNode) []*d
 		return nil
 	default:
 		return []*diagnostic.Error{{
-			Token:       kv.Value.GetToken(),
-			BeforeToken: jobKey,
-			Message:     fmt.Sprintf("job %q \"uses\" must be a string, but got %s", jobID, kv.Value.Type()),
+			Token:         kv.Value.GetToken(),
+			ContextTokens: []*token.Token{jobKey},
+			Message:       fmt.Sprintf("job %q \"uses\" must be a string, but got %s", jobID, kv.Value.Type()),
 		}}
 	}
 }

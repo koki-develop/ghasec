@@ -91,17 +91,17 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	resolvedSHA, err := r.Resolver.ResolveTagSHA(context.Background(), owner, repo, tag)
 	if err != nil {
 		return []*diagnostic.Error{{
-			Token:       tagTk,
-			BeforeToken: tk,
-			Message:     fmt.Sprintf("failed to resolve tag %q for action %q: %v", tag, ref.String(), err),
+			Token:         tagTk,
+			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), tk},
+			Message:       fmt.Sprintf("failed to resolve tag %q for action %q: %v", tag, ref.String(), err),
 		}}
 	}
 
 	if resolvedSHA != string(ref.Ref()) {
 		return []*diagnostic.Error{{
-			Token:       tagTk,
-			BeforeToken: tk,
-			Message:     fmt.Sprintf("action %q references tag %q, but the tag points to commit %q", ref.String(), tag, resolvedSHA),
+			Token:         tagTk,
+			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), tk},
+			Message:       fmt.Sprintf("action %q references tag %q, but the tag points to commit %q", ref.String(), tag, resolvedSHA),
 		}}
 	}
 

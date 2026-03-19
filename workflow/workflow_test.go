@@ -65,6 +65,30 @@ func TestWorkflowMapping_EachStep(t *testing.T) {
 	assert.Equal(t, 3, count)
 }
 
+func TestStepMapping_ParentTokens(t *testing.T) {
+	src := `jobs:
+  build:
+    steps:
+      - uses: actions/checkout@v4
+  test:
+    steps:
+      - run: echo hello`
+	w := parseWorkflow(t, src)
+	var steps []workflow.StepMapping
+	w.EachStep(func(step workflow.StepMapping) {
+		steps = append(steps, step)
+	})
+	require.Len(t, steps, 2)
+
+	for _, step := range steps {
+		require.NotNil(t, step.JobsKeyToken())
+		assert.Equal(t, "jobs", step.JobsKeyToken().Value)
+		require.NotNil(t, step.JobKeyToken())
+	}
+	assert.Equal(t, "build", steps[0].JobKeyToken().Value)
+	assert.Equal(t, "test", steps[1].JobKeyToken().Value)
+}
+
 func TestWorkflowMapping_EachStep_NoJobs(t *testing.T) {
 	w := parseWorkflow(t, "name: test")
 	var count int

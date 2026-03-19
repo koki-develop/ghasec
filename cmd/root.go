@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/alecthomas/chroma/v2/quick"
@@ -165,16 +166,22 @@ func printDiagnosticError(path string, e *diagnostic.Error) error {
 			ruleRef = fmt.Sprintf("  %s %s", annotate.Dim("Ref:"), annotate.ComposeStyles(annotate.Dim, annotate.Italic)(url))
 		}
 	}
-	var contextTokens []*token.Token
+	contextTokens := make([]*token.Token, 0, len(e.ContextTokens))
+	for _, ct := range e.ContextTokens {
+		if ct != nil && ct.Position != nil {
+			contextTokens = append(contextTokens, ct)
+		}
+	}
+	sort.Slice(contextTokens, func(i, j int) bool {
+		return contextTokens[i].Position.Offset < contextTokens[j].Position.Offset
+	})
+
 	var before *int
-	one := 1
-	if e.BeforeToken != nil && e.BeforeToken.Position != nil {
-		contextTokens = append(contextTokens, e.BeforeToken)
+	if len(contextTokens) > 0 {
+		one := 1
 		before = &one
 	}
-	if e.AfterToken != nil && e.AfterToken.Position != nil {
-		contextTokens = append(contextTokens, e.AfterToken)
-	}
+
 	return printAnnotatedError(path, e.Token, message, ruleRef, before, contextTokens, e.Markers)
 }
 

@@ -50,7 +50,17 @@ type WorkflowMapping struct{ Mapping }
 type JobMapping struct{ Mapping }
 
 // StepMapping represents a step-level mapping.
-type StepMapping struct{ Mapping }
+type StepMapping struct {
+	Mapping
+	jobsKeyToken *token.Token
+	jobKeyToken  *token.Token
+}
+
+// JobsKeyToken returns the token for the "jobs" key.
+func (s StepMapping) JobsKeyToken() *token.Token { return s.jobsKeyToken }
+
+// JobKeyToken returns the token for the job name key (e.g., "build").
+func (s StepMapping) JobKeyToken() *token.Token { return s.jobKeyToken }
 
 // EachStep iterates over all steps across all jobs in the workflow.
 // It silently skips malformed sections (missing jobs, non-mapping jobs, etc.)
@@ -65,6 +75,7 @@ func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
 	if !ok {
 		return
 	}
+	jobsKeyToken := jobsKV.Key.GetToken()
 	for _, jobEntry := range jobsMapping.Values {
 		jobMapping, ok := jobEntry.Value.(*ast.MappingNode)
 		if !ok {
@@ -78,12 +89,17 @@ func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
 		if !ok {
 			continue
 		}
+		jobKeyToken := jobEntry.Key.GetToken()
 		for _, stepNode := range stepsSeq.Values {
 			stepMapping, ok := stepNode.(*ast.MappingNode)
 			if !ok {
 				continue
 			}
-			fn(StepMapping{Mapping{stepMapping}})
+			fn(StepMapping{
+				Mapping:      Mapping{stepMapping},
+				jobsKeyToken: jobsKeyToken,
+				jobKeyToken:  jobKeyToken,
+			})
 		}
 	}
 }

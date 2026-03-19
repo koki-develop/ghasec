@@ -41,6 +41,10 @@ expected:
   stderr: |
     --> {{.Dir}}/multiple-unpinned-actions.yml:7:32
     ...
+    3 | jobs:
+    4 |   build:
+    ...
+    6 |     steps:
     7 |       - uses: actions/checkout@v6
       |                                ^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
     ...
@@ -48,6 +52,10 @@ expected:
 
     --> {{.Dir}}/multiple-unpinned-actions.yml:10:15
     ...
+     3 | jobs:
+     4 |   build:
+    ...
+     9 |           persist-credentials: false
     10 |       - uses: actions/setup-go
        |               ^^^^^^^^^^^^^^^^ action "actions/setup-go" must be pinned to a full length commit SHA (unpinned-action)
     ...
@@ -55,6 +63,10 @@ expected:
 
     --> {{.Dir}}/unpinned-action.yml:7:32
     ...
+    3 | jobs:
+    4 |   build:
+    ...
+    6 |     steps:
     7 |       - uses: actions/checkout@v6
       |                                ^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
     ...

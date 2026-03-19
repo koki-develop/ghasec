@@ -3,12 +3,13 @@ package diagnostic
 import "github.com/goccy/go-yaml/token"
 
 type Error struct {
-	Token       *token.Token
-	BeforeToken *token.Token
-	AfterToken  *token.Token
-	RuleID      string
-	Message     string
-	// Markers holds additional tokens to highlight with MarkerDash (no text).
+	Token   *token.Token
+	RuleID  string
+	Message string
+	// ContextTokens holds tokens to display as context (MarkerNone, no text).
+	// Rendered in file-position order.
+	ContextTokens []*token.Token
+	// Markers holds additional tokens to highlight with MarkerCaret (no text).
 	Markers []*token.Token
 }
 

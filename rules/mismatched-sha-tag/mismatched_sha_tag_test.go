@@ -196,8 +196,10 @@ func TestRule_TokenPosition(t *testing.T) {
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "v4", errs[0].Token.Value)
-	require.NotNil(t, errs[0].BeforeToken)
-	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].BeforeToken.Value)
+	require.Len(t, errs[0].ContextTokens, 3)
+	assert.Equal(t, "jobs", errs[0].ContextTokens[0].Value)
+	assert.Equal(t, "build", errs[0].ContextTokens[1].Value)
+	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].ContextTokens[2].Value)
 }
 
 func TestRule_MultipleSteps(t *testing.T) {
