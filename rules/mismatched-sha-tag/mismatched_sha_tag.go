@@ -3,11 +3,13 @@ package mismatchedshatag
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/git"
+	ghclient "github.com/koki-develop/ghasec/github"
 	"github.com/koki-develop/ghasec/workflow"
 )
 
@@ -29,7 +31,7 @@ func (r *Rule) Online() bool   { return true }
 
 func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	if r.Resolver == nil {
-		return nil
+		r.Resolver = defaultResolver()
 	}
 
 	var errs []*diagnostic.Error
@@ -106,4 +108,12 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	}
 
 	return nil
+}
+
+func defaultResolver() TagResolver {
+	var opts []ghclient.Option
+	if baseURL := os.Getenv("GHASEC_GITHUB_API_URL"); baseURL != "" {
+		opts = append(opts, ghclient.WithBaseURL(baseURL))
+	}
+	return ghclient.NewClient(opts...)
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/discover"
-	ghclient "github.com/koki-develop/ghasec/github"
 	"github.com/koki-develop/ghasec/parser"
 	"github.com/koki-develop/ghasec/renderer"
 	"github.com/koki-develop/ghasec/rules"
@@ -40,29 +39,7 @@ var rootCmd = &cobra.Command{
 			return errors.New("no workflow files found")
 		}
 
-		var ghOpts []ghclient.Option
-		if baseURL := os.Getenv("GHASEC_GITHUB_API_URL"); baseURL != "" {
-			ghOpts = append(ghOpts, ghclient.WithBaseURL(baseURL))
-		}
-		gh := ghclient.NewClient(ghOpts...)
-
-		allRules := []rules.Rule{
-			&invalidworkflow.Rule{},
-			&unpinnedaction.Rule{},
-			&checkoutpersistcredentials.Rule{},
-			&defaultpermissions.Rule{},
-			&mismatchedshatag.Rule{Resolver: gh},
-		}
-
-		var activeRules []rules.Rule
-		var skippedOnline int
-		for _, r := range allRules {
-			if r.Online() && !online {
-				skippedOnline++
-				continue
-			}
-			activeRules = append(activeRules, r)
-		}
+		activeRules, skippedOnline := buildRules(online)
 
 		if skippedOnline > 0 {
 			defer func() {
@@ -108,6 +85,24 @@ var rootCmd = &cobra.Command{
 		fmt.Fprintln(os.Stderr, "No errors found.")
 		return nil
 	},
+}
+
+func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
+	all := []rules.Rule{
+		&invalidworkflow.Rule{},
+		&unpinnedaction.Rule{},
+		&checkoutpersistcredentials.Rule{},
+		&defaultpermissions.Rule{},
+		&mismatchedshatag.Rule{},
+	}
+	for _, r := range all {
+		if r.Online() && !onlineEnabled {
+			skippedOnline++
+			continue
+		}
+		active = append(active, r)
+	}
+	return
 }
 
 func resolveFiles(args []string) ([]string, error) {

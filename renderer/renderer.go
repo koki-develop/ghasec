@@ -41,7 +41,11 @@ func (r *Renderer) PrintParseError(path string, err error) error {
 	if !isValidToken(tk) {
 		return fmt.Errorf("parse error without position for %s: %s", path, yErr.GetMessage())
 	}
-	return r.printAnnotatedError(path, tk, yErr.GetMessage(), "", nil, nil, nil)
+	return r.printAnnotatedError(annotationParams{
+		path:    path,
+		tk:      tk,
+		message: yErr.GetMessage(),
+	})
 }
 
 // PrintDiagnosticError renders a diagnostic error with source annotation.
@@ -54,11 +58,9 @@ func (r *Renderer) PrintDiagnosticError(path string, e *diagnostic.Error) error 
 	if e.RuleID != "" {
 		message = fmt.Sprintf("%s (%s)", e.Message, e.RuleID)
 		url := fmt.Sprintf("https://github.com/koki-develop/ghasec/blob/main/rules/%s/README.md", e.RuleID)
-		if r.noColor {
-			ruleRef = fmt.Sprintf("  Ref: %s", url)
-		} else {
-			ruleRef = fmt.Sprintf("  %s %s", annotate.Dim("Ref:"), annotate.ComposeStyles(annotate.Dim, annotate.Italic)(url))
-		}
+		ruleRef = fmt.Sprintf("  %s %s",
+			r.styled(annotate.Dim)("Ref:"),
+			r.styled(annotate.ComposeStyles(annotate.Dim, annotate.Italic))(url))
 	}
 	contextTokens := make([]*token.Token, 0, len(e.ContextTokens))
 	for _, ct := range e.ContextTokens {
@@ -76,7 +78,15 @@ func (r *Renderer) PrintDiagnosticError(path string, e *diagnostic.Error) error 
 		before = &one
 	}
 
-	return r.printAnnotatedError(path, e.Token, message, ruleRef, before, contextTokens, e.Markers)
+	return r.printAnnotatedError(annotationParams{
+		path:          path,
+		tk:            e.Token,
+		message:       message,
+		ruleRef:       ruleRef,
+		before:        before,
+		contextTokens: contextTokens,
+		markerTokens:  e.Markers,
+	})
 }
 
 func isValidToken(tk *token.Token) bool {
@@ -99,30 +109,38 @@ func tokenSpan(src []byte, tk *token.Token) annotate.Span {
 	return span
 }
 
-func (r *Renderer) printAnnotatedError(path string, tk *token.Token, message string, ruleRef string, before *int, contextTokens []*token.Token, markerTokens []*token.Token) error {
-	src, readErr := os.ReadFile(path)
-	if readErr != nil {
-		return fmt.Errorf("failed to read source file %s: %w", path, readErr)
-	}
-	if len(bytes.TrimSpace(src)) == 0 {
-		src = []byte(" \n")
-	}
+type annotationParams struct {
+	path          string
+	tk            *token.Token
+	message       string
+	ruleRef       string
+	before        *int
+	contextTokens []*token.Token
+	markerTokens  []*token.Token
+}
 
-	label := annotate.Label{
-		Span:   tokenSpan(src, tk),
+// styled returns fn when color is enabled, or an identity function when disabled.
+func (r *Renderer) styled(fn annotate.StyleFunc) annotate.StyleFunc {
+	if r.noColor {
+		return func(s string) string { return s }
+	}
+	return fn
+}
+
+func (r *Renderer) buildLabels(src []byte, p annotationParams) []annotate.Label {
+	primary := annotate.Label{
+		Span:   tokenSpan(src, p.tk),
 		Marker: annotate.MarkerCaret,
-		Text:   message,
-		Before: before,
+		Text:   p.message,
+		Before: p.before,
+		Style: annotate.LabelStyle{
+			Marker:    r.styled(annotate.FgRed),
+			LabelText: r.styled(annotate.ComposeStyles(annotate.FgRed, annotate.Bold)),
+		},
 	}
-	if !r.noColor {
-		label.Style = annotate.LabelStyle{
-			Marker:    annotate.FgRed,
-			LabelText: annotate.ComposeStyles(annotate.FgRed, annotate.Bold),
-		}
-	}
+	labels := []annotate.Label{primary}
 
-	labels := []annotate.Label{label}
-	for _, ct := range contextTokens {
+	for _, ct := range p.contextTokens {
 		if !isValidToken(ct) {
 			continue
 		}
@@ -131,21 +149,39 @@ func (r *Renderer) printAnnotatedError(path string, tk *token.Token, message str
 			Marker: annotate.MarkerNone,
 		})
 	}
-	for _, mt := range markerTokens {
+
+	for _, mt := range p.markerTokens {
 		if !isValidToken(mt) {
 			continue
 		}
-		ml := annotate.Label{
+		labels = append(labels, annotate.Label{
 			Span:   tokenSpan(src, mt),
 			Marker: annotate.MarkerCaret,
-		}
-		if !r.noColor {
-			ml.Style = annotate.LabelStyle{
-				Marker: annotate.FgYellow,
-			}
-		}
-		labels = append(labels, ml)
+			Style: annotate.LabelStyle{
+				Marker: r.styled(annotate.FgYellow),
+			},
+		})
 	}
+
+	return labels
+}
+
+func (r *Renderer) formatHeader(path string, tk *token.Token) string {
+	arrow := r.styled(annotate.ComposeStyles(annotate.FgCyan, annotate.Bold))("-->")
+	displayPath := r.styled(annotate.Bold)(fmt.Sprintf("%s:%d:%d", path, tk.Position.Line, tk.Position.Column))
+	return fmt.Sprintf("%s %s", arrow, displayPath)
+}
+
+func (r *Renderer) printAnnotatedError(p annotationParams) error {
+	src, readErr := os.ReadFile(p.path)
+	if readErr != nil {
+		return fmt.Errorf("failed to read source file %s: %w", p.path, readErr)
+	}
+	if len(bytes.TrimSpace(src)) == 0 {
+		src = []byte(" \n")
+	}
+
+	labels := r.buildLabels(src, p)
 
 	var opts []annotate.Option
 	if !r.noColor {
@@ -161,19 +197,14 @@ func (r *Renderer) printAnnotatedError(path string, tk *token.Token, message str
 	a := annotate.New(opts...)
 	output, renderErr := a.Render(src, labels)
 	if renderErr != nil {
-		return fmt.Errorf("failed to render annotation for %s: %w", path, renderErr)
+		return fmt.Errorf("failed to render annotation for %s: %w", p.path, renderErr)
 	}
 
-	arrow := "-->"
-	displayPath := fmt.Sprintf("%s:%d:%d", path, tk.Position.Line, tk.Position.Column)
-	if !r.noColor {
-		arrow = annotate.ComposeStyles(annotate.FgCyan, annotate.Bold)("-->")
-		displayPath = annotate.Bold(displayPath)
-	}
-	if ruleRef != "" {
-		fmt.Fprintf(os.Stderr, "%s %s\n%s%s\n\n", arrow, displayPath, output, ruleRef)
+	header := r.formatHeader(p.path, p.tk)
+	if p.ruleRef != "" {
+		fmt.Fprintf(os.Stderr, "%s\n%s%s\n\n", header, output, p.ruleRef)
 	} else {
-		fmt.Fprintf(os.Stderr, "%s %s\n%s\n", arrow, displayPath, output)
+		fmt.Fprintf(os.Stderr, "%s\n%s\n", header, output)
 	}
 	return nil
 }

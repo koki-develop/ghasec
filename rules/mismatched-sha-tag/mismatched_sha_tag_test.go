@@ -220,10 +220,16 @@ func TestRule_MultipleSteps(t *testing.T) {
 	assert.Contains(t, errs[1].Message, "setup-node")
 }
 
-func TestRule_NilResolver(t *testing.T) {
+func TestRule_NilResolver_UsesDefault(t *testing.T) {
+	// When Resolver is nil, Check() lazily initializes a default GitHub client.
+	// The rule is only called when --online is passed, so it should always attempt resolution.
 	r := &mismatchedshatag.Rule{}
-	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4\n"
+	assert.Nil(t, r.Resolver)
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: ./local-action\n"
 	m := parseMapping(t, src)
+	// Local actions are skipped regardless of resolver, so no errors expected.
 	errs := r.Check(m)
 	assert.Empty(t, errs)
+	// After Check(), the resolver should have been initialized.
+	assert.NotNil(t, r.Resolver)
 }
