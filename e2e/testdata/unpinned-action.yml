@@ -21,7 +21,7 @@ workflows:
             - uses: actions/checkout@v6
               with:
                 persist-credentials: false
-            - uses: actions/setup-go@v5
+            - uses: actions/setup-go
             - run: echo hi
   - name: unpinned-action.yml
     content: |
@@ -48,8 +48,8 @@ expected:
 
     --> {{.Dir}}/multiple-unpinned-actions.yml:10:15
     ...
-    10 |       - uses: actions/setup-go@v5
-       |               ^^^^^^^^^^^^^^^^^^^ action "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
+    10 |       - uses: actions/setup-go
+       |               ^^^^^^^^^^^^^^^^ action "actions/setup-go" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
