@@ -1,0 +1,72 @@
+package invalidworkflow
+
+import (
+	"fmt"
+
+	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/token"
+	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/workflow"
+)
+
+func checkStepEntries(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, stepsKeyToken *token.Token, seq *ast.SequenceNode) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	for _, item := range seq.Values {
+		stepMapping, ok := item.(*ast.MappingNode)
+		if !ok {
+			errs = append(errs, &diagnostic.Error{
+				Token:         item.GetToken(),
+				ContextTokens: []*token.Token{jobsKeyToken, jobKey, stepsKeyToken},
+				Message:       fmt.Sprintf("job %q step must be a mapping, but got %s", jobID, item.Type()),
+			})
+			continue
+		}
+		errs = append(errs, checkStep(jobID, jobsKeyToken, jobKey, stepsKeyToken, workflow.Mapping{MappingNode: stepMapping})...)
+	}
+	return errs
+}
+
+func checkStep(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, stepsKeyToken *token.Token, step workflow.Mapping) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	contextTokens := []*token.Token{jobsKeyToken, jobKey, stepsKeyToken}
+
+	usesKV := step.FindKey("uses")
+	runKV := step.FindKey("run")
+
+	hasUses := usesKV != nil
+	hasRun := runKV != nil
+
+	if !hasUses && !hasRun {
+		errs = append(errs, &diagnostic.Error{
+			Token:         step.GetToken(),
+			ContextTokens: contextTokens,
+			Message:       fmt.Sprintf("job %q step must have either \"uses\" or \"run\"", jobID),
+		})
+	}
+	if hasUses && hasRun {
+		firstToken := usesKV.Key.GetToken()
+		secondToken := runKV.Key.GetToken()
+		if secondToken.Position.Offset < firstToken.Position.Offset {
+			firstToken, secondToken = secondToken, firstToken
+		}
+		errs = append(errs, &diagnostic.Error{
+			Token:         firstToken,
+			ContextTokens: contextTokens,
+			Message:       fmt.Sprintf("job %q step cannot have both \"uses\" and \"run\"", jobID),
+			Markers:       []*token.Token{secondToken},
+		})
+	}
+
+	for _, entry := range step.Values {
+		key := entry.Key.GetToken().Value
+		if !knownStepKeys[key] {
+			errs = append(errs, &diagnostic.Error{
+				Token:         entry.Key.GetToken(),
+				ContextTokens: contextTokens,
+				Message:       fmt.Sprintf("job %q step has unknown key %q", jobID, key),
+			})
+		}
+	}
+
+	return errs
+}

@@ -158,7 +158,7 @@ func (r *Renderer) buildLabels(src []byte, p annotationParams) []annotate.Label 
 			Span:   tokenSpan(src, mt),
 			Marker: annotate.MarkerCaret,
 			Style: annotate.LabelStyle{
-				Marker: r.styled(annotate.FgYellow),
+				Marker: r.styled(annotate.FgRed),
 			},
 		})
 	}

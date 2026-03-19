@@ -1,10 +1,63 @@
 workflows:
+  - name: concurrency-missing-group.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          concurrency:
+            cancel-in-progress: true
+          steps:
+            - run: echo hi
   - name: empty-file.yml
     content: ""
   - name: empty-jobs.yml
     content: |
       on: push
       jobs:
+  - name: filter-conflict-branches.yml
+    content: |
+      on:
+        push:
+          branches: [main]
+          branches-ignore: [dev]
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: filter-conflict-paths.yml
+    content: |
+      on:
+        pull_request:
+          paths: ["src/"]
+          paths-ignore: ["docs/"]
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: filter-conflict-tags.yml
+    content: |
+      on:
+        push:
+          tags: [v1]
+          tags-ignore: [v2]
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: invalid-defaults-structure.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          defaults:
+            foo: bar
+          steps:
+            - run: echo hi
   - name: invalid-job-uses-type.yml
     content: |
       on: push
@@ -26,12 +79,59 @@ workflows:
           runs-on: ubuntu-latest
           steps:
             - run: echo hi
+  - name: invalid-permissions-level.yml
+    content: |
+      on: push
+      permissions:
+        contents: admin
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: invalid-permissions-string-value.yml
+    content: |
+      on: push
+      permissions: admin
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: invalid-permissions-type.yml
+    content: |
+      on: push
+      permissions: 123
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
   - name: invalid-runs-on-type.yml
     content: |
       on: push
       jobs:
         build:
           runs-on: 123
+          steps:
+            - run: echo hi
+  - name: invalid-schedule-missing-cron.yml
+    content: |
+      on:
+        schedule:
+          - foo: bar
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: invalid-schedule-not-array.yml
+    content: |
+      on:
+        schedule: "* * * * *"
+      jobs:
+        build:
+          runs-on: ubuntu-latest
           steps:
             - run: echo hi
   - name: invalid-steps-type.yml
@@ -54,6 +154,16 @@ workflows:
       jobs:
         build:
           uses: octo-org/this-repo/.github/workflows/workflow.yml@main
+          steps:
+            - run: echo hi
+  - name: job-invalid-permissions.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          permissions:
+            foo: read
           steps:
             - run: echo hi
   - name: job-missing-runs-on-and-uses.yml
@@ -86,11 +196,235 @@ workflows:
     content: |
       - foo
       - bar
+  - name: step-has-both-uses-and-run.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+              run: echo hi
+  - name: step-missing-uses-and-run.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - name: missing action
+  - name: strategy-missing-matrix.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          strategy:
+            fail-fast: false
+          steps:
+            - run: echo hi
+  - name: top-level-concurrency-missing-group.yml
+    content: |
+      on: push
+      concurrency:
+        cancel-in-progress: true
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: top-level-invalid-defaults.yml
+    content: |
+      on: push
+      defaults:
+        foo: bar
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: unknown-event-mapping.yml
+    content: |
+      on:
+        invalid_event:
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: unknown-event-sequence.yml
+    content: |
+      on: [push, invalid_event]
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: unknown-event-string.yml
+    content: |
+      on: invalid_event
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: unknown-job-key.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          foo: bar
+          steps:
+            - run: echo hi
+  - name: unknown-reusable-job-key.yml
+    content: |
+      on: push
+      jobs:
+        call:
+          uses: org/repo/.github/workflows/ci.yml@main
+          foo: bar
+  - name: unknown-step-key.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+              foo: bar
+  - name: unknown-top-level-key.yml
+    content: |
+      on: push
+      foo: bar
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: valid-concurrency-string.yml
+    content: |
+      on: push
+      concurrency: my-group
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: valid-empty-permissions.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+  - name: valid-full-workflow.yml
+    content: |
+      name: CI
+      run-name: Build
+      on:
+        push:
+          branches: [main]
+        pull_request:
+        schedule:
+          - cron: "0 0 * * *"
+        workflow_dispatch:
+          inputs:
+            name:
+              description: Name
+              type: string
+              required: false
+              default: world
+      permissions:
+        contents: read
+        issues: write
+      env:
+        CI: "true"
+      defaults:
+        run:
+          shell: bash
+          working-directory: src
+      concurrency:
+        group: ci
+        cancel-in-progress: true
+      jobs:
+        build:
+          name: Build
+          runs-on: ubuntu-latest
+          permissions:
+            contents: read
+          environment: production
+          env:
+            NODE_ENV: production
+          defaults:
+            run:
+              shell: bash
+          if: true
+          timeout-minutes: 30
+          strategy:
+            matrix:
+              os: [ubuntu-latest]
+            fail-fast: false
+          continue-on-error: false
+          concurrency:
+            group: build
+            cancel-in-progress: false
+          steps:
+            - id: checkout
+              name: Checkout
+              uses: actions/checkout@v4
+              with:
+                fetch-depth: "0"
+            - name: Build
+              run: echo build
+              shell: bash
+              working-directory: src
+              env:
+                DEBUG: "true"
+              continue-on-error: false
+              timeout-minutes: 10
+              if: true
+        call:
+          name: Call
+          needs: [build]
+          uses: org/repo/.github/workflows/ci.yml@main
+          with:
+            name: test
+          secrets: inherit
+          permissions:
+            contents: read
+          if: true
+          strategy:
+            matrix:
+              os: [ubuntu-latest]
+          concurrency: call-group
+  - name: workflow-dispatch-unknown-key.yml
+    content: |
+      on:
+        workflow_dispatch:
+          foo: bar
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
 
 expected:
   exit_code: 1
   stdout: ""
   stderr: |
+    --> {{.Dir}}/concurrency-missing-group.yml:5:5
+    ...
+    2 | jobs:
+    3 |   build:
+    4 |     runs-on: ubuntu-latest
+    5 |     concurrency:
+      |     ^^^^^^^^^^^ job "build" "concurrency" mapping must have a "group" key (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
     --> {{.Dir}}/empty-file.yml:1:1
     1 | {{" "}}
       | ^ workflow must be a YAML mapping
@@ -99,6 +433,50 @@ expected:
     ...
     2 | jobs:
       | ^^^^ "jobs" must not be empty (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/filter-conflict-branches.yml:2:3
+    1 | on:
+    2 |   push:
+      |   ^^^^ event "push" cannot have both "branches" and "branches-ignore" (invalid-workflow)
+    3 |     branches: [main]
+      |     ^^^^^^^^
+    4 |     branches-ignore: [dev]
+      |     ^^^^^^^^^^^^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/filter-conflict-paths.yml:2:3
+    1 | on:
+    2 |   pull_request:
+      |   ^^^^^^^^^^^^ event "pull_request" cannot have both "paths" and "paths-ignore" (invalid-workflow)
+    3 |     paths: ["src/"]
+      |     ^^^^^
+    4 |     paths-ignore: ["docs/"]
+      |     ^^^^^^^^^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/filter-conflict-tags.yml:2:3
+    1 | on:
+    2 |   push:
+      |   ^^^^ event "push" cannot have both "tags" and "tags-ignore" (invalid-workflow)
+    3 |     tags: [v1]
+      |     ^^^^
+    4 |     tags-ignore: [v2]
+      |     ^^^^^^^^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/invalid-defaults-structure.yml:6:7
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     defaults:
+    6 |       foo: bar
+      |       ^^^ job "build" "defaults" has unknown key "foo" (invalid-workflow)
+    ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
     --> {{.Dir}}/invalid-job-uses-type.yml:5:7
@@ -124,12 +502,49 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
+    --> {{.Dir}}/invalid-permissions-level.yml:3:13
+    ...
+    2 | permissions:
+    3 |   contents: admin
+      |             ^^^^^ workflow "permissions" scope "contents" must be "read", "write", or "none", but got "admin" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/invalid-permissions-string-value.yml:2:14
+    ...
+    2 | permissions: admin
+      |              ^^^^^ workflow "permissions" string must be "read-all" or "write-all", but got "admin" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/invalid-permissions-type.yml:2:14
+    ...
+    2 | permissions: 123
+      |              ^^^ workflow "permissions" must be a string or mapping, but got Integer (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
     --> {{.Dir}}/invalid-runs-on-type.yml:4:14
     ...
     2 | jobs:
     3 |   build:
     4 |     runs-on: 123
       |              ^^^ job "build" "runs-on" must be a string, sequence, or mapping, but got Integer (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/invalid-schedule-missing-cron.yml:3:10
+    1 | on:
+    2 |   schedule:
+    3 |     - foo: bar
+      |          ^ "schedule" entry must have a "cron" key (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/invalid-schedule-not-array.yml:2:13
+    1 | on:
+    2 |   schedule: "* * * * *"
+      |             ^^^^^^^^^ "schedule" must be a sequence, but got String (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
@@ -162,6 +577,17 @@ expected:
       |     ^^^^
     5 |     steps:
       |     ^^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/job-invalid-permissions.yml:6:7
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     permissions:
+    6 |       foo: read
+      |       ^^^ job "build" "permissions" has unknown scope "foo" (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
@@ -207,4 +633,153 @@ expected:
       | ^ workflow must be a YAML mapping
     ...
 
-    16 errors found in 15 files
+    --> {{.Dir}}/step-has-both-uses-and-run.yml:6:9
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     steps:
+    6 |       - uses: actions/checkout@v4
+      |         ^^^^ job "build" step cannot have both "uses" and "run" (invalid-workflow)
+    7 |         run: echo hi
+      |         ^^^
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/step-missing-uses-and-run.yml:6:13
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     steps:
+    6 |       - name: missing action
+      |             ^ job "build" step must have either "uses" or "run" (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/strategy-missing-matrix.yml:5:5
+    ...
+    2 | jobs:
+    3 |   build:
+    4 |     runs-on: ubuntu-latest
+    5 |     strategy:
+      |     ^^^^^^^^ job "build" "strategy" must have a "matrix" key (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/top-level-concurrency-missing-group.yml:2:1
+    1 | on: push
+    2 | concurrency:
+      | ^^^^^^^^^^^ workflow "concurrency" mapping must have a "group" key (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/top-level-invalid-defaults.yml:3:3
+    ...
+    2 | defaults:
+    3 |   foo: bar
+      |   ^^^ workflow "defaults" has unknown key "foo" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/unknown-event-mapping.yml:2:3
+    1 | on:
+    2 |   invalid_event:
+      |   ^^^^^^^^^^^^^ unknown event "invalid_event" in "on" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/unknown-event-sequence.yml:1:12
+    1 | on: [push, invalid_event]
+      |            ^^^^^^^^^^^^^ unknown event "invalid_event" in "on" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/unknown-event-string.yml:1:5
+    1 | on: invalid_event
+      |     ^^^^^^^^^^^^^ unknown event "invalid_event" in "on" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/unknown-job-key.yml:5:5
+    ...
+    2 | jobs:
+    3 |   build:
+    4 |     runs-on: ubuntu-latest
+    5 |     foo: bar
+      |     ^^^ job "build" has unknown key "foo" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/unknown-reusable-job-key.yml:5:5
+    ...
+    2 | jobs:
+    3 |   call:
+    4 |     uses: org/repo/.github/workflows/ci.yml@main
+    5 |     foo: bar
+      |     ^^^ job "call" has unknown key "foo" (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/unknown-step-key.yml:7:9
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     steps:
+    6 |       - run: echo hi
+    7 |         foo: bar
+      |         ^^^ job "build" step has unknown key "foo" (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/unknown-top-level-key.yml:2:1
+    ...
+    2 | foo: bar
+      | ^^^ unknown top-level key "foo" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/valid-concurrency-string.yml:1:1
+    1 | on: push
+      | ^ workflow-level "permissions" must be set to {}; grant permissions per job instead (default-permissions)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
+
+    --> {{.Dir}}/valid-full-workflow.yml:53:32
+    ...
+    28 | jobs:
+    29 |   build:
+    ...
+    52 |         name: Checkout
+    53 |         uses: actions/checkout@v4
+       |                                ^^ action "actions/checkout@v4" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/valid-full-workflow.yml:53:15
+    ...
+    28 | jobs:
+    29 |   build:
+    ...
+    52 |         name: Checkout
+    53 |         uses: actions/checkout@v4
+       |               ^^^^^^^^^^^^^^^^^^^ actions/checkout must be configured with "persist-credentials: false" (checkout-persist-credentials)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
+
+    --> {{.Dir}}/valid-full-workflow.yml:16:1
+    ...
+    15 |         default: world
+    16 | permissions:
+       | ^^^^^^^^^^^ workflow-level "permissions" must be set to {}; grant permissions per job instead (default-permissions)
+    ...
+    18 |   issues: write
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
+
+    --> {{.Dir}}/workflow-dispatch-unknown-key.yml:3:5
+    1 | on:
+    2 |   workflow_dispatch:
+    3 |     foo: bar
+      |     ^^^ "workflow_dispatch" has unknown key "foo" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    44 errors found in 41 files
