@@ -193,6 +193,11 @@ func printAnnotatedError(path string, tk *token.Token, message string, ruleRef s
 
 	start := max(tk.Position.Offset-1, 0)
 	end := min(start+len(tk.Value), len(src))
+	// Truncate span at newline to avoid cross-line spans
+	// (e.g., implicit null tokens whose Value doesn't exist in source).
+	if idx := bytes.IndexByte(src[start:end], '\n'); idx >= 0 {
+		end = start + idx
+	}
 	span := annotate.Span{
 		Start: start,
 		End:   end,
