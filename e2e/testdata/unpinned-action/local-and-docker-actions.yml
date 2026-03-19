@@ -1,0 +1,18 @@
+workflows:
+  - name: local-and-docker-actions.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: ./local-action
+            - uses: docker://alpine:3.8
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    No errors found.

@@ -1,0 +1,119 @@
+workflows:
+  - name: valid-full-workflow.yml
+    content: |
+      name: CI
+      run-name: Build
+      on:
+        push:
+          branches: [main]
+        pull_request:
+        schedule:
+          - cron: "0 0 * * *"
+        workflow_dispatch:
+          inputs:
+            name:
+              description: Name
+              type: string
+              required: false
+              default: world
+      permissions:
+        contents: read
+        issues: write
+      env:
+        CI: "true"
+      defaults:
+        run:
+          shell: bash
+          working-directory: src
+      concurrency:
+        group: ci
+        cancel-in-progress: true
+      jobs:
+        build:
+          name: Build
+          runs-on: ubuntu-latest
+          permissions:
+            contents: read
+          environment: production
+          env:
+            NODE_ENV: production
+          defaults:
+            run:
+              shell: bash
+          if: true
+          timeout-minutes: 30
+          strategy:
+            matrix:
+              os: [ubuntu-latest]
+            fail-fast: false
+          continue-on-error: false
+          concurrency:
+            group: build
+            cancel-in-progress: false
+          steps:
+            - id: checkout
+              name: Checkout
+              uses: actions/checkout@v4
+              with:
+                fetch-depth: "0"
+            - name: Build
+              run: echo build
+              shell: bash
+              working-directory: src
+              env:
+                DEBUG: "true"
+              continue-on-error: false
+              timeout-minutes: 10
+              if: true
+        call:
+          name: Call
+          needs: [build]
+          uses: org/repo/.github/workflows/ci.yml@main
+          with:
+            name: test
+          secrets: inherit
+          permissions:
+            contents: read
+          if: true
+          strategy:
+            matrix:
+              os: [ubuntu-latest]
+          concurrency: call-group
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/valid-full-workflow.yml:53:32
+    ...
+    28 | jobs:
+    29 |   build:
+    ...
+    52 |         name: Checkout
+    53 |         uses: actions/checkout@v4
+       |                                ^^ action "actions/checkout@v4" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/valid-full-workflow.yml:53:15
+    ...
+    28 | jobs:
+    29 |   build:
+    ...
+    52 |         name: Checkout
+    53 |         uses: actions/checkout@v4
+       |               ^^^^^^^^^^^^^^^^^^^ actions/checkout must be configured with "persist-credentials: false" (checkout-persist-credentials)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
+
+    --> {{.Dir}}/valid-full-workflow.yml:16:1
+    ...
+    15 |         default: world
+    16 | permissions:
+       | ^^^^^^^^^^^ workflow-level "permissions" must be set to {}; grant permissions per job instead (default-permissions)
+    ...
+    18 |   issues: write
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
+
+    3 errors found in 1 file

@@ -1,0 +1,16 @@
+workflows:
+  - name: non-mapping-document.yml
+    content: |
+      - foo
+      - bar
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/non-mapping-document.yml:1:1
+    1 | - foo
+      | ^ workflow must be a YAML mapping
+    ...
+
+    1 error found in 1 file

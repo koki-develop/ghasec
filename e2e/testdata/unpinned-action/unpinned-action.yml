@@ -1,0 +1,29 @@
+workflows:
+  - name: unpinned-action.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v6
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/unpinned-action.yml:7:32
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    6 |     steps:
+    7 |       - uses: actions/checkout@v6
+      |                                ^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    1 error found in 1 file

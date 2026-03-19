@@ -1,0 +1,27 @@
+workflows:
+  - name: concurrency-missing-group.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          concurrency:
+            cancel-in-progress: true
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/concurrency-missing-group.yml:5:5
+    ...
+    2 | jobs:
+    3 |   build:
+    4 |     runs-on: ubuntu-latest
+    5 |     concurrency:
+      |     ^^^^^^^^^^^ job "build" "concurrency" mapping must have a "group" key (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

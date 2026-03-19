@@ -1,0 +1,29 @@
+workflows:
+  - name: filter-conflict-paths.yml
+    content: |
+      on:
+        pull_request:
+          paths: ["src/"]
+          paths-ignore: ["docs/"]
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/filter-conflict-paths.yml:2:3
+    1 | on:
+    2 |   pull_request:
+      |   ^^^^^^^^^^^^ event "pull_request" cannot have both "paths" and "paths-ignore" (invalid-workflow)
+    3 |     paths: ["src/"]
+      |     ^^^^^
+    4 |     paths-ignore: ["docs/"]
+      |     ^^^^^^^^^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

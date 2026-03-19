@@ -137,12 +137,12 @@ func runTestCase(t *testing.T, name string) {
 	files := writeWorkflows(t, tc.Workflows, tmpDir)
 
 	var extraArgs []string
-	if args, ok := extraCLIArgs[name]; ok {
+	if args, ok := lookupTestConfig(extraCLIArgs, name); ok {
 		extraArgs = args
 	}
 
 	var extraEnv []string
-	if tags, ok := mockGitHubTags[name]; ok {
+	if tags, ok := lookupTestConfig(mockGitHubTags, name); ok {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ref, ok := tags[r.URL.Path]
 			if !ok {
@@ -157,10 +157,10 @@ func runTestCase(t *testing.T, name string) {
 		t.Cleanup(srv.Close)
 		extraEnv = append(extraEnv, "GHASEC_GITHUB_API_URL="+srv.URL)
 	}
-	if envs, ok := extraEnvVars[name]; ok {
+	if envs, ok := lookupTestConfig(extraEnvVars, name); ok {
 		extraEnv = append(extraEnv, envs...)
 	}
-	if !suppressOfflineWarningExclude[name] {
+	if _, excluded := lookupTestConfig(suppressOfflineWarningExclude, name); !excluded {
 		extraEnv = append(extraEnv, "GHASEC_DISABLE_OFFLINE_WARNING=")
 	}
 
@@ -224,6 +224,23 @@ func loadTestCase(t *testing.T, name string) testCase {
 	require.NoError(t, yaml.Unmarshal(data, &tc))
 
 	return tc
+}
+
+// lookupTestConfig checks for an exact match on the test name, then falls back
+// to matching the first path segment (directory name). This allows per-directory
+// configuration (e.g., all tests under "mismatched-sha-tag/" share the same
+// CLI args) without duplicating map entries.
+func lookupTestConfig[V any](m map[string]V, name string) (V, bool) {
+	if v, ok := m[name]; ok {
+		return v, true
+	}
+	if dir, _, ok := strings.Cut(name, "/"); ok {
+		if v, ok := m[dir]; ok {
+			return v, true
+		}
+	}
+	var zero V
+	return zero, false
 }
 
 func expandTemplate(t *testing.T, text, tmpDir string) string {

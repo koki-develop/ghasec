@@ -1,0 +1,23 @@
+workflows:
+  - name: invalid-permissions-type.yml
+    content: |
+      on: push
+      permissions: 123
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/invalid-permissions-type.yml:2:14
+    ...
+    2 | permissions: 123
+      |              ^^^ workflow "permissions" must be a string or mapping, but got Integer (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

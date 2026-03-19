@@ -1,0 +1,23 @@
+workflows:
+  - name: invalid-schedule-not-array.yml
+    content: |
+      on:
+        schedule: "* * * * *"
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/invalid-schedule-not-array.yml:2:13
+    1 | on:
+    2 |   schedule: "* * * * *"
+      |             ^^^^^^^^^ "schedule" must be a sequence, but got String (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

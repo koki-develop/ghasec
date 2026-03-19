@@ -1,0 +1,25 @@
+workflows:
+  - name: workflow-dispatch-unknown-key.yml
+    content: |
+      on:
+        workflow_dispatch:
+          foo: bar
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow-dispatch-unknown-key.yml:3:5
+    1 | on:
+    2 |   workflow_dispatch:
+    3 |     foo: bar
+      |     ^^^ "workflow_dispatch" has unknown key "foo" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

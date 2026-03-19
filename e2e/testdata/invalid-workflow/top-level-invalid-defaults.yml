@@ -1,0 +1,25 @@
+workflows:
+  - name: top-level-invalid-defaults.yml
+    content: |
+      on: push
+      defaults:
+        foo: bar
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/top-level-invalid-defaults.yml:3:3
+    ...
+    2 | defaults:
+    3 |   foo: bar
+      |   ^^^ workflow "defaults" has unknown key "foo" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

@@ -1,0 +1,27 @@
+workflows:
+  - name: job-has-both-uses-and-steps.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          uses: octo-org/this-repo/.github/workflows/workflow.yml@main
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/job-has-both-uses-and-steps.yml:3:3
+    ...
+    2 | jobs:
+    3 |   build:
+      |   ^^^^^ job "build" cannot have both "uses" and "steps" (invalid-workflow)
+    4 |     uses: octo-org/this-repo/.github/workflows/workflow.yml@main
+      |     ^^^^
+    5 |     steps:
+      |     ^^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

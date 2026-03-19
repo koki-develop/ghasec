@@ -1,0 +1,22 @@
+workflows:
+  - name: job-missing-runs-on-and-uses.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/job-missing-runs-on-and-uses.yml:3:3
+    ...
+    2 | jobs:
+    3 |   build:
+      |   ^^^^^ job "build" must have either "runs-on" or "uses" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

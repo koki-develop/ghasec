@@ -1,0 +1,27 @@
+workflows:
+  - name: strategy-missing-matrix.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          strategy:
+            fail-fast: false
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/strategy-missing-matrix.yml:5:5
+    ...
+    2 | jobs:
+    3 |   build:
+    4 |     runs-on: ubuntu-latest
+    5 |     strategy:
+      |     ^^^^^^^^ job "build" "strategy" must have a "matrix" key (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file
