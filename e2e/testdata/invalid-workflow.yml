@@ -169,6 +169,7 @@ expected:
 
     --> {{.Dir}}/job-not-mapping.yml:3:10
     ...
+    2 | jobs:
     3 |   build: "not a mapping"
       |          ^^^^^^^^^^^^^ job "build" must be a mapping (invalid-workflow)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md

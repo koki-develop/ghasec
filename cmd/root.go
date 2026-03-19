@@ -165,21 +165,17 @@ func printDiagnosticError(path string, e *diagnostic.Error) error {
 			ruleRef = fmt.Sprintf("  %s %s", annotate.Dim("Ref:"), annotate.ComposeStyles(annotate.Dim, annotate.Italic)(url))
 		}
 	}
+	var contextTokens []*token.Token
 	var before *int
+	one := 1
 	if e.BeforeToken != nil && e.BeforeToken.Position != nil {
-		n := e.Token.Position.Line - e.BeforeToken.Position.Line
-		if n > 0 {
-			before = &n
-		}
+		contextTokens = append(contextTokens, e.BeforeToken)
+		before = &one
 	}
-	var after *int
 	if e.AfterToken != nil && e.AfterToken.Position != nil {
-		n := e.AfterToken.Position.Line - e.Token.Position.Line
-		if n > 0 {
-			after = &n
-		}
+		contextTokens = append(contextTokens, e.AfterToken)
 	}
-	return printAnnotatedError(path, e.Token, message, ruleRef, before, after, e.Markers)
+	return printAnnotatedError(path, e.Token, message, ruleRef, before, contextTokens, e.Markers)
 }
 
 func tokenSpan(src []byte, tk *token.Token) annotate.Span {
@@ -197,7 +193,7 @@ func tokenSpan(src []byte, tk *token.Token) annotate.Span {
 	return span
 }
 
-func printAnnotatedError(path string, tk *token.Token, message string, ruleRef string, before *int, after *int, markerTokens []*token.Token) error {
+func printAnnotatedError(path string, tk *token.Token, message string, ruleRef string, before *int, contextTokens []*token.Token, markerTokens []*token.Token) error {
 	src, readErr := os.ReadFile(path)
 	if readErr != nil {
 		return fmt.Errorf("failed to read source file %s: %w", path, readErr)
@@ -213,7 +209,6 @@ func printAnnotatedError(path string, tk *token.Token, message string, ruleRef s
 		Marker: annotate.MarkerCaret,
 		Text:   message,
 		Before: before,
-		After:  after,
 	}
 	if !noColor {
 		label.Style = annotate.LabelStyle{
@@ -223,6 +218,15 @@ func printAnnotatedError(path string, tk *token.Token, message string, ruleRef s
 	}
 
 	labels := []annotate.Label{label}
+	for _, ct := range contextTokens {
+		if ct == nil || ct.Position == nil {
+			continue
+		}
+		labels = append(labels, annotate.Label{
+			Span:   tokenSpan(src, ct),
+			Marker: annotate.MarkerNone,
+		})
+	}
 	for _, mt := range markerTokens {
 		if mt == nil || mt.Position == nil {
 			continue
