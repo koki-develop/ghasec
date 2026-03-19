@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -68,23 +69,23 @@ type templateData struct {
 }
 
 func TestE2E(t *testing.T) {
-	entries, err := testdata.ReadDir("testdata")
-	require.NoError(t, err)
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
+	err := fs.WalkDir(testdata, "testdata", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
-		filename := entry.Name()
-		if filepath.Ext(filename) != ".yml" {
-			continue
+		if d.IsDir() || filepath.Ext(path) != ".yml" {
+			return nil
 		}
-		name := strings.TrimSuffix(filename, ".yml")
+		// path is relative to embed root, e.g. "testdata/subdir/foo.yml"
+		rel := strings.TrimPrefix(path, "testdata/")
+		name := strings.TrimSuffix(rel, ".yml")
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			runTestCase(t, name)
 		})
-	}
+		return nil
+	})
+	require.NoError(t, err)
 }
 
 // extraCLIArgs maps test case names to additional CLI flags.

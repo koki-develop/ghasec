@@ -1,19 +1,20 @@
 # E2E Tests
 
-Builds the ghasec binary once in `TestMain`, then runs each `testdata/*.yml` file as a parallel test case. Test data is embedded via `go:embed`. No Go code changes needed to add or modify test cases.
+Builds the ghasec binary once in `TestMain`, then runs each `testdata/**/*.yml` file as a parallel test case. Test data is embedded via `go:embed`. No Go code changes needed to add or modify test cases.
 
 ## File Structure
 
 ```
 e2e/testdata/
-  <name>.yml    # One file per test case (rule-specific or cross-cutting)
+  <name>.yml           # Top-level test case
+  <subdir>/<name>.yml  # Test case organized in a subdirectory
 ```
 
 Each `.yml` file contains both workflow inputs and expected outputs.
 
 ## Adding a Test Case
 
-Create a new `.yml` file under `testdata/`. The test case name is the filename without extension.
+Create a new `.yml` file under `testdata/` (or any subdirectory). The test case name is the relative path from `testdata/` without extension (e.g., `testdata/foo/bar.yml` becomes test name `foo/bar`).
 
 ## Test Case Format
 
