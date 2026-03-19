@@ -187,6 +187,12 @@ var knownConcurrencyKeys = map[string]bool{
 	"cancel-in-progress": true,
 }
 
+// knownRunsOnKeys lists known keys for the runs-on mapping form.
+var knownRunsOnKeys = map[string]bool{
+	"group":  true,
+	"labels": true,
+}
+
 // knownDefaultsRunKeys lists known keys under defaults.run.
 var knownDefaultsRunKeys = map[string]bool{
 	"shell":             true,

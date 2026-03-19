@@ -102,6 +102,39 @@ func TestRule_RunsOnExpression(t *testing.T) {
 	assert.Empty(t, errs)
 }
 
+func TestRule_RunsOnMappingUnknownKey(t *testing.T) {
+	r := &invalidworkflow.Rule{}
+	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on:\n      foo: bar\n    steps:\n      - run: echo hi\n")
+	errs := r.Check(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "runs-on")
+	assert.Contains(t, errs[0].Message, "unknown key")
+	assert.Contains(t, errs[0].Message, "foo")
+}
+
+func TestRule_RunsOnMappingValidKeys(t *testing.T) {
+	r := &invalidworkflow.Rule{}
+	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on:\n      group: my-group\n      labels: [self-hosted, linux]\n    steps:\n      - run: echo hi\n")
+	errs := r.Check(m)
+	assert.Empty(t, errs)
+}
+
+func TestRule_RunsOnSequenceInvalidElement(t *testing.T) {
+	r := &invalidworkflow.Rule{}
+	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: [self-hosted, 123]\n    steps:\n      - run: echo hi\n")
+	errs := r.Check(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "runs-on")
+	assert.Contains(t, errs[0].Message, "sequence elements must be strings")
+}
+
+func TestRule_RunsOnSequenceWithExpression(t *testing.T) {
+	r := &invalidworkflow.Rule{}
+	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: [self-hosted, \"${{ matrix.label }}\"]\n    steps:\n      - run: echo hi\n")
+	errs := r.Check(m)
+	assert.Empty(t, errs)
+}
+
 func TestRule_StrategyNotMapping(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    strategy: invalid\n    steps:\n      - run: echo hi\n")

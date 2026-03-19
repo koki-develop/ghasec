@@ -155,16 +155,58 @@ func checkRunsOn(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, k
 		return nil
 	}
 
-	switch kv.Value.(type) {
-	case *ast.StringNode, *ast.LiteralNode, *ast.SequenceNode, *ast.MappingNode:
+	jobKeyCtx := []*token.Token{jobsKeyToken, jobKey}
+	runsOnCtx := extendContext(jobKeyCtx, kv.Key.GetToken())
+
+	switch v := kv.Value.(type) {
+	case *ast.StringNode, *ast.LiteralNode:
 		return nil
+	case *ast.SequenceNode:
+		return checkRunsOnSequence(jobID, v, runsOnCtx)
+	case *ast.MappingNode:
+		return checkRunsOnMapping(jobID, v, runsOnCtx)
 	default:
 		return []*diagnostic.Error{{
 			Token:         kv.Value.GetToken(),
-			ContextTokens: []*token.Token{jobsKeyToken, jobKey},
+			ContextTokens: jobKeyCtx,
 			Message:       fmt.Sprintf("job %q \"runs-on\" must be a string, sequence, or mapping, but got %s", jobID, kv.Value.Type()),
 		}}
 	}
+}
+
+func checkRunsOnMapping(jobID string, m *ast.MappingNode, contextTokens []*token.Token) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	for _, entry := range m.Values {
+		key := entry.Key.GetToken().Value
+		if !knownRunsOnKeys[key] {
+			errs = append(errs, &diagnostic.Error{
+				Token:         entry.Key.GetToken(),
+				ContextTokens: contextTokens,
+				Message:       fmt.Sprintf("job %q \"runs-on\" has unknown key %q; valid keys are \"group\" and \"labels\"", jobID, key),
+			})
+		}
+	}
+	return errs
+}
+
+func checkRunsOnSequence(jobID string, seq *ast.SequenceNode, contextTokens []*token.Token) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	for _, elem := range seq.Values {
+		if isExpression(elem) {
+			continue
+		}
+		switch elem.(type) {
+		case *ast.StringNode, *ast.LiteralNode:
+			// ok
+		default:
+			errs = append(errs, &diagnostic.Error{
+				Token:         elem.GetToken(),
+				ContextTokens: contextTokens,
+				Message:       fmt.Sprintf("job %q \"runs-on\" sequence elements must be strings, but got %s", jobID, elem.Type()),
+			})
+		}
+	}
+	return errs
 }
 
 func checkStepsType(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.MappingValueNode) []*diagnostic.Error {
