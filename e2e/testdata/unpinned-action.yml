@@ -39,10 +39,10 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/multiple-unpinned-actions.yml:7:15
+    --> {{.Dir}}/multiple-unpinned-actions.yml:7:32
     ...
     7 |       - uses: actions/checkout@v6
-      |               ^^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
+      |                                ^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
@@ -53,10 +53,10 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
-    --> {{.Dir}}/unpinned-action.yml:7:15
+    --> {{.Dir}}/unpinned-action.yml:7:32
     ...
     7 |       - uses: actions/checkout@v6
-      |               ^^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
+      |                                ^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 

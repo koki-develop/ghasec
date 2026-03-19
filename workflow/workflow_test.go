@@ -186,6 +186,36 @@ func TestActionRef_Ref_NoAt(t *testing.T) {
 	assert.Equal(t, git.Ref(""), ref.Ref())
 }
 
+func TestActionRef_RefToken_WithRef(t *testing.T) {
+	src := `jobs:
+  build:
+    steps:
+      - uses: actions/checkout@v6`
+	w := parseWorkflow(t, src)
+	var ref workflow.ActionRef
+	w.EachStep(func(step workflow.StepMapping) {
+		ref, _ = step.Uses()
+	})
+	tk := ref.RefToken()
+	require.NotNil(t, tk)
+	assert.Equal(t, "v6", tk.Value)
+	assert.Greater(t, tk.Position.Column, ref.Token().Position.Column)
+}
+
+func TestActionRef_RefToken_NoRef(t *testing.T) {
+	src := `jobs:
+  build:
+    steps:
+      - uses: actions/setup-go`
+	w := parseWorkflow(t, src)
+	var ref workflow.ActionRef
+	w.EachStep(func(step workflow.StepMapping) {
+		ref, _ = step.Uses()
+	})
+	tk := ref.RefToken()
+	assert.Equal(t, ref.Token(), tk)
+}
+
 func TestActionRef_OwnerRepo(t *testing.T) {
 	ref := workflow.NewActionRef("actions/checkout@abc123", nil)
 	owner, repo := ref.OwnerRepo()

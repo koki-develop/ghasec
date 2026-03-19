@@ -137,6 +137,28 @@ func (a ActionRef) String() string { return a.value }
 // Token returns the source token for error reporting.
 func (a ActionRef) Token() *token.Token { return a.token }
 
+// RefToken returns a token pointing to just the ref portion (after "@").
+// If there is no "@", it returns the full token.
+func (a ActionRef) RefToken() *token.Token {
+	if a.token == nil || a.token.Position == nil {
+		return a.token
+	}
+	idx := strings.LastIndex(a.value, "@")
+	if idx == -1 {
+		return a.token
+	}
+	ref := a.value[idx+1:]
+	skip := idx + 1
+	cp := *a.token
+	cp.Value = ref
+	cp.Position = &token.Position{
+		Line:   a.token.Position.Line,
+		Column: a.token.Position.Column + skip,
+		Offset: a.token.Position.Offset + skip,
+	}
+	return &cp
+}
+
 // IsLocal reports whether the action is a local path reference (starts with "./").
 func (a ActionRef) IsLocal() bool { return strings.HasPrefix(a.value, "./") }
 
