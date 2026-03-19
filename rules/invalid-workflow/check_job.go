@@ -165,7 +165,7 @@ func checkRunsOn(jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.Mapping
 	default:
 		return []*diagnostic.Error{{
 			Token:         kv.Value.GetToken(),
-			ContextTokens: jobKeyCtx,
+			ContextTokens: runsOnCtx,
 			Message:       fmt.Sprintf("\"runs-on\" must be a string, sequence, or mapping, but got %s", kv.Value.Type()),
 		}}
 	}
@@ -211,7 +211,7 @@ func checkStepsType(jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.Mapp
 	if !ok {
 		return []*diagnostic.Error{{
 			Token:         kv.Value.GetToken(),
-			ContextTokens: []*token.Token{jobsKeyToken, jobKey},
+			ContextTokens: []*token.Token{jobsKeyToken, jobKey, kv.Key.GetToken()},
 			Message:       fmt.Sprintf("\"steps\" must be a sequence, but got %s", kv.Value.Type()),
 		}}
 	}
@@ -225,7 +225,7 @@ func checkUsesType(jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.Mappi
 	default:
 		return []*diagnostic.Error{{
 			Token:         kv.Value.GetToken(),
-			ContextTokens: []*token.Token{jobsKeyToken, jobKey},
+			ContextTokens: []*token.Token{jobsKeyToken, jobKey, kv.Key.GetToken()},
 			Message:       fmt.Sprintf("\"uses\" must be a string, but got %s", kv.Value.Type()),
 		}}
 	}

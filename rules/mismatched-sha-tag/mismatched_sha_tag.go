@@ -94,7 +94,7 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	if err != nil {
 		return []*diagnostic.Error{{
 			Token:         tagTk,
-			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), tk},
+			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), step.StepsKeyToken(), tk},
 			Message:       fmt.Sprintf("failed to resolve tag %q for %q: %v", tag, ref.String(), err),
 		}}
 	}
@@ -102,7 +102,7 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	if resolvedSHA != string(ref.Ref()) {
 		return []*diagnostic.Error{{
 			Token:         tagTk,
-			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), tk},
+			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), step.StepsKeyToken(), tk},
 			Message:       fmt.Sprintf("%q points to commit %q, not the pinned commit", tag, resolvedSHA),
 		}}
 	}

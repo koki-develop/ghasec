@@ -19,7 +19,7 @@ expected:
     3 |   build:
     ...
     5 |     steps:
-    6 |       - run: echo hi
+    ...
     7 |         foo: bar
       |         ^^^ unknown key "foo" (invalid-workflow)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md

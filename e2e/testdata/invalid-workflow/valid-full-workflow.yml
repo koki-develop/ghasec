@@ -89,7 +89,8 @@ expected:
     28 | jobs:
     29 |   build:
     ...
-    52 |         name: Checkout
+    50 |     steps:
+    ...
     53 |         uses: actions/checkout@v4
        |                                ^^ "actions/checkout@v4" must be pinned to a full length commit SHA (unpinned-action)
     ...
@@ -100,7 +101,8 @@ expected:
     28 | jobs:
     29 |   build:
     ...
-    52 |         name: Checkout
+    50 |     steps:
+    ...
     53 |         uses: actions/checkout@v4
        |               ^^^^^^^^^^^^^^^^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)
     ...
@@ -108,7 +110,6 @@ expected:
 
     --> {{.Dir}}/valid-full-workflow.yml:16:1
     ...
-    15 |         default: world
     16 | permissions:
        | ^^^^^^^^^^^ "permissions" must be {}; grant permissions per job instead (default-permissions)
     ...

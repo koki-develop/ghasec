@@ -49,6 +49,7 @@ func checkDefaults(kv *ast.MappingValueNode, contextTokens []*token.Token) []*di
 
 	runKV := workflow.Mapping{MappingNode: defaultsMapping}.FindKey("run")
 	if runKV != nil {
+		runCtx := extendContext(defaultsCtx, runKV.Key.GetToken())
 		runMapping, ok := runKV.Value.(*ast.MappingNode)
 		if !ok {
 			errs = append(errs, &diagnostic.Error{
@@ -62,7 +63,7 @@ func checkDefaults(kv *ast.MappingValueNode, contextTokens []*token.Token) []*di
 				if !knownDefaultsRunKeys[key] {
 					errs = append(errs, &diagnostic.Error{
 						Token:         entry.Key.GetToken(),
-						ContextTokens: defaultsCtx,
+						ContextTokens: runCtx,
 						Message:       fmt.Sprintf("\"run\" has unknown key %q", key),
 					})
 				}

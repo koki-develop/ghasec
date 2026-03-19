@@ -72,18 +72,11 @@ func (r *Renderer) PrintDiagnosticError(path string, e *diagnostic.Error) error 
 		return contextTokens[i].Position.Offset < contextTokens[j].Position.Offset
 	})
 
-	var before *int
-	if len(contextTokens) > 0 {
-		one := 1
-		before = &one
-	}
-
 	return r.printAnnotatedError(annotationParams{
 		path:          path,
 		tk:            e.Token,
 		message:       message,
 		ruleRef:       ruleRef,
-		before:        before,
 		contextTokens: contextTokens,
 		markerTokens:  e.Markers,
 	})
@@ -117,7 +110,6 @@ type annotationParams struct {
 	tk            *token.Token
 	message       string
 	ruleRef       string
-	before        *int
 	contextTokens []*token.Token
 	markerTokens  []*token.Token
 }
@@ -135,7 +127,6 @@ func (r *Renderer) buildLabels(src []byte, p annotationParams) []annotate.Label 
 		Span:   tokenSpan(src, p.tk),
 		Marker: annotate.MarkerCaret,
 		Text:   p.message,
-		Before: p.before,
 		Style: annotate.LabelStyle{
 			Marker:    r.styled(annotate.FgRed),
 			LabelText: r.styled(annotate.ComposeStyles(annotate.FgRed, annotate.Bold)),

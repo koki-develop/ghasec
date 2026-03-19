@@ -15,7 +15,7 @@ expected:
   stdout: ""
   stderr: |
     --> {{.Dir}}/top-level-concurrency-missing-group.yml:2:1
-    1 | on: push
+    ...
     2 | concurrency:
       | ^^^^^^^^^^^ "concurrency" must have a "group" key (invalid-workflow)
     ...

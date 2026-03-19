@@ -68,7 +68,7 @@ func checkPermissionsMapping(m *ast.MappingNode, contextTokens []*token.Token) [
 		if level == "" {
 			errs = append(errs, &diagnostic.Error{
 				Token:         entry.Value.GetToken(),
-				ContextTokens: contextTokens,
+				ContextTokens: extendContext(contextTokens, entry.Key.GetToken()),
 				Message:       fmt.Sprintf("\"permissions\" scope %q must be a string, but got %s", scope, entry.Value.Type()),
 			})
 			continue
@@ -78,7 +78,7 @@ func checkPermissionsMapping(m *ast.MappingNode, contextTokens []*token.Token) [
 			if !modelsPermissionLevels[level] {
 				errs = append(errs, &diagnostic.Error{
 					Token:         entry.Value.GetToken(),
-					ContextTokens: contextTokens,
+					ContextTokens: extendContext(contextTokens, entry.Key.GetToken()),
 					Message:       fmt.Sprintf("\"permissions\" scope %q must be \"read\" or \"none\", but got %q", scope, level),
 				})
 			}
@@ -88,7 +88,7 @@ func checkPermissionsMapping(m *ast.MappingNode, contextTokens []*token.Token) [
 		if !knownPermissionLevels[level] {
 			errs = append(errs, &diagnostic.Error{
 				Token:         entry.Value.GetToken(),
-				ContextTokens: contextTokens,
+				ContextTokens: extendContext(contextTokens, entry.Key.GetToken()),
 				Message:       fmt.Sprintf("\"permissions\" scope %q must be \"read\", \"write\", or \"none\", but got %q", scope, level),
 			})
 		}

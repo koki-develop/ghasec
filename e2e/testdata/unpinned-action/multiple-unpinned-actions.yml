@@ -33,7 +33,8 @@ expected:
      3 | jobs:
      4 |   build:
     ...
-     9 |           persist-credentials: false
+     6 |     steps:
+    ...
     10 |       - uses: actions/setup-go
        |               ^^^^^^^^^^^^^^^^ "actions/setup-go" must be pinned to a full length commit SHA (unpinned-action)
     ...

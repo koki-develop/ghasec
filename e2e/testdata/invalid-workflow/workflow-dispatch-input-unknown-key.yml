@@ -22,7 +22,7 @@ expected:
     2 |   workflow_dispatch:
     3 |     inputs:
     4 |       myinput:
-    5 |         description: test
+    ...
     6 |         unknown_prop: value
       |         ^^^^^^^^^^^^ input "myinput" has unknown key "unknown_prop" (invalid-workflow)
     ...

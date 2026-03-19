@@ -22,7 +22,6 @@ expected:
     3 |   build:
     4 |     runs-on:
     ...
-    8 |       - gpu
     9 |       - 123
       |         ^^^ "runs-on" elements must be strings, but got Integer (invalid-workflow)
     ...

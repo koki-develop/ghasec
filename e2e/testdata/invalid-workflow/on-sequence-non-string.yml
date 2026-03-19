@@ -16,7 +16,7 @@ expected:
   stderr: |
     --> {{.Dir}}/on-sequence-non-string.yml:3:5
     1 | on:
-    2 |   - push
+    ...
     3 |   - 123
       |     ^^^ "on" elements must be strings, but got Integer (invalid-workflow)
     ...

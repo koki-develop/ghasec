@@ -14,7 +14,7 @@ expected:
   stdout: ""
   stderr: |
     --> {{.Dir}}/default-permissions-non-empty.yml:2:1
-    1 | on: push
+    ...
     2 | permissions: read-all
       | ^^^^^^^^^^^ "permissions" must be {}; grant permissions per job instead (default-permissions)
     ...
