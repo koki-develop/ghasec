@@ -135,12 +135,14 @@ expected:
       |            ^^^^^^^^^^^^^^ job "build" "steps" must be a sequence, but got String (invalid-workflow)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
-    --> {{.Dir}}/job-has-both-runs-on-and-uses.yml:4:12
+    --> {{.Dir}}/job-has-both-runs-on-and-uses.yml:3:3
     ...
     3 |   build:
+      |   ^^^^^ job "build" cannot have both "runs-on" and "uses" (invalid-workflow)
     4 |     runs-on: ubuntu-latest
-      |            ^ job "build" cannot have both "runs-on" and "uses" (invalid-workflow)
-    ...
+      |     ^^^^^^^
+    5 |     uses: octo-org/this-repo/.github/workflows/workflow.yml@main
+      |     ^^^^
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
     --> {{.Dir}}/job-has-both-uses-and-steps.yml:3:3

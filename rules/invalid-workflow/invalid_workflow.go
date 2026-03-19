@@ -124,9 +124,9 @@ func checkJob(jobKey *token.Token, job workflow.JobMapping) []*diagnostic.Error 
 	}
 	if hasRunsOn && hasUses {
 		errs = append(errs, &diagnostic.Error{
-			Token:       job.GetToken(),
-			BeforeToken: jobKey,
-			Message:     fmt.Sprintf("job %q cannot have both \"runs-on\" and \"uses\"", jobID),
+			Token:   jobKey,
+			Message: fmt.Sprintf("job %q cannot have both \"runs-on\" and \"uses\"", jobID),
+			Markers: []*token.Token{runsOnKV.Key.GetToken(), usesKV.Key.GetToken()},
 		})
 	}
 	if hasUses && hasSteps {
