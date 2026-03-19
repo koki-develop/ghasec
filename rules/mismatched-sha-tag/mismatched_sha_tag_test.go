@@ -114,7 +114,6 @@ func TestRule_NotPinnedToSHA(t *testing.T) {
 		{"tag ref", "actions/checkout@v4"},
 		{"branch ref", "actions/checkout@main"},
 		{"short sha", "actions/checkout@de0fac"},
-		{"no ref", "actions/checkout"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

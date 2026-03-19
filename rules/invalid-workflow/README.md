@@ -42,6 +42,7 @@ This is a **required** rule — if it fails, all other rules are skipped.
 
 ### Step validation
 - Each step must have either `uses` or `run`, but not both
+- Remote actions (not local `./` or `docker://`) in `uses` must include a `@<ref>`
 - Unknown step keys are rejected
 
 ## Examples
@@ -165,6 +166,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: missing action
+```
+
+```yaml
+# Remote action missing ref
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout
 ```
 
 ```yaml

@@ -46,6 +46,33 @@ func TestRule_StepNotMapping(t *testing.T) {
 	assert.Contains(t, errs[0].Message, "mapping")
 }
 
+func TestRule_StepRemoteActionMissingRef(t *testing.T) {
+	r := &invalidworkflow.Rule{}
+	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout\n")
+	errs := r.Check(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "must have a ref")
+	assert.Contains(t, errs[0].Message, "actions/checkout")
+}
+
+func TestRule_StepLocalAndDockerActionNoRef(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{"local action", "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: ./my-action\n"},
+		{"docker action", "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: docker://alpine:3.8\n"},
+	}
+	r := &invalidworkflow.Rule{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := parseMapping(t, tt.src)
+			errs := r.Check(m)
+			assert.Empty(t, errs)
+		})
+	}
+}
+
 func TestRule_ValidStepKeys(t *testing.T) {
 	tests := []struct {
 		name string

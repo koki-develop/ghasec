@@ -35,6 +35,10 @@ func checkStepAction(step workflow.StepMapping) *diagnostic.Error {
 		return nil
 	}
 
+	if ref.Ref() == "" {
+		return nil
+	}
+
 	if !ref.Ref().IsFullSHA() {
 		return &diagnostic.Error{
 			Token:   ref.RefToken(),

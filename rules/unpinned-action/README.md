@@ -17,7 +17,6 @@ steps:
   - uses: actions/checkout@v6        # tag — mutable
   - uses: actions/checkout@main      # branch — mutable
   - uses: actions/checkout@de0fac    # short SHA — ambiguous
-  - uses: actions/checkout           # no ref at all
 ```
 
 **Good** :white_check_mark:

@@ -73,10 +73,6 @@ func TestRule_MissingPersistCredentials(t *testing.T) {
 			"persist-credentials true",
 			"on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n        with:\n          persist-credentials: true\n",
 		},
-		{
-			"no version ref",
-			"on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout\n",
-		},
 	}
 	r := &checkoutpersistcredentials.Rule{}
 	for _, tt := range tests {

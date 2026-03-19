@@ -53,6 +53,17 @@ func checkStep(step workflow.Mapping) []*diagnostic.Error {
 		})
 	}
 
+	if hasUses {
+		stepMapping := workflow.StepMapping{Mapping: step}
+		ref, ok := stepMapping.Uses()
+		if ok && !ref.IsLocal() && !ref.IsDocker() && ref.Ref() == "" {
+			errs = append(errs, &diagnostic.Error{
+				Token:   ref.Token(),
+				Message: fmt.Sprintf("%q must have a ref (e.g. %s@<ref>)", ref.String(), ref.String()),
+			})
+		}
+	}
+
 	for _, entry := range step.Values {
 		key := entry.Key.GetToken().Value
 		if !knownStepKeys[key] {

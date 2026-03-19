@@ -10,7 +10,7 @@ workflows:
             - uses: actions/checkout@v6
               with:
                 persist-credentials: false
-            - uses: actions/setup-go
+            - uses: actions/setup-go@v5
             - run: echo hi
 
 expected:
@@ -28,15 +28,15 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
-    --> {{.Dir}}/multiple-unpinned-actions.yml:10:15
+    --> {{.Dir}}/multiple-unpinned-actions.yml:10:32
     ...
      3 | jobs:
      4 |   build:
     ...
      6 |     steps:
     ...
-    10 |       - uses: actions/setup-go
-       |               ^^^^^^^^^^^^^^^^ "actions/setup-go" must be pinned to a full length commit SHA (unpinned-action)
+    10 |       - uses: actions/setup-go@v5
+       |                                ^^ "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 

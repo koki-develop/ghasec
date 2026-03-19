@@ -60,7 +60,7 @@ func checkStep(step workflow.StepMapping) *diagnostic.Error {
 }
 
 func isCheckoutAction(uses string) bool {
-	return uses == "actions/checkout" || strings.HasPrefix(uses, "actions/checkout@")
+	return strings.HasPrefix(uses, "actions/checkout@")
 }
 
 // findPersistCredentialsError checks if persist-credentials is set to false.

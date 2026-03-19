@@ -48,7 +48,6 @@ func TestRule_NotPinned(t *testing.T) {
 		{"tag", "actions/checkout@v6"},
 		{"branch", "actions/checkout@main"},
 		{"short sha", "actions/checkout@de0fac"},
-		{"no ref", "actions/checkout"},
 	}
 	r := &unpinnedaction.Rule{}
 	for _, tt := range tests {

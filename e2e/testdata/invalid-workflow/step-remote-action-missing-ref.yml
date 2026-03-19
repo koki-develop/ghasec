@@ -1,0 +1,25 @@
+workflows:
+  - name: step-remote-action-missing-ref.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/step-remote-action-missing-ref.yml:6:15
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     steps:
+    6 |       - uses: actions/checkout
+      |               ^^^^^^^^^^^^^^^^ "actions/checkout" must have a ref (e.g. actions/checkout@<ref>) (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file
