@@ -27,7 +27,8 @@ func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	errs = append(errs, jobsErrs...)
 
 	if jobsMapping != nil {
-		errs = append(errs, checkJobEntries(jobsMapping)...)
+		jobsKeyToken := mapping.FindKey("jobs").Key.GetToken()
+		errs = append(errs, checkJobEntries(jobsMapping, jobsKeyToken)...)
 	}
 
 	return errs
@@ -86,24 +87,24 @@ func checkJobs(mapping workflow.Mapping, fileStart *token.Token) (*ast.MappingNo
 	return jobsMapping, nil
 }
 
-func checkJobEntries(jobs *ast.MappingNode) []*diagnostic.Error {
+func checkJobEntries(jobs *ast.MappingNode, jobsKeyToken *token.Token) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	for _, jobEntry := range jobs.Values {
 		jobMapping, ok := jobEntry.Value.(*ast.MappingNode)
 		if !ok {
 			errs = append(errs, &diagnostic.Error{
 				Token:         jobEntry.Value.GetToken(),
-				ContextTokens: []*token.Token{jobEntry.Key.GetToken()},
+				ContextTokens: []*token.Token{jobsKeyToken, jobEntry.Key.GetToken()},
 				Message:       fmt.Sprintf("job %q must be a mapping", jobEntry.Key.GetToken().Value),
 			})
 			continue
 		}
-		errs = append(errs, checkJob(jobEntry.Key.GetToken(), workflow.JobMapping{Mapping: workflow.Mapping{MappingNode: jobMapping}})...)
+		errs = append(errs, checkJob(jobsKeyToken, jobEntry.Key.GetToken(), workflow.JobMapping{Mapping: workflow.Mapping{MappingNode: jobMapping}})...)
 	}
 	return errs
 }
 
-func checkJob(jobKey *token.Token, job workflow.JobMapping) []*diagnostic.Error {
+func checkJob(jobsKeyToken *token.Token, jobKey *token.Token, job workflow.JobMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	jobID := jobKey.Value
 
@@ -117,39 +118,42 @@ func checkJob(jobKey *token.Token, job workflow.JobMapping) []*diagnostic.Error 
 
 	if !hasRunsOn && !hasUses {
 		errs = append(errs, &diagnostic.Error{
-			Token:   jobKey,
-			Message: fmt.Sprintf("job %q must have either \"runs-on\" or \"uses\"", jobID),
+			Token:         jobKey,
+			ContextTokens: []*token.Token{jobsKeyToken},
+			Message:       fmt.Sprintf("job %q must have either \"runs-on\" or \"uses\"", jobID),
 		})
 	}
 	if hasRunsOn && hasUses {
 		errs = append(errs, &diagnostic.Error{
-			Token:   jobKey,
-			Message: fmt.Sprintf("job %q cannot have both \"runs-on\" and \"uses\"", jobID),
-			Markers: []*token.Token{runsOnKV.Key.GetToken(), usesKV.Key.GetToken()},
+			Token:         jobKey,
+			ContextTokens: []*token.Token{jobsKeyToken},
+			Message:       fmt.Sprintf("job %q cannot have both \"runs-on\" and \"uses\"", jobID),
+			Markers:       []*token.Token{runsOnKV.Key.GetToken(), usesKV.Key.GetToken()},
 		})
 	}
 	if hasUses && hasSteps {
 		errs = append(errs, &diagnostic.Error{
-			Token:   jobKey,
-			Message: fmt.Sprintf("job %q cannot have both \"uses\" and \"steps\"", jobID),
-			Markers: []*token.Token{usesKV.Key.GetToken(), stepsKV.Key.GetToken()},
+			Token:         jobKey,
+			ContextTokens: []*token.Token{jobsKeyToken},
+			Message:       fmt.Sprintf("job %q cannot have both \"uses\" and \"steps\"", jobID),
+			Markers:       []*token.Token{usesKV.Key.GetToken(), stepsKV.Key.GetToken()},
 		})
 	}
 
 	if hasRunsOn {
-		errs = append(errs, checkRunsOn(jobID, jobKey, runsOnKV)...)
+		errs = append(errs, checkRunsOn(jobID, jobsKeyToken, jobKey, runsOnKV)...)
 	}
 	if hasSteps {
-		errs = append(errs, checkSteps(jobID, jobKey, stepsKV)...)
+		errs = append(errs, checkSteps(jobID, jobsKeyToken, jobKey, stepsKV)...)
 	}
 	if hasUses {
-		errs = append(errs, checkUses(jobID, jobKey, usesKV)...)
+		errs = append(errs, checkUses(jobID, jobsKeyToken, jobKey, usesKV)...)
 	}
 
 	return errs
 }
 
-func checkRunsOn(jobID string, jobKey *token.Token, kv *ast.MappingValueNode) []*diagnostic.Error {
+func checkRunsOn(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.MappingValueNode) []*diagnostic.Error {
 	switch kv.Value.(type) {
 	case *ast.StringNode, *ast.LiteralNode:
 		return nil
@@ -160,32 +164,32 @@ func checkRunsOn(jobID string, jobKey *token.Token, kv *ast.MappingValueNode) []
 	default:
 		return []*diagnostic.Error{{
 			Token:         kv.Value.GetToken(),
-			ContextTokens: []*token.Token{jobKey},
+			ContextTokens: []*token.Token{jobsKeyToken, jobKey},
 			Message:       fmt.Sprintf("job %q \"runs-on\" must be a string, sequence, or mapping, but got %s", jobID, kv.Value.Type()),
 		}}
 	}
 }
 
-func checkSteps(jobID string, jobKey *token.Token, kv *ast.MappingValueNode) []*diagnostic.Error {
+func checkSteps(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.MappingValueNode) []*diagnostic.Error {
 	_, ok := kv.Value.(*ast.SequenceNode)
 	if !ok {
 		return []*diagnostic.Error{{
 			Token:         kv.Value.GetToken(),
-			ContextTokens: []*token.Token{jobKey},
+			ContextTokens: []*token.Token{jobsKeyToken, jobKey},
 			Message:       fmt.Sprintf("job %q \"steps\" must be a sequence, but got %s", jobID, kv.Value.Type()),
 		}}
 	}
 	return nil
 }
 
-func checkUses(jobID string, jobKey *token.Token, kv *ast.MappingValueNode) []*diagnostic.Error {
+func checkUses(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.MappingValueNode) []*diagnostic.Error {
 	switch kv.Value.(type) {
 	case *ast.StringNode, *ast.LiteralNode:
 		return nil
 	default:
 		return []*diagnostic.Error{{
 			Token:         kv.Value.GetToken(),
-			ContextTokens: []*token.Token{jobKey},
+			ContextTokens: []*token.Token{jobsKeyToken, jobKey},
 			Message:       fmt.Sprintf("job %q \"uses\" must be a string, but got %s", jobID, kv.Value.Type()),
 		}}
 	}
