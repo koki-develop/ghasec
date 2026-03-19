@@ -37,18 +37,21 @@ func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 
 	return []*diagnostic.Error{{
 		Token:         permKV.Key.GetToken(),
-		ExtraContexts: []*token.Token{lastValueToken(permKV.Value)},
+		ExtraContexts: valueTokens(permKV.Value),
 		Message:       messageNonEmpty,
 	}}
 }
 
-func lastValueToken(node ast.Node) *token.Token {
+func valueTokens(node ast.Node) []*token.Token {
 	m, ok := node.(*ast.MappingNode)
 	if !ok || len(m.Values) == 0 {
-		return node.GetToken()
+		return []*token.Token{node.GetToken()}
 	}
-	last := m.Values[len(m.Values)-1]
-	return last.Value.GetToken()
+	tokens := make([]*token.Token, len(m.Values))
+	for i, v := range m.Values {
+		tokens[i] = v.Value.GetToken()
+	}
+	return tokens
 }
 
 func isEmptyMapping(node ast.Node) bool {
