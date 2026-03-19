@@ -1,0 +1,31 @@
+workflows:
+  - name: unknown-step-key-distant.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - name: setup
+              uses: actions/setup-go@v5
+              with:
+                go-version: "1.21"
+              bogus: true
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/unknown-step-key-distant.yml:10:9
+    ...
+     2 | jobs:
+     3 |   build:
+    ...
+     5 |     steps:
+     6 |       - name: setup
+    ...
+    10 |         bogus: true
+       |         ^^^^^ unknown key "bogus" (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

@@ -1,0 +1,49 @@
+workflows:
+  - name: unknown-step-key-multiple-jobs.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - name: build-step
+              run: echo build
+              bogus: a
+        test:
+          runs-on: ubuntu-latest
+          steps:
+            - name: test-step
+              run: echo test
+              bogus: b
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/unknown-step-key-multiple-jobs.yml:8:9
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     steps:
+    6 |       - name: build-step
+    ...
+    8 |         bogus: a
+      |         ^^^^^ unknown key "bogus" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/unknown-step-key-multiple-jobs.yml:14:9
+    ...
+     2 | jobs:
+    ...
+     9 |   test:
+    ...
+    11 |     steps:
+    12 |       - name: test-step
+    ...
+    14 |         bogus: b
+       |         ^^^^^ unknown key "bogus" (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    2 errors found in 1 file

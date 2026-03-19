@@ -1,0 +1,30 @@
+workflows:
+  - name: unpinned-action-distant.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - name: setup
+              id: setup-step
+              uses: actions/setup-go@v5
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/unpinned-action-distant.yml:9:32
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    6 |     steps:
+    7 |       - name: setup
+    ...
+    9 |         uses: actions/setup-go@v5
+      |                                ^^ "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    1 error found in 1 file
