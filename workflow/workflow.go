@@ -165,12 +165,17 @@ func (a ActionRef) RefToken() *token.Token {
 	}
 	ref := a.value[idx+1:]
 	skip := idx + 1
+	quoteOffset := 0
+	if a.token.Type == token.DoubleQuoteType || a.token.Type == token.SingleQuoteType {
+		quoteOffset = 1
+	}
 	cp := *a.token
+	cp.Type = token.StringType
 	cp.Value = ref
 	cp.Position = &token.Position{
 		Line:   a.token.Position.Line,
-		Column: a.token.Position.Column + skip,
-		Offset: a.token.Position.Offset + skip,
+		Column: a.token.Position.Column + quoteOffset + skip,
+		Offset: a.token.Position.Offset + quoteOffset + skip,
 	}
 	return &cp
 }

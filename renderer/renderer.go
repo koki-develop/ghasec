@@ -98,6 +98,9 @@ func isValidToken(tk *token.Token) bool {
 // clamped to a single line and guaranteed to have non-zero length.
 func tokenSpan(src []byte, tk *token.Token) annotate.Span {
 	start := min(max(tk.Position.Offset-1, 0), len(src))
+	if start < len(src) && (src[start] == '"' || src[start] == '\'') {
+		start++
+	}
 	end := min(start+len(tk.Value), len(src))
 	if idx := bytes.IndexByte(src[start:end], '\n'); idx >= 0 {
 		end = start + idx
@@ -166,9 +169,14 @@ func (r *Renderer) buildLabels(src []byte, p annotationParams) []annotate.Label 
 	return labels
 }
 
-func (r *Renderer) formatHeader(path string, tk *token.Token) string {
+func (r *Renderer) formatHeader(path string, src []byte, tk *token.Token) string {
+	col := tk.Position.Column
+	offset := min(max(tk.Position.Offset-1, 0), len(src))
+	if offset < len(src) && (src[offset] == '"' || src[offset] == '\'') {
+		col++
+	}
 	arrow := r.styled(annotate.ComposeStyles(annotate.FgCyan, annotate.Bold))("-->")
-	displayPath := r.styled(annotate.Bold)(fmt.Sprintf("%s:%d:%d", path, tk.Position.Line, tk.Position.Column))
+	displayPath := r.styled(annotate.Bold)(fmt.Sprintf("%s:%d:%d", path, tk.Position.Line, col))
 	return fmt.Sprintf("%s %s", arrow, displayPath)
 }
 
@@ -200,7 +208,7 @@ func (r *Renderer) printAnnotatedError(p annotationParams) error {
 		return fmt.Errorf("failed to render annotation for %s: %w", p.path, renderErr)
 	}
 
-	header := r.formatHeader(p.path, p.tk)
+	header := r.formatHeader(p.path, src, p.tk)
 	if p.ruleRef != "" {
 		fmt.Fprintf(os.Stderr, "%s\n%s%s\n\n", header, output, p.ruleRef)
 	} else {

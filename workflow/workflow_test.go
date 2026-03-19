@@ -226,6 +226,37 @@ func TestActionRef_RefToken_WithRef(t *testing.T) {
 	assert.Greater(t, tk.Position.Column, ref.Token().Position.Column)
 }
 
+func TestActionRef_RefToken_DoubleQuoted(t *testing.T) {
+	src := "jobs:\n  build:\n    steps:\n      - uses: \"actions/checkout@v6\""
+	w := parseWorkflow(t, src)
+	var ref workflow.ActionRef
+	w.EachStep(func(step workflow.StepMapping) {
+		ref, _ = step.Uses()
+	})
+	tk := ref.RefToken()
+	require.NotNil(t, tk)
+	assert.Equal(t, "v6", tk.Value)
+	// Column should account for the opening quote: original column + 1 (quote) + skip
+	usesToken := ref.Token()
+	expectedCol := usesToken.Position.Column + 1 + len("actions/checkout@")
+	assert.Equal(t, expectedCol, tk.Position.Column)
+}
+
+func TestActionRef_RefToken_SingleQuoted(t *testing.T) {
+	src := "jobs:\n  build:\n    steps:\n      - uses: 'actions/checkout@v6'"
+	w := parseWorkflow(t, src)
+	var ref workflow.ActionRef
+	w.EachStep(func(step workflow.StepMapping) {
+		ref, _ = step.Uses()
+	})
+	tk := ref.RefToken()
+	require.NotNil(t, tk)
+	assert.Equal(t, "v6", tk.Value)
+	usesToken := ref.Token()
+	expectedCol := usesToken.Position.Column + 1 + len("actions/checkout@")
+	assert.Equal(t, expectedCol, tk.Position.Column)
+}
+
 func TestActionRef_RefToken_NoRef(t *testing.T) {
 	src := `jobs:
   build:
