@@ -146,7 +146,7 @@ func printParseError(path string, err error) error {
 	if tk == nil || tk.Position == nil {
 		return fmt.Errorf("parse error without position for %s: %s", path, yErr.GetMessage())
 	}
-	return printAnnotatedError(path, tk, yErr.GetMessage(), "", nil, nil)
+	return printAnnotatedError(path, tk, yErr.GetMessage(), "", nil, nil, nil)
 }
 
 func printDiagnosticError(path string, e *diagnostic.Error) error {
@@ -179,10 +179,25 @@ func printDiagnosticError(path string, e *diagnostic.Error) error {
 			after = &n
 		}
 	}
-	return printAnnotatedError(path, e.Token, message, ruleRef, before, after)
+	return printAnnotatedError(path, e.Token, message, ruleRef, before, after, e.Markers)
 }
 
-func printAnnotatedError(path string, tk *token.Token, message string, ruleRef string, before *int, after *int) error {
+func tokenSpan(src []byte, tk *token.Token) annotate.Span {
+	start := max(tk.Position.Offset-1, 0)
+	end := min(start+len(tk.Value), len(src))
+	// Truncate span at newline to avoid cross-line spans
+	// (e.g., implicit null tokens whose Value doesn't exist in source).
+	if idx := bytes.IndexByte(src[start:end], '\n'); idx >= 0 {
+		end = start + idx
+	}
+	span := annotate.Span{Start: start, End: end}
+	if span.End <= span.Start {
+		span.End = span.Start + 1
+	}
+	return span
+}
+
+func printAnnotatedError(path string, tk *token.Token, message string, ruleRef string, before *int, after *int, markerTokens []*token.Token) error {
 	src, readErr := os.ReadFile(path)
 	if readErr != nil {
 		return fmt.Errorf("failed to read source file %s: %w", path, readErr)
@@ -191,25 +206,10 @@ func printAnnotatedError(path string, tk *token.Token, message string, ruleRef s
 		src = []byte(" \n")
 	}
 
-	start := max(tk.Position.Offset-1, 0)
-	end := min(start+len(tk.Value), len(src))
-	// Truncate span at newline to avoid cross-line spans
-	// (e.g., implicit null tokens whose Value doesn't exist in source).
-	if idx := bytes.IndexByte(src[start:end], '\n'); idx >= 0 {
-		end = start + idx
-	}
-	span := annotate.Span{
-		Start: start,
-		End:   end,
-	}
-	if span.End <= span.Start {
-		span.End = span.Start + 1
-	}
-
 	_, noColor := os.LookupEnv("NO_COLOR")
 
 	label := annotate.Label{
-		Span:   span,
+		Span:   tokenSpan(src, tk),
 		Marker: annotate.MarkerCaret,
 		Text:   message,
 		Before: before,
@@ -220,6 +220,23 @@ func printAnnotatedError(path string, tk *token.Token, message string, ruleRef s
 			Marker:    annotate.FgRed,
 			LabelText: annotate.ComposeStyles(annotate.FgRed, annotate.Bold),
 		}
+	}
+
+	labels := []annotate.Label{label}
+	for _, mt := range markerTokens {
+		if mt == nil || mt.Position == nil {
+			continue
+		}
+		ml := annotate.Label{
+			Span:   tokenSpan(src, mt),
+			Marker: annotate.MarkerCaret,
+		}
+		if !noColor {
+			ml.Style = annotate.LabelStyle{
+				Marker: annotate.FgYellow,
+			}
+		}
+		labels = append(labels, ml)
 	}
 
 	var opts []annotate.Option
@@ -234,7 +251,7 @@ func printAnnotatedError(path string, tk *token.Token, message string, ruleRef s
 		}))
 	}
 	r := annotate.New(opts...)
-	output, renderErr := r.Render(src, []annotate.Label{label})
+	output, renderErr := r.Render(src, labels)
 	if renderErr != nil {
 		return fmt.Errorf("failed to render annotation for %s: %w", path, renderErr)
 	}
