@@ -1,0 +1,36 @@
+workflows:
+  - name: mismatched.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v4
+              with:
+                persist-credentials: false
+  - name: valid.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/mismatched.yml:7:75
+    ...
+    7 |       - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v4
+      |                                                                           ^^ action "actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" references tag "v4", but the tag points to commit "de0fac2e4500dabe0009e67214ff5f5447ce83dd" (mismatched-sha-tag)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
+
+    1 error found in 1 file

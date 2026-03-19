@@ -1,6 +1,0 @@
-on: push
-jobs:
-  build:
-    runs-on: 123
-    steps:
-      - run: echo hi

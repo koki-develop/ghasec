@@ -1,5 +1,0 @@
-on: push
-permissions: {}
-jobs:
-  build:
-    uses: octo-org/this-repo/.github/workflows/workflow.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd

@@ -1,0 +1,14 @@
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          uses: octo-org/this-repo/.github/workflows/workflow.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    No errors found.

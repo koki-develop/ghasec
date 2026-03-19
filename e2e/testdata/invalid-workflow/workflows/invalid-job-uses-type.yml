@@ -1,5 +1,0 @@
-on: push
-jobs:
-  build:
-    uses:
-      - something

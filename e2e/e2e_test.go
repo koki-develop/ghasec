@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 	"text/template"
 
@@ -52,6 +53,16 @@ type expected struct {
 	Stderr   string `yaml:"stderr"`
 }
 
+type testCase struct {
+	Workflows []testWorkflow `yaml:"workflows"`
+	Expected  expected       `yaml:"expected"`
+}
+
+type testWorkflow struct {
+	Name    string `yaml:"name"`
+	Content string `yaml:"content"`
+}
+
 type templateData struct {
 	Dir string
 }
@@ -61,10 +72,14 @@ func TestE2E(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, entry := range entries {
-		if !entry.IsDir() {
+		if entry.IsDir() {
 			continue
 		}
-		name := entry.Name()
+		filename := entry.Name()
+		if filepath.Ext(filename) != ".yml" {
+			continue
+		}
+		name := strings.TrimSuffix(filename, ".yml")
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			runTestCase(t, name)
@@ -115,8 +130,10 @@ type mockGitObject struct {
 func runTestCase(t *testing.T, name string) {
 	t.Helper()
 
+	tc := loadTestCase(t, name)
+
 	tmpDir := t.TempDir()
-	files := writeWorkflows(t, name, tmpDir)
+	files := writeWorkflows(t, tc.Workflows, tmpDir)
 
 	var extraArgs []string
 	if args, ok := extraCLIArgs[name]; ok {
@@ -142,37 +159,28 @@ func runTestCase(t *testing.T, name string) {
 	if envs, ok := extraEnvVars[name]; ok {
 		extraEnv = append(extraEnv, envs...)
 	}
-	// Suppress the offline warning by default for all test cases that are not
-	// explicitly testing offline-warning behavior.
 	if !suppressOfflineWarningExclude[name] {
 		extraEnv = append(extraEnv, "GHASEC_DISABLE_OFFLINE_WARNING=")
 	}
 
 	stdout, stderr, exitCode := runGhasec(t, files, extraArgs, extraEnv...)
 
-	exp := loadExpected(t, name, tmpDir)
+	exp := tc.Expected
+	exp.Stdout = expandTemplate(t, exp.Stdout, tmpDir)
+	exp.Stderr = expandTemplate(t, exp.Stderr, tmpDir)
+
 	assert.Equal(t, exp.ExitCode, exitCode, "exit code mismatch")
 	assert.Equal(t, exp.Stdout, stdout, "stdout mismatch")
 	assert.Equal(t, exp.Stderr, stderr, "stderr mismatch")
 }
 
-func writeWorkflows(t *testing.T, name, tmpDir string) []string {
+func writeWorkflows(t *testing.T, workflows []testWorkflow, tmpDir string) []string {
 	t.Helper()
 
-	workflowsDir := filepath.Join("testdata", name, "workflows")
-	entries, err := testdata.ReadDir(workflowsDir)
-	require.NoError(t, err)
-
 	var files []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		data, err := testdata.ReadFile(filepath.Join(workflowsDir, entry.Name()))
-		require.NoError(t, err)
-
-		dst := filepath.Join(tmpDir, entry.Name())
-		require.NoError(t, os.WriteFile(dst, data, 0o644))
+	for _, w := range workflows {
+		dst := filepath.Join(tmpDir, w.Name)
+		require.NoError(t, os.WriteFile(dst, []byte(w.Content), 0o644))
 		files = append(files, dst)
 	}
 	sort.Strings(files)
@@ -205,19 +213,16 @@ func runGhasec(t *testing.T, files []string, extraArgs []string, extraEnv ...str
 	return stdoutBuf.String(), stderrBuf.String(), exitCode
 }
 
-func loadExpected(t *testing.T, name, tmpDir string) expected {
+func loadTestCase(t *testing.T, name string) testCase {
 	t.Helper()
 
-	data, err := testdata.ReadFile(filepath.Join("testdata", name, "expected.yml"))
+	data, err := testdata.ReadFile(filepath.Join("testdata", name+".yml"))
 	require.NoError(t, err)
 
-	var exp expected
-	require.NoError(t, yaml.Unmarshal(data, &exp))
+	var tc testCase
+	require.NoError(t, yaml.Unmarshal(data, &tc))
 
-	exp.Stdout = expandTemplate(t, exp.Stdout, tmpDir)
-	exp.Stderr = expandTemplate(t, exp.Stderr, tmpDir)
-
-	return exp
+	return tc
 }
 
 func expandTemplate(t *testing.T, text, tmpDir string) string {

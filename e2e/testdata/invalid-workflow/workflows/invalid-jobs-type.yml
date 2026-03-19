@@ -1,4 +1,0 @@
-on: push
-jobs:
-  - build
-  - test

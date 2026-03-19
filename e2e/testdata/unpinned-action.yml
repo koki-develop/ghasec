@@ -1,0 +1,63 @@
+workflows:
+  - name: local-and-docker-actions.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: ./local-action
+            - uses: docker://alpine:3.8
+            - run: echo hi
+  - name: multiple-unpinned-actions.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v6
+              with:
+                persist-credentials: false
+            - uses: actions/setup-go@v5
+            - run: echo hi
+  - name: unpinned-action.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v6
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/multiple-unpinned-actions.yml:7:15
+    ...
+    7 |       - uses: actions/checkout@v6
+      |               ^^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/multiple-unpinned-actions.yml:10:15
+    ...
+    10 |       - uses: actions/setup-go@v5
+       |               ^^^^^^^^^^^^^^^^^^^ action "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/unpinned-action.yml:7:15
+    ...
+    7 |       - uses: actions/checkout@v6
+      |               ^^^^^^^^^^^^^^^^^^^ action "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    3 errors found in 2 files
