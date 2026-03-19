@@ -5,6 +5,7 @@ import (
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/rules"
+	"github.com/koki-develop/ghasec/workflow"
 )
 
 type Analyzer struct {
@@ -49,7 +50,7 @@ func (a *Analyzer) Analyze(f *ast.File) []*diagnostic.Error {
 	return lintErrs
 }
 
-func topLevelMapping(f *ast.File) (*ast.MappingNode, []*diagnostic.Error) {
+func topLevelMapping(f *ast.File) (workflow.WorkflowMapping, []*diagnostic.Error) {
 	if len(f.Docs) == 0 || f.Docs[0] == nil || f.Docs[0].Body == nil {
 		tk := &token.Token{
 			Position: &token.Position{
@@ -59,15 +60,15 @@ func topLevelMapping(f *ast.File) (*ast.MappingNode, []*diagnostic.Error) {
 			},
 			Value: " ",
 		}
-		return nil, []*diagnostic.Error{{Token: tk, Message: "workflow must be a YAML mapping"}}
+		return workflow.WorkflowMapping{}, []*diagnostic.Error{{Token: tk, Message: "workflow must be a YAML mapping"}}
 	}
 
 	m, ok := f.Docs[0].Body.(*ast.MappingNode)
 	if !ok {
-		return nil, []*diagnostic.Error{{
+		return workflow.WorkflowMapping{}, []*diagnostic.Error{{
 			Token:   f.Docs[0].Body.GetToken(),
 			Message: "workflow must be a YAML mapping",
 		}}
 	}
-	return m, nil
+	return workflow.WorkflowMapping{Mapping: workflow.Mapping{MappingNode: m}}, nil
 }

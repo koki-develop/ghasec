@@ -6,7 +6,7 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
-	"github.com/koki-develop/ghasec/rules"
+	"github.com/koki-develop/ghasec/workflow"
 )
 
 const id = "invalid-workflow"
@@ -17,13 +17,13 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return true }
 func (r *Rule) Online() bool   { return false }
 
-func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
-	fileStart := rules.FirstToken(mapping.GetToken())
+func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+	fileStart := mapping.FirstToken()
 
 	var errs []*diagnostic.Error
-	errs = append(errs, checkOn(mapping, fileStart)...)
+	errs = append(errs, checkOn(mapping.Mapping, fileStart)...)
 
-	jobsMapping, jobsErrs := checkJobs(mapping, fileStart)
+	jobsMapping, jobsErrs := checkJobs(mapping.Mapping, fileStart)
 	errs = append(errs, jobsErrs...)
 
 	if jobsMapping != nil {
@@ -33,8 +33,8 @@ func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
 	return errs
 }
 
-func checkOn(mapping *ast.MappingNode, fileStart *token.Token) []*diagnostic.Error {
-	kv := rules.FindKey(mapping, "on")
+func checkOn(mapping workflow.Mapping, fileStart *token.Token) []*diagnostic.Error {
+	kv := mapping.FindKey("on")
 	if kv == nil {
 		return []*diagnostic.Error{{
 			Token:   fileStart,
@@ -57,8 +57,8 @@ func checkOn(mapping *ast.MappingNode, fileStart *token.Token) []*diagnostic.Err
 	}
 }
 
-func checkJobs(mapping *ast.MappingNode, fileStart *token.Token) (*ast.MappingNode, []*diagnostic.Error) {
-	kv := rules.FindKey(mapping, "jobs")
+func checkJobs(mapping workflow.Mapping, fileStart *token.Token) (*ast.MappingNode, []*diagnostic.Error) {
+	kv := mapping.FindKey("jobs")
 	if kv == nil {
 		return nil, []*diagnostic.Error{{
 			Token:   fileStart,
@@ -95,17 +95,17 @@ func checkJobEntries(jobs *ast.MappingNode) []*diagnostic.Error {
 			})
 			continue
 		}
-		errs = append(errs, checkJob(jobEntry.Key.GetToken().Value, jobMapping)...)
+		errs = append(errs, checkJob(jobEntry.Key.GetToken().Value, workflow.JobMapping{Mapping: workflow.Mapping{MappingNode: jobMapping}})...)
 	}
 	return errs
 }
 
-func checkJob(jobID string, job *ast.MappingNode) []*diagnostic.Error {
+func checkJob(jobID string, job workflow.JobMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 
-	runsOnKV := rules.FindKey(job, "runs-on")
-	usesKV := rules.FindKey(job, "uses")
-	stepsKV := rules.FindKey(job, "steps")
+	runsOnKV := job.FindKey("runs-on")
+	usesKV := job.FindKey("uses")
+	stepsKV := job.FindKey("steps")
 
 	hasRunsOn := runsOnKV != nil
 	hasUses := usesKV != nil

@@ -49,9 +49,20 @@ import (
     "github.com/goccy/go-yaml/ast"
     yamlparser "github.com/goccy/go-yaml/parser"
     rulename "github.com/koki-develop/ghasec/rules/<rule-id>"
+    "github.com/koki-develop/ghasec/workflow"
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
 )
+
+func parseMapping(t *testing.T, src string) workflow.WorkflowMapping {
+    t.Helper()
+    f, err := yamlparser.ParseBytes([]byte(src), 0)
+    require.NoError(t, err)
+    require.NotEmpty(t, f.Docs)
+    m, ok := f.Docs[0].Body.(*ast.MappingNode)
+    require.True(t, ok)
+    return workflow.WorkflowMapping{Mapping: workflow.Mapping{MappingNode: m}}
+}
 ```
 
 Cover at minimum:
@@ -71,9 +82,8 @@ Create `rules/<rule-id>/<rule_name>.go`. Follow the existing pattern:
 package rulename
 
 import (
-    "github.com/goccy/go-yaml/ast"
     "github.com/koki-develop/ghasec/diagnostic"
-    "github.com/koki-develop/ghasec/rules"
+    "github.com/koki-develop/ghasec/workflow"
 )
 
 const id = "<rule-id>"
@@ -82,26 +92,27 @@ type Rule struct{}
 
 func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
+func (r *Rule) Online() bool   { return false }
 
-func (r *Rule) Check(f *ast.File) []*diagnostic.Error {
-    // AST traversal: docs -> top-level mapping -> jobs -> each job -> steps -> each step
-    // Use rules.TopLevelMapping() and rules.FindKey() helpers
+func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+    // Use mapping.FindKey(), mapping.EachStep(), step.Uses() etc.
 }
 ```
 
 There are two common rule patterns:
 
 **Step-level rules** (e.g., `unpinned-action`, `checkout-persist-credentials`):
-- Traverse jobs -> steps -> check each step's `uses` or `with` keys
-- Extract `uses` value handling both `*ast.StringNode` and `*ast.LiteralNode`
+- Use `mapping.EachStep(func(step workflow.StepMapping) { ... })` to iterate steps
+- Use `step.Uses()` to get an `ActionRef` — handles both `*ast.StringNode` and `*ast.LiteralNode`
+- Use `ref.IsLocal()`, `ref.IsDocker()`, `ref.Ref()`, `ref.OwnerRepo()` for action classification
 
 **Top-level rules** (e.g., `default-permissions`):
-- Check keys directly on the top-level mapping (e.g., `permissions`)
-- When a required key is missing and the error should point at the file start, refer to the `firstToken` pattern in `invalid-workflow` for how to obtain a file-start token
+- Use `mapping.FindKey("key")` to check keys on the workflow mapping
+- Use `mapping.FirstToken()` to get a file-start token for errors on missing keys
 
 **Common patterns for both:**
 - Return `nil` early for missing/unexpected nodes (required rules already validated structure)
-- Use `rules.FindKey()` to navigate mapping nodes
+- Use `m.FindKey()` to navigate mapping nodes (wrap raw `*ast.MappingNode` in `workflow.Mapping{MappingNode: m}` if needed)
 - To point at a mapping value's key, use `kv.Key.GetToken()` — note that `MappingNode.GetToken()` returns the `:` separator, not the key
 
 ### Step 3: Run unit tests

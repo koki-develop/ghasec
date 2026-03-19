@@ -6,7 +6,7 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
-	"github.com/koki-develop/ghasec/rules"
+	"github.com/koki-develop/ghasec/workflow"
 )
 
 const id = "checkout-persist-credentials"
@@ -17,9 +17,9 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
-func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
+func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
-	rules.EachStep(mapping, func(step *ast.MappingNode) {
+	mapping.EachStep(func(step workflow.StepMapping) {
 		if err := checkStep(step); err != nil {
 			errs = append(errs, err)
 		}
@@ -27,13 +27,13 @@ func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
 	return errs
 }
 
-func checkStep(step *ast.MappingNode) *diagnostic.Error {
-	usesValue, usesToken, ok := rules.StepUsesValue(step)
+func checkStep(step workflow.StepMapping) *diagnostic.Error {
+	ref, ok := step.Uses()
 	if !ok {
 		return nil
 	}
 
-	if !isCheckoutAction(usesValue) {
+	if !isCheckoutAction(ref.String()) {
 		return nil
 	}
 
@@ -42,6 +42,7 @@ func checkStep(step *ast.MappingNode) *diagnostic.Error {
 		return nil
 	}
 
+	usesToken := ref.Token()
 	if errToken == nil {
 		errToken = usesToken
 	}
@@ -64,18 +65,13 @@ func isCheckoutAction(uses string) bool {
 // Returns (nil, true) if correctly set to false.
 // Returns (token, false) if persist-credentials exists but is not false (token points to the bad value).
 // Returns (nil, false) if persist-credentials or with is missing.
-func findPersistCredentialsError(step *ast.MappingNode) (*token.Token, bool) {
-	withKV := rules.FindKey(step, "with")
-	if withKV == nil {
-		return nil, false
-	}
-
-	withMapping, ok := withKV.Value.(*ast.MappingNode)
+func findPersistCredentialsError(step workflow.StepMapping) (*token.Token, bool) {
+	withMapping, ok := step.With()
 	if !ok {
 		return nil, false
 	}
 
-	pcKV := rules.FindKey(withMapping, "persist-credentials")
+	pcKV := withMapping.FindKey("persist-credentials")
 	if pcKV == nil {
 		return nil, false
 	}

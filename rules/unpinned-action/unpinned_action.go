@@ -2,12 +2,9 @@ package unpinnedaction
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/goccy/go-yaml/ast"
 	"github.com/koki-develop/ghasec/diagnostic"
-	"github.com/koki-develop/ghasec/git"
-	"github.com/koki-develop/ghasec/rules"
+	"github.com/koki-develop/ghasec/workflow"
 )
 
 const id = "unpinned-action"
@@ -18,9 +15,9 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
-func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
+func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
-	rules.EachStep(mapping, func(step *ast.MappingNode) {
+	mapping.EachStep(func(step workflow.StepMapping) {
 		if err := checkStepAction(step); err != nil {
 			errs = append(errs, err)
 		}
@@ -28,21 +25,20 @@ func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
 	return errs
 }
 
-func checkStepAction(step *ast.MappingNode) *diagnostic.Error {
-	usesValue, usesToken, ok := rules.StepUsesValue(step)
+func checkStepAction(step workflow.StepMapping) *diagnostic.Error {
+	ref, ok := step.Uses()
 	if !ok {
 		return nil
 	}
 
-	if rules.IsLocalAction(usesValue) || rules.IsDockerAction(usesValue) {
+	if ref.IsLocal() || ref.IsDocker() {
 		return nil
 	}
 
-	atIdx := strings.LastIndex(usesValue, "@")
-	if atIdx == -1 || !git.Ref(usesValue[atIdx+1:]).IsFullSHA() {
+	if !ref.Ref().IsFullSHA() {
 		return &diagnostic.Error{
-			Token:   usesToken,
-			Message: fmt.Sprintf("action %q must be pinned to a full length commit SHA", usesValue),
+			Token:   ref.Token(),
+			Message: fmt.Sprintf("action %q must be pinned to a full length commit SHA", ref.String()),
 		}
 	}
 

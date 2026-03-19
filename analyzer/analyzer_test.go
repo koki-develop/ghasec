@@ -7,6 +7,7 @@ import (
 	yamlparser "github.com/goccy/go-yaml/parser"
 	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/workflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,13 +15,15 @@ import (
 type mockRule struct {
 	id       string
 	required bool
-	check    func(mapping *ast.MappingNode) []*diagnostic.Error
+	check    func(mapping workflow.WorkflowMapping) []*diagnostic.Error
 }
 
-func (r *mockRule) ID() string                                         { return r.id }
-func (r *mockRule) Required() bool                                     { return r.required }
-func (r *mockRule) Online() bool                                       { return false }
-func (r *mockRule) Check(mapping *ast.MappingNode) []*diagnostic.Error { return r.check(mapping) }
+func (r *mockRule) ID() string     { return r.id }
+func (r *mockRule) Required() bool { return r.required }
+func (r *mockRule) Online() bool   { return false }
+func (r *mockRule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+	return r.check(mapping)
+}
 
 func parseYAML(t *testing.T, src string) *ast.File {
 	t.Helper()
@@ -47,11 +50,11 @@ func TestAnalyzer_NonMappingDocument(t *testing.T) {
 }
 
 func TestAnalyzer_RequiredRuleError_SkipsNonRequired(t *testing.T) {
-	reqRule := &mockRule{id: "req", required: true, check: func(mapping *ast.MappingNode) []*diagnostic.Error {
+	reqRule := &mockRule{id: "req", required: true, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 		return []*diagnostic.Error{{Message: "required error"}}
 	}}
 	lintCalled := false
-	lintRule := &mockRule{id: "lint", required: false, check: func(mapping *ast.MappingNode) []*diagnostic.Error {
+	lintRule := &mockRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 		lintCalled = true
 		return []*diagnostic.Error{{Message: "lint error"}}
 	}}
@@ -65,10 +68,10 @@ func TestAnalyzer_RequiredRuleError_SkipsNonRequired(t *testing.T) {
 }
 
 func TestAnalyzer_RequiredRulePass_RunsNonRequired(t *testing.T) {
-	reqRule := &mockRule{id: "req", required: true, check: func(mapping *ast.MappingNode) []*diagnostic.Error {
+	reqRule := &mockRule{id: "req", required: true, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 		return nil
 	}}
-	lintRule := &mockRule{id: "lint", required: false, check: func(mapping *ast.MappingNode) []*diagnostic.Error {
+	lintRule := &mockRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 		return []*diagnostic.Error{{Message: "lint error"}}
 	}}
 	a := analyzer.New(reqRule, lintRule)
@@ -87,7 +90,7 @@ func TestAnalyzer_NoRules(t *testing.T) {
 }
 
 func TestAnalyzer_AllPass(t *testing.T) {
-	noErr := func(mapping *ast.MappingNode) []*diagnostic.Error { return nil }
+	noErr := func(mapping workflow.WorkflowMapping) []*diagnostic.Error { return nil }
 	a := analyzer.New(
 		&mockRule{id: "req", required: true, check: noErr},
 		&mockRule{id: "lint", required: false, check: noErr},

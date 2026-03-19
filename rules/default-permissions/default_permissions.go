@@ -4,7 +4,7 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
-	"github.com/koki-develop/ghasec/rules"
+	"github.com/koki-develop/ghasec/workflow"
 )
 
 const id = "default-permissions"
@@ -17,10 +17,10 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
-func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
-	fileStart := rules.FirstToken(mapping.GetToken())
+func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+	fileStart := mapping.FirstToken()
 
-	permKV := rules.FindKey(mapping, "permissions")
+	permKV := mapping.FindKey("permissions")
 	if permKV == nil {
 		return []*diagnostic.Error{{
 			Token:   fileStart,

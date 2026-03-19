@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/git"
-	"github.com/koki-develop/ghasec/rules"
+	"github.com/koki-develop/ghasec/workflow"
 )
 
 const id = "mismatched-sha-tag"
@@ -28,40 +27,34 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return true }
 
-func (r *Rule) Check(mapping *ast.MappingNode) []*diagnostic.Error {
+func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	if r.Resolver == nil {
 		return nil
 	}
 
 	var errs []*diagnostic.Error
-	rules.EachStep(mapping, func(step *ast.MappingNode) {
+	mapping.EachStep(func(step workflow.StepMapping) {
 		errs = append(errs, r.checkStep(step)...)
 	})
 	return errs
 }
 
-func (r *Rule) checkStep(step *ast.MappingNode) []*diagnostic.Error {
-	usesValue, usesToken, ok := rules.StepUsesValue(step)
+func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
+	ref, ok := step.Uses()
 	if !ok {
 		return nil
 	}
 
-	if rules.IsLocalAction(usesValue) || rules.IsDockerAction(usesValue) {
+	if ref.IsLocal() || ref.IsDocker() {
 		return nil
 	}
 
-	atIdx := strings.LastIndex(usesValue, "@")
-	if atIdx == -1 {
-		return nil
-	}
-
-	sha := usesValue[atIdx+1:]
-	if !git.Ref(sha).IsFullSHA() {
+	if !ref.Ref().IsFullSHA() {
 		return nil
 	}
 
 	// Extract the comment from the next token.
-	tk := usesToken
+	tk := ref.Token()
 	if tk.Next == nil || tk.Next.Type.String() != "Comment" {
 		return nil
 	}
@@ -76,13 +69,10 @@ func (r *Rule) checkStep(step *ast.MappingNode) []*diagnostic.Error {
 	}
 
 	// Parse owner/repo from the action reference.
-	actionPath := usesValue[:atIdx]
-	parts := strings.SplitN(actionPath, "/", 3)
-	if len(parts) < 2 {
+	owner, repo := ref.OwnerRepo()
+	if owner == "" {
 		return nil
 	}
-	owner := parts[0]
-	repo := parts[1]
 
 	// Build a token pointing at just the tag text.
 	rawComment := tk.Next
@@ -103,15 +93,15 @@ func (r *Rule) checkStep(step *ast.MappingNode) []*diagnostic.Error {
 		return []*diagnostic.Error{{
 			Token:       tagTk,
 			BeforeToken: tk,
-			Message:     fmt.Sprintf("failed to resolve tag %q for action %q: %v", tag, usesValue, err),
+			Message:     fmt.Sprintf("failed to resolve tag %q for action %q: %v", tag, ref.String(), err),
 		}}
 	}
 
-	if resolvedSHA != sha {
+	if resolvedSHA != string(ref.Ref()) {
 		return []*diagnostic.Error{{
 			Token:       tagTk,
 			BeforeToken: tk,
-			Message:     fmt.Sprintf("action %q references tag %q, but the tag points to commit %q", usesValue, tag, resolvedSHA),
+			Message:     fmt.Sprintf("action %q references tag %q, but the tag points to commit %q", ref.String(), tag, resolvedSHA),
 		}}
 	}
 

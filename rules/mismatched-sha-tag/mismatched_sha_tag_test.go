@@ -8,18 +8,19 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	yamlparser "github.com/goccy/go-yaml/parser"
 	mismatchedshatag "github.com/koki-develop/ghasec/rules/mismatched-sha-tag"
+	"github.com/koki-develop/ghasec/workflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func parseMapping(t *testing.T, src string) *ast.MappingNode {
+func parseMapping(t *testing.T, src string) workflow.WorkflowMapping {
 	t.Helper()
 	f, err := yamlparser.ParseBytes([]byte(src), 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, f.Docs)
 	m, ok := f.Docs[0].Body.(*ast.MappingNode)
 	require.True(t, ok)
-	return m
+	return workflow.WorkflowMapping{Mapping: workflow.Mapping{MappingNode: m}}
 }
 
 type mockResolver struct {
