@@ -98,52 +98,46 @@ func (c *Client) resolveTagSHA(ctx context.Context, owner, repo, tag string) (st
 	}
 }
 
-func (c *Client) getRef(ctx context.Context, owner, repo, tag string) (*gitRef, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/git/ref/tags/%s", c.baseURL, owner, repo, tag)
+// doGet performs a GET request to the given path, decodes the JSON response
+// into result, and returns an error with errContext on non-200 status or decode failure.
+func (c *Client) doGet(ctx context.Context, path string, result any, errContext string) error {
+	url := c.baseURL + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	c.setHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, apiError(resp, fmt.Sprintf("failed to resolve tag %q on %s/%s", tag, owner, repo))
+		return apiError(resp, errContext)
 	}
 
+	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+		return fmt.Errorf("%s: %w", errContext, err)
+	}
+	return nil
+}
+
+func (c *Client) getRef(ctx context.Context, owner, repo, tag string) (*gitRef, error) {
+	path := fmt.Sprintf("/repos/%s/%s/git/ref/tags/%s", owner, repo, tag)
 	var ref gitRef
-	if err := json.NewDecoder(resp.Body).Decode(&ref); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := c.doGet(ctx, path, &ref, fmt.Sprintf("failed to resolve tag %q on %s/%s", tag, owner, repo)); err != nil {
+		return nil, err
 	}
 	return &ref, nil
 }
 
 func (c *Client) dereferenceTag(ctx context.Context, owner, repo, tagSHA string) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/git/tags/%s", c.baseURL, owner, repo, tagSHA)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return "", err
-	}
-	c.setHeaders(req)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", apiError(resp, fmt.Sprintf("failed to dereference tag object %q on %s/%s", tagSHA, owner, repo))
-	}
-
+	path := fmt.Sprintf("/repos/%s/%s/git/tags/%s", owner, repo, tagSHA)
 	var ref gitRef
-	if err := json.NewDecoder(resp.Body).Decode(&ref); err != nil {
-		return "", fmt.Errorf("failed to decode tag object: %w", err)
+	if err := c.doGet(ctx, path, &ref, fmt.Sprintf("failed to dereference tag object %q on %s/%s", tagSHA, owner, repo)); err != nil {
+		return "", err
 	}
 
 	if ref.Object.Type != "commit" {

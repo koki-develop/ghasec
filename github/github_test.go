@@ -138,7 +138,7 @@ func TestResolveTagSHA_InvalidJSON(t *testing.T) {
 
 	_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v4")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to decode")
+	assert.Contains(t, err.Error(), "failed to resolve tag")
 }
 
 func TestResolveTagSHA_Cache(t *testing.T) {

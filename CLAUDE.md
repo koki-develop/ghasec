@@ -29,6 +29,7 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 
 - `cmd/root.go` — CLI entry point (cobra). Orchestrates the full pipeline.
 - `analyzer/` — Runs rules against a parsed AST file. Required rules run first; if any fail, non-required rules are skipped entirely.
+- `renderer/` — Diagnostic error rendering with source annotation, syntax highlighting, and `NO_COLOR` support.
 - `workflow/` — Typed wrappers around `goccy/go-yaml` AST nodes and `ActionRef` for action references. Rules use these wrappers for domain-specific navigation.
 - `rules/` — See `rules/CLAUDE.md` for details.
 - `e2e/` — E2E tests. See `e2e/CLAUDE.md` for details.
