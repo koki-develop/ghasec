@@ -6,6 +6,7 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	yamlparser "github.com/goccy/go-yaml/parser"
+	"github.com/goccy/go-yaml/token"
 	checkoutpersistcredentials "github.com/koki-develop/ghasec/rules/checkout-persist-credentials"
 	"github.com/koki-develop/ghasec/workflow"
 	"github.com/stretchr/testify/assert"
@@ -96,12 +97,13 @@ func TestRule_PersistCredentialsTrue_TokenPointsToValue(t *testing.T) {
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "true", errs[0].Token.Value)
-	require.Len(t, errs[0].ContextTokens, 5)
+	require.Len(t, errs[0].ContextTokens, 6)
 	assert.Equal(t, "jobs", errs[0].ContextTokens[0].Value)
 	assert.Equal(t, "build", errs[0].ContextTokens[1].Value)
 	assert.Equal(t, "steps", errs[0].ContextTokens[2].Value)
-	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].ContextTokens[3].Value)
-	assert.Equal(t, "with", errs[0].ContextTokens[4].Value)
+	assert.Equal(t, token.SequenceEntryType, errs[0].ContextTokens[3].Type)
+	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].ContextTokens[4].Value)
+	assert.Equal(t, "with", errs[0].ContextTokens[5].Value)
 }
 
 func TestRule_MissingPersistCredentials_TokenPointsToUses(t *testing.T) {
@@ -111,10 +113,11 @@ func TestRule_MissingPersistCredentials_TokenPointsToUses(t *testing.T) {
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].Token.Value)
-	require.Len(t, errs[0].ContextTokens, 3)
+	require.Len(t, errs[0].ContextTokens, 4)
 	assert.Equal(t, "jobs", errs[0].ContextTokens[0].Value)
 	assert.Equal(t, "build", errs[0].ContextTokens[1].Value)
 	assert.Equal(t, "steps", errs[0].ContextTokens[2].Value)
+	assert.Equal(t, token.SequenceEntryType, errs[0].ContextTokens[3].Type)
 }
 
 func TestRule_NonCheckoutAction(t *testing.T) {

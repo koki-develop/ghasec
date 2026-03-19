@@ -39,7 +39,7 @@ func checkStepAction(step workflow.StepMapping) *diagnostic.Error {
 	if !ref.Ref().IsFullSHA() {
 		return &diagnostic.Error{
 			Token:         ref.RefToken(),
-			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), step.StepsKeyToken()},
+			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), step.StepsKeyToken(), step.SeqEntryToken()},
 			Message:       fmt.Sprintf("%q must be pinned to a full length commit SHA", ref.String()),
 		}
 	}

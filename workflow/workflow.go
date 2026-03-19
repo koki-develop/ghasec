@@ -55,6 +55,7 @@ type StepMapping struct {
 	jobsKeyToken  *token.Token
 	jobKeyToken   *token.Token
 	stepsKeyToken *token.Token
+	seqEntryToken *token.Token
 }
 
 // JobsKeyToken returns the token for the "jobs" key.
@@ -65,6 +66,9 @@ func (s StepMapping) JobKeyToken() *token.Token { return s.jobKeyToken }
 
 // StepsKeyToken returns the token for the "steps" key.
 func (s StepMapping) StepsKeyToken() *token.Token { return s.stepsKeyToken }
+
+// SeqEntryToken returns the token for the "-" sequence entry indicator of this step.
+func (s StepMapping) SeqEntryToken() *token.Token { return s.seqEntryToken }
 
 // EachStep iterates over all steps across all jobs in the workflow.
 // It silently skips malformed sections (missing jobs, non-mapping jobs, etc.)
@@ -104,9 +108,22 @@ func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
 				jobsKeyToken:  jobsKeyToken,
 				jobKeyToken:   jobKeyToken,
 				stepsKeyToken: stepsKV.Key.GetToken(),
+				seqEntryToken: FindSeqEntryToken(stepMapping.GetToken()),
 			})
 		}
 	}
+}
+
+// FindSeqEntryToken walks the token chain backward from tk to find the nearest
+// SequenceEntry token ("-"). Returns nil if not found.
+func FindSeqEntryToken(tk *token.Token) *token.Token {
+	for tk != nil {
+		if tk.Type == token.SequenceEntryType {
+			return tk
+		}
+		tk = tk.Prev
+	}
+	return nil
 }
 
 // With returns the "with" mapping from the step.

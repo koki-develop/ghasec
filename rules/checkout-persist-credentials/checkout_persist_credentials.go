@@ -47,7 +47,7 @@ func checkStep(step workflow.StepMapping) *diagnostic.Error {
 		errToken = usesToken
 	}
 
-	ctx := []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), step.StepsKeyToken()}
+	ctx := []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), step.StepsKeyToken(), step.SeqEntryToken()}
 	if errToken != usesToken {
 		ctx = append(ctx, usesToken)
 		if withKV := step.FindKey("with"); withKV != nil {

@@ -90,6 +90,7 @@ expected:
     29 |   build:
     ...
     50 |     steps:
+    51 |       - id: checkout
     ...
     53 |         uses: actions/checkout@v4
        |                                ^^ "actions/checkout@v4" must be pinned to a full length commit SHA (unpinned-action)
@@ -102,6 +103,7 @@ expected:
     29 |   build:
     ...
     50 |     steps:
+    51 |       - id: checkout
     ...
     53 |         uses: actions/checkout@v4
        |               ^^^^^^^^^^^^^^^^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)

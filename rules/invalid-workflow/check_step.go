@@ -16,19 +16,20 @@ func checkStepEntries(jobsKeyToken *token.Token, jobKey *token.Token, stepsKeyTo
 		if !ok {
 			errs = append(errs, &diagnostic.Error{
 				Token:         item.GetToken(),
-				ContextTokens: []*token.Token{jobsKeyToken, jobKey, stepsKeyToken},
+				ContextTokens: []*token.Token{jobsKeyToken, jobKey, stepsKeyToken, workflow.FindSeqEntryToken(item.GetToken())},
 				Message:       fmt.Sprintf("step must be a mapping, but got %s", item.Type()),
 			})
 			continue
 		}
-		errs = append(errs, checkStep(jobsKeyToken, jobKey, stepsKeyToken, workflow.Mapping{MappingNode: stepMapping})...)
+		seqEntry := workflow.FindSeqEntryToken(stepMapping.GetToken())
+		errs = append(errs, checkStep(jobsKeyToken, jobKey, stepsKeyToken, seqEntry, workflow.Mapping{MappingNode: stepMapping})...)
 	}
 	return errs
 }
 
-func checkStep(jobsKeyToken *token.Token, jobKey *token.Token, stepsKeyToken *token.Token, step workflow.Mapping) []*diagnostic.Error {
+func checkStep(jobsKeyToken *token.Token, jobKey *token.Token, stepsKeyToken *token.Token, seqEntryToken *token.Token, step workflow.Mapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
-	contextTokens := []*token.Token{jobsKeyToken, jobKey, stepsKeyToken}
+	contextTokens := []*token.Token{jobsKeyToken, jobKey, stepsKeyToken, seqEntryToken}
 
 	usesKV := step.FindKey("uses")
 	runKV := step.FindKey("run")
