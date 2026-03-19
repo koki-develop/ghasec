@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml/ast"
-	"github.com/goccy/go-yaml/token"
 )
 
 // knownTopLevelKeys lists all documented top-level keys in a GitHub Actions workflow file.
@@ -197,14 +196,6 @@ var knownRunsOnKeys = map[string]bool{
 var knownDefaultsRunKeys = map[string]bool{
 	"shell":             true,
 	"working-directory": true,
-}
-
-// extendContext returns a new context slice with additional tokens appended,
-// without modifying the original slice.
-func extendContext(base []*token.Token, extra ...*token.Token) []*token.Token {
-	out := make([]*token.Token, len(base), len(base)+len(extra))
-	copy(out, base)
-	return append(out, extra...)
 }
 
 // isExpression reports whether the node's string value contains a ${{ expression.

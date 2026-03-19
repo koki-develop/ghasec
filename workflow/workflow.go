@@ -52,23 +52,7 @@ type JobMapping struct{ Mapping }
 // StepMapping represents a step-level mapping.
 type StepMapping struct {
 	Mapping
-	jobsKeyToken  *token.Token
-	jobKeyToken   *token.Token
-	stepsKeyToken *token.Token
-	seqEntryToken *token.Token
 }
-
-// JobsKeyToken returns the token for the "jobs" key.
-func (s StepMapping) JobsKeyToken() *token.Token { return s.jobsKeyToken }
-
-// JobKeyToken returns the token for the job name key (e.g., "build").
-func (s StepMapping) JobKeyToken() *token.Token { return s.jobKeyToken }
-
-// StepsKeyToken returns the token for the "steps" key.
-func (s StepMapping) StepsKeyToken() *token.Token { return s.stepsKeyToken }
-
-// SeqEntryToken returns the token for the "-" sequence entry indicator of this step.
-func (s StepMapping) SeqEntryToken() *token.Token { return s.seqEntryToken }
 
 // EachStep iterates over all steps across all jobs in the workflow.
 // It silently skips malformed sections (missing jobs, non-mapping jobs, etc.)
@@ -83,7 +67,6 @@ func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
 	if !ok {
 		return
 	}
-	jobsKeyToken := jobsKV.Key.GetToken()
 	for _, jobEntry := range jobsMapping.Values {
 		jobMapping, ok := jobEntry.Value.(*ast.MappingNode)
 		if !ok {
@@ -97,33 +80,14 @@ func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
 		if !ok {
 			continue
 		}
-		jobKeyToken := jobEntry.Key.GetToken()
 		for _, stepNode := range stepsSeq.Values {
 			stepMapping, ok := stepNode.(*ast.MappingNode)
 			if !ok {
 				continue
 			}
-			fn(StepMapping{
-				Mapping:       Mapping{stepMapping},
-				jobsKeyToken:  jobsKeyToken,
-				jobKeyToken:   jobKeyToken,
-				stepsKeyToken: stepsKV.Key.GetToken(),
-				seqEntryToken: FindSeqEntryToken(stepMapping.GetToken()),
-			})
+			fn(StepMapping{Mapping: Mapping{stepMapping}})
 		}
 	}
-}
-
-// FindSeqEntryToken walks the token chain backward from tk to find the nearest
-// SequenceEntry token ("-"). Returns nil if not found.
-func FindSeqEntryToken(tk *token.Token) *token.Token {
-	for tk != nil {
-		if tk.Type == token.SequenceEntryType {
-			return tk
-		}
-		tk = tk.Prev
-	}
-	return nil
 }
 
 // With returns the "with" mapping from the step.

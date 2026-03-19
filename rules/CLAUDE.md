@@ -19,6 +19,12 @@ Each rule lives in its own subdirectory under `rules/`. Run `ls rules/` to see a
 - New rules: implement `rules.Rule` interface and add to the `buildRules()` function in `cmd/root.go`. Online rules should lazily initialize their own dependencies (see `mismatched-sha-tag` for an example). Rule IDs are flat kebab-case names describing the violation they detect (e.g., `invalid-workflow`, `unpinned-action`).
 - Tests use `github.com/stretchr/testify` (assert/require).
 
+## Diagnostic Context (Breadcrumbs)
+
+The renderer automatically computes ancestor breadcrumb lines from the error token's position — rules do NOT manually specify parent keys. The renderer walks backward through the token chain collecting mapping keys and sequence entries at decreasing indentation levels.
+
+Rules only need to set `Token` and `Message` on `diagnostic.Error`. Use `ExtraContexts` only for non-ancestor tokens that provide important context (e.g., `default-permissions` uses it to show the last permission entry, `checkout-persist-credentials` uses it to show the `uses` value when the error is on `persist-credentials`).
+
 ## Diagnostic Message Format
 
 Messages use **key-path subject style** — the YAML key or structural term is the subject of the sentence. No dynamic prefixes like `job "<id>"` or context labels; the annotated source output provides positional context.

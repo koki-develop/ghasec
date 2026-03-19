@@ -4,22 +4,19 @@ import (
 	"fmt"
 
 	"github.com/goccy/go-yaml/ast"
-	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 )
 
-func checkPermissions(kv *ast.MappingValueNode, contextTokens []*token.Token) []*diagnostic.Error {
+func checkPermissions(kv *ast.MappingValueNode) []*diagnostic.Error {
 	if isExpression(kv.Value) {
 		return nil
 	}
 
-	permCtx := extendContext(contextTokens, kv.Key.GetToken())
-
 	switch v := kv.Value.(type) {
 	case *ast.StringNode, *ast.LiteralNode:
-		return checkPermissionsString(v, contextTokens)
+		return checkPermissionsString(v)
 	case *ast.MappingNode:
-		return checkPermissionsMapping(v, permCtx)
+		return checkPermissionsMapping(v)
 	case *ast.NullNode:
 		// permissions: (with no value) is parsed as null.
 		// GitHub Actions treats this as default permissions (NOT the same as {}).
@@ -28,34 +25,31 @@ func checkPermissions(kv *ast.MappingValueNode, contextTokens []*token.Token) []
 		return nil
 	default:
 		return []*diagnostic.Error{{
-			Token:         kv.Value.GetToken(),
-			ContextTokens: contextTokens,
-			Message:       fmt.Sprintf("\"permissions\" must be a string or mapping, but got %s", kv.Value.Type()),
+			Token:   kv.Value.GetToken(),
+			Message: fmt.Sprintf("\"permissions\" must be a string or mapping, but got %s", kv.Value.Type()),
 		}}
 	}
 }
 
-func checkPermissionsString(node ast.Node, contextTokens []*token.Token) []*diagnostic.Error {
+func checkPermissionsString(node ast.Node) []*diagnostic.Error {
 	v := stringValue(node)
 	if knownPermissionStrings[v] {
 		return nil
 	}
 	return []*diagnostic.Error{{
-		Token:         node.GetToken(),
-		ContextTokens: contextTokens,
-		Message:       fmt.Sprintf("\"permissions\" must be \"read-all\" or \"write-all\", but got %q", v),
+		Token:   node.GetToken(),
+		Message: fmt.Sprintf("\"permissions\" must be \"read-all\" or \"write-all\", but got %q", v),
 	}}
 }
 
-func checkPermissionsMapping(m *ast.MappingNode, contextTokens []*token.Token) []*diagnostic.Error {
+func checkPermissionsMapping(m *ast.MappingNode) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	for _, entry := range m.Values {
 		scope := entry.Key.GetToken().Value
 		if !knownPermissionScopes[scope] {
 			errs = append(errs, &diagnostic.Error{
-				Token:         entry.Key.GetToken(),
-				ContextTokens: contextTokens,
-				Message:       fmt.Sprintf("\"permissions\" has unknown scope %q", scope),
+				Token:   entry.Key.GetToken(),
+				Message: fmt.Sprintf("\"permissions\" has unknown scope %q", scope),
 			})
 			continue
 		}
@@ -67,9 +61,8 @@ func checkPermissionsMapping(m *ast.MappingNode, contextTokens []*token.Token) [
 		level := stringValue(entry.Value)
 		if level == "" {
 			errs = append(errs, &diagnostic.Error{
-				Token:         entry.Value.GetToken(),
-				ContextTokens: extendContext(contextTokens, entry.Key.GetToken()),
-				Message:       fmt.Sprintf("\"permissions\" scope %q must be a string, but got %s", scope, entry.Value.Type()),
+				Token:   entry.Value.GetToken(),
+				Message: fmt.Sprintf("\"permissions\" scope %q must be a string, but got %s", scope, entry.Value.Type()),
 			})
 			continue
 		}
@@ -77,9 +70,8 @@ func checkPermissionsMapping(m *ast.MappingNode, contextTokens []*token.Token) [
 		if scope == "models" {
 			if !modelsPermissionLevels[level] {
 				errs = append(errs, &diagnostic.Error{
-					Token:         entry.Value.GetToken(),
-					ContextTokens: extendContext(contextTokens, entry.Key.GetToken()),
-					Message:       fmt.Sprintf("\"permissions\" scope %q must be \"read\" or \"none\", but got %q", scope, level),
+					Token:   entry.Value.GetToken(),
+					Message: fmt.Sprintf("\"permissions\" scope %q must be \"read\" or \"none\", but got %q", scope, level),
 				})
 			}
 			continue
@@ -87,9 +79,8 @@ func checkPermissionsMapping(m *ast.MappingNode, contextTokens []*token.Token) [
 
 		if !knownPermissionLevels[level] {
 			errs = append(errs, &diagnostic.Error{
-				Token:         entry.Value.GetToken(),
-				ContextTokens: extendContext(contextTokens, entry.Key.GetToken()),
-				Message:       fmt.Sprintf("\"permissions\" scope %q must be \"read\", \"write\", or \"none\", but got %q", scope, level),
+				Token:   entry.Value.GetToken(),
+				Message: fmt.Sprintf("\"permissions\" scope %q must be \"read\", \"write\", or \"none\", but got %q", scope, level),
 			})
 		}
 	}

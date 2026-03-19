@@ -3,7 +3,6 @@ package unpinnedaction
 import (
 	"fmt"
 
-	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/workflow"
 )
@@ -38,9 +37,8 @@ func checkStepAction(step workflow.StepMapping) *diagnostic.Error {
 
 	if !ref.Ref().IsFullSHA() {
 		return &diagnostic.Error{
-			Token:         ref.RefToken(),
-			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), step.StepsKeyToken(), step.SeqEntryToken()},
-			Message:       fmt.Sprintf("%q must be pinned to a full length commit SHA", ref.String()),
+			Token:   ref.RefToken(),
+			Message: fmt.Sprintf("%q must be pinned to a full length commit SHA", ref.String()),
 		}
 	}
 

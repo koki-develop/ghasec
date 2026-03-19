@@ -62,8 +62,8 @@ func (r *Renderer) PrintDiagnosticError(path string, e *diagnostic.Error) error 
 			r.styled(annotate.Dim)("Ref:"),
 			r.styled(annotate.ComposeStyles(annotate.Dim, annotate.Italic))(url))
 	}
-	contextTokens := make([]*token.Token, 0, len(e.ContextTokens))
-	for _, ct := range e.ContextTokens {
+	contextTokens := computeAncestors(e.Token)
+	for _, ct := range e.ExtraContexts {
 		if isValidToken(ct) {
 			contextTokens = append(contextTokens, ct)
 		}
@@ -84,6 +84,43 @@ func (r *Renderer) PrintDiagnosticError(path string, e *diagnostic.Error) error 
 
 func isValidToken(tk *token.Token) bool {
 	return tk != nil && tk.Position != nil
+}
+
+// isMappingKey reports whether tk is a mapping key (i.e., its Next token is ":").
+func isMappingKey(tk *token.Token) bool {
+	return tk.Next != nil && tk.Next.Type == token.MappingValueType
+}
+
+// computeAncestors walks the token chain backward from tk and collects
+// structurally significant ancestor tokens (mapping keys and sequence entries)
+// at strictly decreasing indentation levels.
+func computeAncestors(tk *token.Token) []*token.Token {
+	if !isValidToken(tk) {
+		return nil
+	}
+	threshold := tk.Position.Column
+	var ancestors []*token.Token
+	for cur := tk.Prev; cur != nil; cur = cur.Prev {
+		if cur.Position == nil {
+			continue
+		}
+		col := cur.Position.Column
+		if col >= threshold {
+			continue
+		}
+		if cur.Type == token.SequenceEntryType || isMappingKey(cur) {
+			ancestors = append(ancestors, cur)
+			threshold = col
+			if threshold <= 1 {
+				break
+			}
+		}
+	}
+	// Reverse to root-first order
+	for i, j := 0, len(ancestors)-1; i < j; i, j = i+1, j-1 {
+		ancestors[i], ancestors[j] = ancestors[j], ancestors[i]
+	}
+	return ancestors
 }
 
 // tokenSpan converts a YAML token's position into an annotate.Span over src.

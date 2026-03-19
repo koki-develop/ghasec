@@ -83,6 +83,7 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	tagTk := &token.Token{
 		Type:  rawComment.Type,
 		Value: tag,
+		Prev:  rawComment, // connect to real chain for computeAncestors (Prev-walk only; do NOT set rawComment.Next)
 		Position: &token.Position{
 			Line:   rawComment.Position.Line,
 			Column: rawComment.Position.Column + skip,
@@ -93,17 +94,15 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	resolvedSHA, err := r.Resolver.ResolveTagSHA(context.Background(), owner, repo, tag)
 	if err != nil {
 		return []*diagnostic.Error{{
-			Token:         tagTk,
-			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), step.StepsKeyToken(), step.SeqEntryToken(), tk},
-			Message:       fmt.Sprintf("failed to resolve tag %q for %q: %v", tag, ref.String(), err),
+			Token:   tagTk,
+			Message: fmt.Sprintf("failed to resolve tag %q for %q: %v", tag, ref.String(), err),
 		}}
 	}
 
 	if resolvedSHA != string(ref.Ref()) {
 		return []*diagnostic.Error{{
-			Token:         tagTk,
-			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken(), step.StepsKeyToken(), step.SeqEntryToken(), tk},
-			Message:       fmt.Sprintf("%q points to commit %q, not the pinned commit", tag, resolvedSHA),
+			Token:   tagTk,
+			Message: fmt.Sprintf("%q points to commit %q, not the pinned commit", tag, resolvedSHA),
 		}}
 	}
 

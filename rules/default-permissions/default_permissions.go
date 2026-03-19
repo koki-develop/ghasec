@@ -37,7 +37,7 @@ func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 
 	return []*diagnostic.Error{{
 		Token:         permKV.Key.GetToken(),
-		ContextTokens: []*token.Token{lastValueToken(permKV.Value)},
+		ExtraContexts: []*token.Token{lastValueToken(permKV.Value)},
 		Message:       messageNonEmpty,
 	}}
 }

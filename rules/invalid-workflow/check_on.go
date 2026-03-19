@@ -29,9 +29,8 @@ func checkOn(mapping workflow.Mapping, fileStart *token.Token) []*diagnostic.Err
 		return checkOnMapping(v, kv.Key.GetToken())
 	default:
 		return []*diagnostic.Error{{
-			Token:         kv.Value.GetToken(),
-			ContextTokens: []*token.Token{kv.Key.GetToken()},
-			Message:       fmt.Sprintf("\"on\" must be a string, sequence, or mapping, but got %s", kv.Value.Type()),
+			Token:   kv.Value.GetToken(),
+			Message: fmt.Sprintf("\"on\" must be a string, sequence, or mapping, but got %s", kv.Value.Type()),
 		}}
 	}
 }
@@ -41,9 +40,8 @@ func checkOnEventName(name string, tk *token.Token, onKeyToken *token.Token) []*
 		return nil
 	}
 	return []*diagnostic.Error{{
-		Token:         tk,
-		ContextTokens: []*token.Token{onKeyToken},
-		Message:       fmt.Sprintf("\"on\" has unknown event %q", name),
+		Token:   tk,
+		Message: fmt.Sprintf("\"on\" has unknown event %q", name),
 	}}
 }
 
@@ -54,18 +52,16 @@ func checkOnSequence(seq *ast.SequenceNode, onKeyToken *token.Token) []*diagnost
 		if name == "" {
 			if _, ok := item.(*ast.NullNode); !ok {
 				errs = append(errs, &diagnostic.Error{
-					Token:         item.GetToken(),
-					ContextTokens: []*token.Token{onKeyToken},
-					Message:       fmt.Sprintf("\"on\" elements must be strings, but got %s", item.Type()),
+					Token:   item.GetToken(),
+					Message: fmt.Sprintf("\"on\" elements must be strings, but got %s", item.Type()),
 				})
 			}
 			continue
 		}
 		if !knownOnEvents[name] {
 			errs = append(errs, &diagnostic.Error{
-				Token:         item.GetToken(),
-				ContextTokens: []*token.Token{onKeyToken},
-				Message:       fmt.Sprintf("\"on\" has unknown event %q", name),
+				Token:   item.GetToken(),
+				Message: fmt.Sprintf("\"on\" has unknown event %q", name),
 			})
 		}
 	}
@@ -78,9 +74,8 @@ func checkOnMapping(m *ast.MappingNode, onKeyToken *token.Token) []*diagnostic.E
 		eventName := entry.Key.GetToken().Value
 		if !knownOnEvents[eventName] {
 			errs = append(errs, &diagnostic.Error{
-				Token:         entry.Key.GetToken(),
-				ContextTokens: []*token.Token{onKeyToken},
-				Message:       fmt.Sprintf("\"on\" has unknown event %q", eventName),
+				Token:   entry.Key.GetToken(),
+				Message: fmt.Sprintf("\"on\" has unknown event %q", eventName),
 			})
 			continue
 		}
@@ -115,10 +110,9 @@ func checkOnEventFilters(eventName string, entry *ast.MappingValueNode, onKeyTok
 		a, b := pair[0], pair[1]
 		if present[a] != nil && present[b] != nil {
 			errs = append(errs, &diagnostic.Error{
-				Token:         entry.Key.GetToken(),
-				ContextTokens: []*token.Token{onKeyToken},
-				Message:       fmt.Sprintf("%q and %q are mutually exclusive", a, b),
-				Markers:       []*token.Token{present[a], present[b]},
+				Token:   entry.Key.GetToken(),
+				Message: fmt.Sprintf("%q and %q are mutually exclusive", a, b),
+				Markers: []*token.Token{present[a], present[b]},
 			})
 		}
 	}
@@ -130,9 +124,8 @@ func checkOnSchedule(entry *ast.MappingValueNode, onKeyToken *token.Token) []*di
 	seq, ok := entry.Value.(*ast.SequenceNode)
 	if !ok {
 		return []*diagnostic.Error{{
-			Token:         entry.Value.GetToken(),
-			ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken()},
-			Message:       fmt.Sprintf("\"schedule\" must be a sequence, but got %s", entry.Value.Type()),
+			Token:   entry.Value.GetToken(),
+			Message: fmt.Sprintf("\"schedule\" must be a sequence, but got %s", entry.Value.Type()),
 		}}
 	}
 
@@ -141,18 +134,16 @@ func checkOnSchedule(entry *ast.MappingValueNode, onKeyToken *token.Token) []*di
 		itemMapping, ok := item.(*ast.MappingNode)
 		if !ok {
 			errs = append(errs, &diagnostic.Error{
-				Token:         item.GetToken(),
-				ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken()},
-				Message:       fmt.Sprintf("\"schedule\" elements must be mappings, but got %s", item.Type()),
+				Token:   item.GetToken(),
+				Message: fmt.Sprintf("\"schedule\" elements must be mappings, but got %s", item.Type()),
 			})
 			continue
 		}
 		cronKV := workflow.Mapping{MappingNode: itemMapping}.FindKey("cron")
 		if cronKV == nil {
 			errs = append(errs, &diagnostic.Error{
-				Token:         item.GetToken(),
-				ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken()},
-				Message:       "\"schedule\" element must have a \"cron\" key",
+				Token:   item.GetToken(),
+				Message: "\"schedule\" element must have a \"cron\" key",
 			})
 		}
 	}
@@ -166,9 +157,8 @@ func checkOnWorkflowDispatch(entry *ast.MappingValueNode, onKeyToken *token.Toke
 	dispatchMapping, ok := entry.Value.(*ast.MappingNode)
 	if !ok {
 		return []*diagnostic.Error{{
-			Token:         entry.Value.GetToken(),
-			ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken()},
-			Message:       fmt.Sprintf("\"workflow_dispatch\" must be a mapping, but got %s", entry.Value.Type()),
+			Token:   entry.Value.GetToken(),
+			Message: fmt.Sprintf("\"workflow_dispatch\" must be a mapping, but got %s", entry.Value.Type()),
 		}}
 	}
 
@@ -177,9 +167,8 @@ func checkOnWorkflowDispatch(entry *ast.MappingValueNode, onKeyToken *token.Toke
 		key := dispatchEntry.Key.GetToken().Value
 		if !knownWorkflowDispatchKeys[key] {
 			errs = append(errs, &diagnostic.Error{
-				Token:         dispatchEntry.Key.GetToken(),
-				ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken()},
-				Message:       fmt.Sprintf("\"workflow_dispatch\" has unknown key %q", key),
+				Token:   dispatchEntry.Key.GetToken(),
+				Message: fmt.Sprintf("\"workflow_dispatch\" has unknown key %q", key),
 			})
 		}
 	}
@@ -194,9 +183,8 @@ func checkOnWorkflowDispatch(entry *ast.MappingValueNode, onKeyToken *token.Toke
 				if !ok {
 					if _, isNull := inputEntry.Value.(*ast.NullNode); !isNull {
 						errs = append(errs, &diagnostic.Error{
-							Token:         inputEntry.Value.GetToken(),
-							ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken(), inputsKV.Key.GetToken()},
-							Message:       fmt.Sprintf("input %q must be a mapping, but got %s", inputEntry.Key.GetToken().Value, inputEntry.Value.Type()),
+							Token:   inputEntry.Value.GetToken(),
+							Message: fmt.Sprintf("input %q must be a mapping, but got %s", inputEntry.Key.GetToken().Value, inputEntry.Value.Type()),
 						})
 					}
 					continue
@@ -205,9 +193,8 @@ func checkOnWorkflowDispatch(entry *ast.MappingValueNode, onKeyToken *token.Toke
 					propKey := inputProp.Key.GetToken().Value
 					if !knownWorkflowDispatchInputKeys[propKey] {
 						errs = append(errs, &diagnostic.Error{
-							Token:         inputProp.Key.GetToken(),
-							ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken(), inputsKV.Key.GetToken(), inputEntry.Key.GetToken()},
-							Message:       fmt.Sprintf("input %q has unknown key %q", inputEntry.Key.GetToken().Value, propKey),
+							Token:   inputProp.Key.GetToken(),
+							Message: fmt.Sprintf("input %q has unknown key %q", inputEntry.Key.GetToken().Value, propKey),
 						})
 					}
 				}
