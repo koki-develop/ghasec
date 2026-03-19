@@ -27,13 +27,10 @@ go test ./e2e/...             # E2E tests only
 
 The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output**.
 
-- `cmd/root.go` — CLI entry point (cobra). Orchestrates the full pipeline: resolve files, parse, run analyzer, print errors with source annotations via `annotate-go`.
-- `discover/` — Finds workflow files under `.github/workflows/`.
-- `parser/` — Thin wrapper around `goccy/go-yaml/parser` to parse YAML into AST.
-- `analyzer/` — Takes a list of `rules.Rule` and runs them against a parsed AST file. Required rules run first; if any fail, non-required rules are skipped entirely.
-- `workflow/` — Typed wrappers around `goccy/go-yaml` AST nodes (`Mapping`, `WorkflowMapping`, `JobMapping`, `StepMapping`) and `ActionRef` for action references. Provides domain-specific navigation methods used by rules.
+- `cmd/root.go` — CLI entry point (cobra). Orchestrates the full pipeline.
+- `analyzer/` — Runs rules against a parsed AST file. Required rules run first; if any fail, non-required rules are skipped entirely.
+- `workflow/` — Typed wrappers around `goccy/go-yaml` AST nodes and `ActionRef` for action references. Rules use these wrappers for domain-specific navigation.
 - `rules/` — See `rules/CLAUDE.md` for details.
-- `diagnostic/` — `Error` type carrying a `token.Token` (for source location) and message.
 - `e2e/` — E2E tests. See `e2e/CLAUDE.md` for details.
 
 ## Key Design Decisions
