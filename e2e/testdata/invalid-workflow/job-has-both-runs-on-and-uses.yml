@@ -15,7 +15,7 @@ expected:
     ...
     2 | jobs:
     3 |   build:
-      |   ^^^^^ job "build" cannot have both "runs-on" and "uses" (invalid-workflow)
+      |   ^^^^^ "runs-on" and "uses" are mutually exclusive (invalid-workflow)
     4 |     runs-on: ubuntu-latest
       |     ^^^^^^^
     5 |     uses: octo-org/this-repo/.github/workflows/workflow.yml@main

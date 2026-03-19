@@ -9,7 +9,7 @@ import (
 	"github.com/koki-develop/ghasec/workflow"
 )
 
-func checkStepEntries(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, stepsKeyToken *token.Token, seq *ast.SequenceNode) []*diagnostic.Error {
+func checkStepEntries(jobsKeyToken *token.Token, jobKey *token.Token, stepsKeyToken *token.Token, seq *ast.SequenceNode) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	for _, item := range seq.Values {
 		stepMapping, ok := item.(*ast.MappingNode)
@@ -17,16 +17,16 @@ func checkStepEntries(jobID string, jobsKeyToken *token.Token, jobKey *token.Tok
 			errs = append(errs, &diagnostic.Error{
 				Token:         item.GetToken(),
 				ContextTokens: []*token.Token{jobsKeyToken, jobKey, stepsKeyToken},
-				Message:       fmt.Sprintf("job %q step must be a mapping, but got %s", jobID, item.Type()),
+				Message:       fmt.Sprintf("step must be a mapping, but got %s", item.Type()),
 			})
 			continue
 		}
-		errs = append(errs, checkStep(jobID, jobsKeyToken, jobKey, stepsKeyToken, workflow.Mapping{MappingNode: stepMapping})...)
+		errs = append(errs, checkStep(jobsKeyToken, jobKey, stepsKeyToken, workflow.Mapping{MappingNode: stepMapping})...)
 	}
 	return errs
 }
 
-func checkStep(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, stepsKeyToken *token.Token, step workflow.Mapping) []*diagnostic.Error {
+func checkStep(jobsKeyToken *token.Token, jobKey *token.Token, stepsKeyToken *token.Token, step workflow.Mapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	contextTokens := []*token.Token{jobsKeyToken, jobKey, stepsKeyToken}
 
@@ -40,7 +40,7 @@ func checkStep(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, ste
 		errs = append(errs, &diagnostic.Error{
 			Token:         step.GetToken(),
 			ContextTokens: contextTokens,
-			Message:       fmt.Sprintf("job %q step must have either \"uses\" or \"run\"", jobID),
+			Message:       "\"uses\" or \"run\" is required",
 		})
 	}
 	if hasUses && hasRun {
@@ -52,7 +52,7 @@ func checkStep(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, ste
 		errs = append(errs, &diagnostic.Error{
 			Token:         firstToken,
 			ContextTokens: contextTokens,
-			Message:       fmt.Sprintf("job %q step cannot have both \"uses\" and \"run\"", jobID),
+			Message:       "\"uses\" and \"run\" are mutually exclusive",
 			Markers:       []*token.Token{secondToken},
 		})
 	}
@@ -63,7 +63,7 @@ func checkStep(jobID string, jobsKeyToken *token.Token, jobKey *token.Token, ste
 			errs = append(errs, &diagnostic.Error{
 				Token:         entry.Key.GetToken(),
 				ContextTokens: contextTokens,
-				Message:       fmt.Sprintf("job %q step has unknown key %q", jobID, key),
+				Message:       fmt.Sprintf("unknown key %q", key),
 			})
 		}
 	}

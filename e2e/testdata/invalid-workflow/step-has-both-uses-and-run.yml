@@ -20,7 +20,7 @@ expected:
     ...
     5 |     steps:
     6 |       - uses: actions/checkout@v4
-      |         ^^^^ job "build" step cannot have both "uses" and "run" (invalid-workflow)
+      |         ^^^^ "uses" and "run" are mutually exclusive (invalid-workflow)
     7 |         run: echo hi
       |         ^^^
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md

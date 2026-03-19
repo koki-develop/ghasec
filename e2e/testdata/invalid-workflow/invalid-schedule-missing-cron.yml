@@ -18,7 +18,7 @@ expected:
     1 | on:
     2 |   schedule:
     3 |     - foo: bar
-      |          ^ "schedule" entry must have a "cron" key (invalid-workflow)
+      |          ^ "schedule" element must have a "cron" key (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

@@ -94,7 +94,6 @@ func TestRule_WorkflowDispatchInputUnknownKey(t *testing.T) {
 	m := parseMapping(t, "on:\n  workflow_dispatch:\n    inputs:\n      myinput:\n        description: test\n        unknown_prop: value\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "workflow_dispatch")
 	assert.Contains(t, errs[0].Message, "myinput")
 	assert.Contains(t, errs[0].Message, "unknown key")
 	assert.Contains(t, errs[0].Message, "unknown_prop")

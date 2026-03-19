@@ -7,7 +7,7 @@ expected:
   stdout: ""
   stderr: |
     --> {{.Dir}}/empty-file.yml:1:1
-    1 | {{" "}}
+    1 |  
       | ^ workflow must be a YAML mapping
 
     1 error found in 1 file

@@ -91,7 +91,7 @@ expected:
     ...
     52 |         name: Checkout
     53 |         uses: actions/checkout@v4
-       |                                ^^ action "actions/checkout@v4" must be pinned to a full length commit SHA (unpinned-action)
+       |                                ^^ "actions/checkout@v4" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
@@ -102,7 +102,7 @@ expected:
     ...
     52 |         name: Checkout
     53 |         uses: actions/checkout@v4
-       |               ^^^^^^^^^^^^^^^^^^^ actions/checkout must be configured with "persist-credentials: false" (checkout-persist-credentials)
+       |               ^^^^^^^^^^^^^^^^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
 
@@ -110,7 +110,7 @@ expected:
     ...
     15 |         default: world
     16 | permissions:
-       | ^^^^^^^^^^^ workflow-level "permissions" must be set to {}; grant permissions per job instead (default-permissions)
+       | ^^^^^^^^^^^ "permissions" must be {}; grant permissions per job instead (default-permissions)
     ...
     18 |   issues: write
     ...

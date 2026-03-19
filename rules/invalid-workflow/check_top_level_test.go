@@ -13,7 +13,7 @@ func TestRule_UnknownTopLevelKey(t *testing.T) {
 	m := parseMapping(t, "on: push\nfoo: bar\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "unknown top-level key")
+	assert.Contains(t, errs[0].Message, "unknown key")
 	assert.Contains(t, errs[0].Message, "foo")
 }
 
@@ -56,7 +56,7 @@ func TestRule_InvalidDefaultsRunKey(t *testing.T) {
 	m := parseMapping(t, "on: push\ndefaults:\n  run:\n    unknown: value\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "defaults.run")
+	assert.Contains(t, errs[0].Message, "\"run\"")
 	assert.Contains(t, errs[0].Message, "unknown key")
 	assert.Contains(t, errs[0].Message, "unknown")
 }
@@ -83,7 +83,7 @@ func TestRule_DefaultsRunNonMapping(t *testing.T) {
 	m := parseMapping(t, "on: push\ndefaults:\n  run: not-a-mapping\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "defaults.run")
+	assert.Contains(t, errs[0].Message, "\"run\"")
 	assert.Contains(t, errs[0].Message, "mapping")
 }
 

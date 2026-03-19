@@ -55,7 +55,7 @@ func checkStep(step workflow.StepMapping) *diagnostic.Error {
 	return &diagnostic.Error{
 		Token:         errToken,
 		ContextTokens: ctx,
-		Message:       `actions/checkout must be configured with "persist-credentials: false"`,
+		Message:       `"persist-credentials: false" must be set in "with"`,
 	}
 }
 

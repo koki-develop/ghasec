@@ -13,7 +13,7 @@ func TestRule_StepMissingUsesAndRun(t *testing.T) {
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - name: no action\n")
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "must have either")
+	assert.Contains(t, errs[0].Message, "is required")
 	assert.Contains(t, errs[0].Message, "uses")
 	assert.Contains(t, errs[0].Message, "run")
 }
@@ -23,7 +23,7 @@ func TestRule_StepHasBothUsesAndRun(t *testing.T) {
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@abc123\n        run: echo hi\n")
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "cannot have both")
+	assert.Contains(t, errs[0].Message, "mutually exclusive")
 	assert.Contains(t, errs[0].Message, "uses")
 	assert.Contains(t, errs[0].Message, "run")
 }

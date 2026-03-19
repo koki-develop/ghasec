@@ -1,0 +1,25 @@
+workflows:
+  - name: defaults-run-not-mapping.yml
+    content: |
+      on: push
+      defaults:
+        run: not-a-mapping
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/defaults-run-not-mapping.yml:3:8
+    ...
+    2 | defaults:
+    3 |   run: not-a-mapping
+      |        ^^^^^^^^^^^^^ "run" must be a mapping, but got String (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

@@ -16,7 +16,7 @@ expected:
     --> {{.Dir}}/invalid-permissions-type.yml:2:14
     ...
     2 | permissions: 123
-      |              ^^^ workflow "permissions" must be a string or mapping, but got Integer (invalid-workflow)
+      |              ^^^ "permissions" must be a string or mapping, but got Integer (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

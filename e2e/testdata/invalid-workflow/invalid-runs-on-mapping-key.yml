@@ -21,7 +21,7 @@ expected:
     3 |   build:
     4 |     runs-on:
     5 |       foo:
-      |       ^^^ job "build" "runs-on" has unknown key "foo"; valid keys are "group" and "labels" (invalid-workflow)
+      |       ^^^ "runs-on" has unknown key "foo"; valid keys are "group" and "labels" (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

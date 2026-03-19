@@ -9,7 +9,10 @@ import (
 
 const id = "default-permissions"
 
-const message = `workflow-level "permissions" must be set to {}; grant permissions per job instead`
+const (
+	messageMissing  = `"permissions: {}" must be set; grant permissions per job instead`
+	messageNonEmpty = `"permissions" must be {}; grant permissions per job instead`
+)
 
 type Rule struct{}
 
@@ -24,7 +27,7 @@ func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	if permKV == nil {
 		return []*diagnostic.Error{{
 			Token:   fileStart,
-			Message: message,
+			Message: messageMissing,
 		}}
 	}
 
@@ -35,7 +38,7 @@ func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	return []*diagnostic.Error{{
 		Token:         permKV.Key.GetToken(),
 		ContextTokens: []*token.Token{lastValueToken(permKV.Value)},
-		Message:       message,
+		Message:       messageNonEmpty,
 	}}
 }
 

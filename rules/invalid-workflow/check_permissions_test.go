@@ -82,7 +82,7 @@ func TestRule_PermissionsScopeNonStringValue(t *testing.T) {
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "contents")
-	assert.Contains(t, errs[0].Message, "string level")
+	assert.Contains(t, errs[0].Message, "must be a string")
 }
 
 func TestRule_PermissionsScopeLevelExpression(t *testing.T) {

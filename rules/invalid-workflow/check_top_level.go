@@ -16,20 +16,20 @@ func checkTopLevelKeys(mapping workflow.Mapping) []*diagnostic.Error {
 		if !knownTopLevelKeys[key] {
 			errs = append(errs, &diagnostic.Error{
 				Token:   entry.Key.GetToken(),
-				Message: fmt.Sprintf("unknown top-level key %q", key),
+				Message: fmt.Sprintf("unknown key %q", key),
 			})
 		}
 	}
 	return errs
 }
 
-func checkDefaults(label string, kv *ast.MappingValueNode, contextTokens []*token.Token) []*diagnostic.Error {
+func checkDefaults(kv *ast.MappingValueNode, contextTokens []*token.Token) []*diagnostic.Error {
 	defaultsMapping, ok := kv.Value.(*ast.MappingNode)
 	if !ok {
 		return []*diagnostic.Error{{
 			Token:         kv.Value.GetToken(),
 			ContextTokens: contextTokens,
-			Message:       fmt.Sprintf("%s \"defaults\" must be a mapping, but got %s", label, kv.Value.Type()),
+			Message:       fmt.Sprintf("\"defaults\" must be a mapping, but got %s", kv.Value.Type()),
 		}}
 	}
 
@@ -42,7 +42,7 @@ func checkDefaults(label string, kv *ast.MappingValueNode, contextTokens []*toke
 			errs = append(errs, &diagnostic.Error{
 				Token:         entry.Key.GetToken(),
 				ContextTokens: defaultsCtx,
-				Message:       fmt.Sprintf("%s \"defaults\" has unknown key %q", label, key),
+				Message:       fmt.Sprintf("\"defaults\" has unknown key %q", key),
 			})
 		}
 	}
@@ -54,7 +54,7 @@ func checkDefaults(label string, kv *ast.MappingValueNode, contextTokens []*toke
 			errs = append(errs, &diagnostic.Error{
 				Token:         runKV.Value.GetToken(),
 				ContextTokens: defaultsCtx,
-				Message:       fmt.Sprintf("%s \"defaults.run\" must be a mapping, but got %s", label, runKV.Value.Type()),
+				Message:       fmt.Sprintf("\"run\" must be a mapping, but got %s", runKV.Value.Type()),
 			})
 		} else {
 			for _, entry := range runMapping.Values {
@@ -63,7 +63,7 @@ func checkDefaults(label string, kv *ast.MappingValueNode, contextTokens []*toke
 					errs = append(errs, &diagnostic.Error{
 						Token:         entry.Key.GetToken(),
 						ContextTokens: defaultsCtx,
-						Message:       fmt.Sprintf("%s \"defaults.run\" has unknown key %q", label, key),
+						Message:       fmt.Sprintf("\"run\" has unknown key %q", key),
 					})
 				}
 			}
@@ -72,7 +72,7 @@ func checkDefaults(label string, kv *ast.MappingValueNode, contextTokens []*toke
 	return errs
 }
 
-func checkConcurrencyMapping(label string, kv *ast.MappingValueNode, contextTokens []*token.Token) []*diagnostic.Error {
+func checkConcurrencyMapping(kv *ast.MappingValueNode, contextTokens []*token.Token) []*diagnostic.Error {
 	if isExpression(kv.Value) {
 		return nil
 	}
@@ -87,7 +87,7 @@ func checkConcurrencyMapping(label string, kv *ast.MappingValueNode, contextToke
 		return []*diagnostic.Error{{
 			Token:         kv.Value.GetToken(),
 			ContextTokens: contextTokens,
-			Message:       fmt.Sprintf("%s \"concurrency\" must be a string or mapping, but got %s", label, kv.Value.Type()),
+			Message:       fmt.Sprintf("\"concurrency\" must be a string or mapping, but got %s", kv.Value.Type()),
 		}}
 	}
 
@@ -98,7 +98,7 @@ func checkConcurrencyMapping(label string, kv *ast.MappingValueNode, contextToke
 		return []*diagnostic.Error{{
 			Token:         kv.Key.GetToken(),
 			ContextTokens: concCtx,
-			Message:       fmt.Sprintf("%s \"concurrency\" mapping must have a \"group\" key", label),
+			Message:       "\"concurrency\" must have a \"group\" key",
 		}}
 	}
 
@@ -109,7 +109,7 @@ func checkConcurrencyMapping(label string, kv *ast.MappingValueNode, contextToke
 			errs = append(errs, &diagnostic.Error{
 				Token:         entry.Key.GetToken(),
 				ContextTokens: concCtx,
-				Message:       fmt.Sprintf("%s \"concurrency\" has unknown key %q", label, key),
+				Message:       fmt.Sprintf("\"concurrency\" has unknown key %q", key),
 			})
 		}
 	}

@@ -18,3 +18,16 @@ Each rule lives in its own subdirectory under `rules/`. Run `ls rules/` to see a
 - Online rules (`Online() == true`) require network access and are disabled by default. They run only when `--online` is passed. Currently only `mismatched-sha-tag` is an online rule.
 - New rules: implement `rules.Rule` interface and add to the `buildRules()` function in `cmd/root.go`. Online rules should lazily initialize their own dependencies (see `mismatched-sha-tag` for an example). Rule IDs are flat kebab-case names describing the violation they detect (e.g., `invalid-workflow`, `unpinned-action`).
 - Tests use `github.com/stretchr/testify` (assert/require).
+
+## Diagnostic Message Format
+
+Messages use **key-path subject style** — the YAML key or structural term is the subject of the sentence. No dynamic prefixes like `job "<id>"` or context labels; the annotated source output provides positional context.
+
+**Patterns:**
+- Required key: `"<key>" is required`
+- Mutual exclusion: `"<a>" and "<b>" are mutually exclusive`
+- Type mismatch: `"<key>" must be a <type>, but got <actual>` (always include `but got`)
+- Unknown identifier: `unknown key "<key>"` (no static parent) or `"<parent>" has unknown <thing> "<name>"` (static parent)
+- Sequence elements: `"<key>" elements must be <type>, but got <actual>`
+
+**Tone:** Use `must` for all messages. Required rules enforce structural correctness; lint rules enforce security policy that the user opted into by running ghasec. `should` is too weak for either.

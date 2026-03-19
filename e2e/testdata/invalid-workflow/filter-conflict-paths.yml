@@ -18,7 +18,7 @@ expected:
     --> {{.Dir}}/filter-conflict-paths.yml:2:3
     1 | on:
     2 |   pull_request:
-      |   ^^^^^^^^^^^^ event "pull_request" cannot have both "paths" and "paths-ignore" (invalid-workflow)
+      |   ^^^^^^^^^^^^ "paths" and "paths-ignore" are mutually exclusive (invalid-workflow)
     3 |     paths: ["src/"]
       |     ^^^^^
     4 |     paths-ignore: ["docs/"]

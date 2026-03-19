@@ -23,17 +23,17 @@ func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 
 	// Top-level permissions
 	if permKV := mapping.FindKey("permissions"); permKV != nil {
-		errs = append(errs, checkPermissions("workflow", permKV, nil)...)
+		errs = append(errs, checkPermissions(permKV, nil)...)
 	}
 
 	// Top-level concurrency
 	if concurrencyKV := mapping.FindKey("concurrency"); concurrencyKV != nil {
-		errs = append(errs, checkConcurrencyMapping("workflow", concurrencyKV, nil)...)
+		errs = append(errs, checkConcurrencyMapping(concurrencyKV, nil)...)
 	}
 
 	// Top-level defaults
 	if defaultsKV := mapping.FindKey("defaults"); defaultsKV != nil {
-		errs = append(errs, checkDefaults("workflow", defaultsKV, nil)...)
+		errs = append(errs, checkDefaults(defaultsKV, nil)...)
 	}
 
 	jobsMapping, jobsErrs := checkJobs(mapping.Mapping, fileStart)

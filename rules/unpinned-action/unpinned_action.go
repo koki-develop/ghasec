@@ -40,7 +40,7 @@ func checkStepAction(step workflow.StepMapping) *diagnostic.Error {
 		return &diagnostic.Error{
 			Token:         ref.RefToken(),
 			ContextTokens: []*token.Token{step.JobsKeyToken(), step.JobKeyToken()},
-			Message:       fmt.Sprintf("action %q must be pinned to a full length commit SHA", ref.String()),
+			Message:       fmt.Sprintf("%q must be pinned to a full length commit SHA", ref.String()),
 		}
 	}
 

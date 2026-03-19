@@ -16,7 +16,7 @@ expected:
     --> {{.Dir}}/invalid-permissions-string-value.yml:2:14
     ...
     2 | permissions: admin
-      |              ^^^^^ workflow "permissions" string must be "read-all" or "write-all", but got "admin" (invalid-workflow)
+      |              ^^^^^ "permissions" must be "read-all" or "write-all", but got "admin" (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

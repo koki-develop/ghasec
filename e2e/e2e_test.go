@@ -243,6 +243,45 @@ func lookupTestConfig[V any](m map[string]V, name string) (V, bool) {
 	return zero, false
 }
 
+func TestE2E_NoWorkflowFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	cmd := exec.Command(binaryPath)
+	cmd.Dir = tmpDir
+	cmd.Env = append(os.Environ(), "NO_COLOR=", "GHASEC_DISABLE_OFFLINE_WARNING=")
+
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	err := cmd.Run()
+	require.Error(t, err)
+
+	exitErr, ok := err.(*exec.ExitError)
+	require.True(t, ok)
+	assert.Equal(t, 1, exitErr.ExitCode())
+	assert.Empty(t, stdoutBuf.String())
+	assert.Equal(t, "error: no workflow files found\n", stderrBuf.String())
+}
+
+func TestE2E_DirectoryArgument(t *testing.T) {
+	tmpDir := t.TempDir()
+	cmd := exec.Command(binaryPath, tmpDir)
+	cmd.Env = append(os.Environ(), "NO_COLOR=", "GHASEC_DISABLE_OFFLINE_WARNING=")
+
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	err := cmd.Run()
+	require.Error(t, err)
+
+	exitErr, ok := err.(*exec.ExitError)
+	require.True(t, ok)
+	assert.Equal(t, 1, exitErr.ExitCode())
+	assert.Empty(t, stdoutBuf.String())
+	assert.Equal(t, fmt.Sprintf("error: %s is a directory; specify workflow files directly\n", tmpDir), stderrBuf.String())
+}
+
 func expandTemplate(t *testing.T, text, tmpDir string) string {
 	t.Helper()
 

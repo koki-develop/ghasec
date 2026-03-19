@@ -13,4 +13,4 @@ expected:
   exit_code: 0
   stdout: ""
   stderr: |
-    No errors found.
+    no errors found

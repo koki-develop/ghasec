@@ -20,7 +20,7 @@ expected:
     3 |   build:
     4 |     runs-on: ubuntu-latest
     5 |     concurrency:
-      |     ^^^^^^^^^^^ job "build" "concurrency" mapping must have a "group" key (invalid-workflow)
+      |     ^^^^^^^^^^^ "concurrency" must have a "group" key (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

@@ -16,7 +16,7 @@ expected:
     2 | jobs:
     3 |   build:
     4 |     runs-on: [self-hosted, 123]
-      |                            ^^^ job "build" "runs-on" sequence elements must be strings, but got Integer (invalid-workflow)
+      |                            ^^^ "runs-on" elements must be strings, but got Integer (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

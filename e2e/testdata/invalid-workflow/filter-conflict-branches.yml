@@ -18,7 +18,7 @@ expected:
     --> {{.Dir}}/filter-conflict-branches.yml:2:3
     1 | on:
     2 |   push:
-      |   ^^^^ event "push" cannot have both "branches" and "branches-ignore" (invalid-workflow)
+      |   ^^^^ "branches" and "branches-ignore" are mutually exclusive (invalid-workflow)
     3 |     branches: [main]
       |     ^^^^^^^^
     4 |     branches-ignore: [dev]

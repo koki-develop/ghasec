@@ -17,7 +17,7 @@ expected:
     --> {{.Dir}}/default-permissions-non-empty-mapping.yml:2:1
     1 | on: push
     2 | permissions:
-      | ^^^^^^^^^^^ workflow-level "permissions" must be set to {}; grant permissions per job instead (default-permissions)
+      | ^^^^^^^^^^^ "permissions" must be {}; grant permissions per job instead (default-permissions)
     3 |   contents: read
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md

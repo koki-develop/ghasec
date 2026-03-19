@@ -21,7 +21,7 @@ expected:
     ...
     5 |     permissions:
     6 |       foo: read
-      |       ^^^ job "build" "permissions" has unknown scope "foo" (invalid-workflow)
+      |       ^^^ "permissions" has unknown scope "foo" (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

@@ -16,7 +16,7 @@ expected:
     ...
     2 | jobs:
     3 |   build:
-      |   ^^^^^ job "build" cannot have both "uses" and "steps" (invalid-workflow)
+      |   ^^^^^ "uses" and "steps" are mutually exclusive (invalid-workflow)
     4 |     uses: octo-org/this-repo/.github/workflows/workflow.yml@main
       |     ^^^^
     5 |     steps:

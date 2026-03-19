@@ -16,7 +16,7 @@ expected:
     --> {{.Dir}}/unknown-event-mapping.yml:2:3
     1 | on:
     2 |   invalid_event:
-      |   ^^^^^^^^^^^^^ unknown event "invalid_event" in "on" (invalid-workflow)
+      |   ^^^^^^^^^^^^^ "on" has unknown event "invalid_event" (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

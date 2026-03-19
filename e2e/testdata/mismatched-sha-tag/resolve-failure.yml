@@ -1,0 +1,29 @@
+workflows:
+  - name: resolve-failure.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v999
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/resolve-failure.yml:7:75
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    6 |     steps:
+    7 |       - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v999
+      |                                                                           ^^^^ failed to resolve tag "v999" for "actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": failed to resolve tag "v999" on actions/checkout: HTTP 404: Not Found (mismatched-sha-tag)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
+
+    1 error found in 1 file

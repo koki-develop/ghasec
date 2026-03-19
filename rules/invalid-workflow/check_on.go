@@ -43,7 +43,7 @@ func checkOnEventName(name string, tk *token.Token, onKeyToken *token.Token) []*
 	return []*diagnostic.Error{{
 		Token:         tk,
 		ContextTokens: []*token.Token{onKeyToken},
-		Message:       fmt.Sprintf("unknown event %q in \"on\"", name),
+		Message:       fmt.Sprintf("\"on\" has unknown event %q", name),
 	}}
 }
 
@@ -56,7 +56,7 @@ func checkOnSequence(seq *ast.SequenceNode, onKeyToken *token.Token) []*diagnost
 				errs = append(errs, &diagnostic.Error{
 					Token:         item.GetToken(),
 					ContextTokens: []*token.Token{onKeyToken},
-					Message:       fmt.Sprintf("\"on\" sequence item must be a string, but got %s", item.Type()),
+					Message:       fmt.Sprintf("\"on\" elements must be strings, but got %s", item.Type()),
 				})
 			}
 			continue
@@ -65,7 +65,7 @@ func checkOnSequence(seq *ast.SequenceNode, onKeyToken *token.Token) []*diagnost
 			errs = append(errs, &diagnostic.Error{
 				Token:         item.GetToken(),
 				ContextTokens: []*token.Token{onKeyToken},
-				Message:       fmt.Sprintf("unknown event %q in \"on\"", name),
+				Message:       fmt.Sprintf("\"on\" has unknown event %q", name),
 			})
 		}
 	}
@@ -80,7 +80,7 @@ func checkOnMapping(m *ast.MappingNode, onKeyToken *token.Token) []*diagnostic.E
 			errs = append(errs, &diagnostic.Error{
 				Token:         entry.Key.GetToken(),
 				ContextTokens: []*token.Token{onKeyToken},
-				Message:       fmt.Sprintf("unknown event %q in \"on\"", eventName),
+				Message:       fmt.Sprintf("\"on\" has unknown event %q", eventName),
 			})
 			continue
 		}
@@ -117,7 +117,7 @@ func checkOnEventFilters(eventName string, entry *ast.MappingValueNode, onKeyTok
 			errs = append(errs, &diagnostic.Error{
 				Token:         entry.Key.GetToken(),
 				ContextTokens: []*token.Token{onKeyToken},
-				Message:       fmt.Sprintf("event %q cannot have both %q and %q", eventName, a, b),
+				Message:       fmt.Sprintf("%q and %q are mutually exclusive", a, b),
 				Markers:       []*token.Token{present[a], present[b]},
 			})
 		}
@@ -143,7 +143,7 @@ func checkOnSchedule(entry *ast.MappingValueNode, onKeyToken *token.Token) []*di
 			errs = append(errs, &diagnostic.Error{
 				Token:         item.GetToken(),
 				ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken()},
-				Message:       fmt.Sprintf("\"schedule\" entry must be a mapping, but got %s", item.Type()),
+				Message:       fmt.Sprintf("\"schedule\" elements must be mappings, but got %s", item.Type()),
 			})
 			continue
 		}
@@ -152,7 +152,7 @@ func checkOnSchedule(entry *ast.MappingValueNode, onKeyToken *token.Token) []*di
 			errs = append(errs, &diagnostic.Error{
 				Token:         item.GetToken(),
 				ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken()},
-				Message:       "\"schedule\" entry must have a \"cron\" key",
+				Message:       "\"schedule\" element must have a \"cron\" key",
 			})
 		}
 	}
@@ -196,7 +196,7 @@ func checkOnWorkflowDispatch(entry *ast.MappingValueNode, onKeyToken *token.Toke
 						errs = append(errs, &diagnostic.Error{
 							Token:         inputEntry.Value.GetToken(),
 							ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken(), inputsKV.Key.GetToken()},
-							Message:       fmt.Sprintf("\"workflow_dispatch\" input %q must be a mapping, but got %s", inputEntry.Key.GetToken().Value, inputEntry.Value.Type()),
+							Message:       fmt.Sprintf("input %q must be a mapping, but got %s", inputEntry.Key.GetToken().Value, inputEntry.Value.Type()),
 						})
 					}
 					continue
@@ -207,7 +207,7 @@ func checkOnWorkflowDispatch(entry *ast.MappingValueNode, onKeyToken *token.Toke
 						errs = append(errs, &diagnostic.Error{
 							Token:         inputProp.Key.GetToken(),
 							ContextTokens: []*token.Token{onKeyToken, entry.Key.GetToken(), inputsKV.Key.GetToken(), inputEntry.Key.GetToken()},
-							Message:       fmt.Sprintf("\"workflow_dispatch\" input %q has unknown key %q", inputEntry.Key.GetToken().Value, propKey),
+							Message:       fmt.Sprintf("input %q has unknown key %q", inputEntry.Key.GetToken().Value, propKey),
 						})
 					}
 				}

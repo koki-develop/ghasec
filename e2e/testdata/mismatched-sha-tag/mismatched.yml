@@ -22,7 +22,7 @@ expected:
     ...
     6 |     steps:
     7 |       - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v4
-      |                                                                           ^^ action "actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" references tag "v4", but the tag points to commit "de0fac2e4500dabe0009e67214ff5f5447ce83dd" (mismatched-sha-tag)
+      |                                                                           ^^ "v4" points to commit "de0fac2e4500dabe0009e67214ff5f5447ce83dd", not the pinned commit (mismatched-sha-tag)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
 

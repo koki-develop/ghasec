@@ -44,7 +44,7 @@ var rootCmd = &cobra.Command{
 		if skippedOnline > 0 {
 			defer func() {
 				if _, disabled := os.LookupEnv("GHASEC_DISABLE_OFFLINE_WARNING"); !disabled {
-					fmt.Fprintf(os.Stderr, "Warning: %d online %s skipped. Use --online to enable them.\n",
+					fmt.Fprintf(os.Stderr, "warning: %d online %s skipped; use --online to enable them\n",
 						skippedOnline, pluralize("rule", skippedOnline))
 				}
 			}()
@@ -82,7 +82,7 @@ var rootCmd = &cobra.Command{
 				errorFileCount, pluralize("file", errorFileCount))
 			return errValidationFailed
 		}
-		fmt.Fprintln(os.Stderr, "No errors found.")
+		fmt.Fprintln(os.Stderr, "no errors found")
 		return nil
 	},
 }
@@ -131,7 +131,7 @@ func pluralize(word string, count int) string {
 func Execute() error {
 	err := rootCmd.Execute()
 	if err != nil && !errors.Is(err, errValidationFailed) {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
 	}
 	return err
 }

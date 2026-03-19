@@ -21,7 +21,7 @@ expected:
     ...
     5 |     defaults:
     6 |       foo: bar
-      |       ^^^ job "build" "defaults" has unknown key "foo" (invalid-workflow)
+      |       ^^^ "defaults" has unknown key "foo" (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

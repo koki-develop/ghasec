@@ -125,7 +125,7 @@ func TestRule_RunsOnSequenceInvalidElement(t *testing.T) {
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "runs-on")
-	assert.Contains(t, errs[0].Message, "sequence elements must be strings")
+	assert.Contains(t, errs[0].Message, "elements must be strings")
 }
 
 func TestRule_RunsOnSequenceWithExpression(t *testing.T) {

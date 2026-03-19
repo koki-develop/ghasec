@@ -76,7 +76,7 @@ func TestRule_MismatchedSHA(t *testing.T) {
 	m := parseMapping(t, src)
 	errs := r.Check(m)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, `references tag "v4", but the tag points to commit "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`)
+	assert.Contains(t, errs[0].Message, `"v4" points to commit "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", not the pinned commit`)
 }
 
 func TestRule_SemverTag(t *testing.T) {
@@ -216,8 +216,8 @@ func TestRule_MultipleSteps(t *testing.T) {
 	m := parseMapping(t, src)
 	errs := r.Check(m)
 	require.Len(t, errs, 2)
-	assert.Contains(t, errs[0].Message, "setup-go")
-	assert.Contains(t, errs[1].Message, "setup-node")
+	assert.Contains(t, errs[0].Message, "v5")
+	assert.Contains(t, errs[1].Message, "v4")
 }
 
 func TestRule_NilResolver_UsesDefault(t *testing.T) {

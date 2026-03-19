@@ -1,0 +1,27 @@
+workflows:
+  - name: defaults-run-unknown-key.yml
+    content: |
+      on: push
+      defaults:
+        run:
+          unknown: value
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/defaults-run-unknown-key.yml:4:5
+    ...
+    2 | defaults:
+    3 |   run:
+    4 |     unknown: value
+      |     ^^^^^^^ "run" has unknown key "unknown" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

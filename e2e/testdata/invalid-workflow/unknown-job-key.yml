@@ -19,7 +19,7 @@ expected:
     3 |   build:
     4 |     runs-on: ubuntu-latest
     5 |     foo: bar
-      |     ^^^ job "build" has unknown key "foo" (invalid-workflow)
+      |     ^^^ unknown key "foo" (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

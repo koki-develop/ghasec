@@ -15,7 +15,7 @@ expected:
     ...
     2 | jobs:
     3 |   build:
-      |   ^^^^^ job "build" must have either "runs-on" or "uses" (invalid-workflow)
+      |   ^^^^^ "runs-on" or "uses" is required (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
