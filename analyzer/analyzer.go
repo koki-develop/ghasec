@@ -46,63 +46,9 @@ func (a *Analyzer) AnalyzeWorkflow(f *ast.File) []*diagnostic.Error {
 	if errs != nil {
 		return errs
 	}
-
-	directives := collectDirectives(f)
-	knownIDs := a.allRuleIDs()
-	requiredIDs := a.requiredRuleIDs()
-
-	requiredIgnoreErrs := checkRequiredIgnores(directives, requiredIDs)
-
-	var requiredErrs []*diagnostic.Error
-	var nonRequiredRules []rules.WorkflowRule
-
-	for _, r := range a.workflowRules {
-		if r.Required() {
-			for _, e := range r.CheckWorkflow(mapping) {
-				e.RuleID = r.ID()
-				requiredErrs = append(requiredErrs, e)
-			}
-		} else {
-			nonRequiredRules = append(nonRequiredRules, r)
-		}
-	}
-
-	if len(requiredErrs) > 0 {
-		result := append(requiredErrs, requiredIgnoreErrs...)
-		sortDiagnostics(result)
-		return result
-	}
-
-	ruleResults := make([][]*diagnostic.Error, len(nonRequiredRules))
-	sem := make(chan struct{}, a.concurrency)
-	var wg sync.WaitGroup
-
-	for i, r := range nonRequiredRules {
-		wg.Add(1)
-		go func(i int, r rules.WorkflowRule) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			var errs []*diagnostic.Error
-			for _, e := range r.CheckWorkflow(mapping) {
-				e.RuleID = r.ID()
-				errs = append(errs, e)
-			}
-			ruleResults[i] = errs
-		}(i, r)
-	}
-	wg.Wait()
-
-	var lintErrs []*diagnostic.Error
-	for _, errs := range ruleResults {
-		lintErrs = append(lintErrs, errs...)
-	}
-
-	filtered := filterDiagnostics(directives, lintErrs)
-	unusedErrs := unusedIgnoreErrors(directives, knownIDs)
-	result := slices.Concat(filtered, unusedErrs, requiredIgnoreErrs)
-	sortDiagnostics(result)
-	return result
+	return runRules(a, a.workflowRules, func(r rules.WorkflowRule) []*diagnostic.Error {
+		return r.CheckWorkflow(mapping)
+	}, f)
 }
 
 func (a *Analyzer) AnalyzeAction(f *ast.File) []*diagnostic.Error {
@@ -110,7 +56,12 @@ func (a *Analyzer) AnalyzeAction(f *ast.File) []*diagnostic.Error {
 	if errs != nil {
 		return errs
 	}
+	return runRules(a, a.actionRules, func(r rules.ActionRule) []*diagnostic.Error {
+		return r.CheckAction(mapping)
+	}, f)
+}
 
+func runRules[R rules.Rule](a *Analyzer, ruleList []R, checkFn func(R) []*diagnostic.Error, f *ast.File) []*diagnostic.Error {
 	directives := collectDirectives(f)
 	knownIDs := a.allRuleIDs()
 	requiredIDs := a.requiredRuleIDs()
@@ -118,11 +69,11 @@ func (a *Analyzer) AnalyzeAction(f *ast.File) []*diagnostic.Error {
 	requiredIgnoreErrs := checkRequiredIgnores(directives, requiredIDs)
 
 	var requiredErrs []*diagnostic.Error
-	var nonRequiredRules []rules.ActionRule
+	var nonRequiredRules []R
 
-	for _, r := range a.actionRules {
+	for _, r := range ruleList {
 		if r.Required() {
-			for _, e := range r.CheckAction(mapping) {
+			for _, e := range checkFn(r) {
 				e.RuleID = r.ID()
 				requiredErrs = append(requiredErrs, e)
 			}
@@ -143,12 +94,12 @@ func (a *Analyzer) AnalyzeAction(f *ast.File) []*diagnostic.Error {
 
 	for i, r := range nonRequiredRules {
 		wg.Add(1)
-		go func(i int, r rules.ActionRule) {
+		go func(i int, r R) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
 			var errs []*diagnostic.Error
-			for _, e := range r.CheckAction(mapping) {
+			for _, e := range checkFn(r) {
 				e.RuleID = r.ID()
 				errs = append(errs, e)
 			}
