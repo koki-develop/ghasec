@@ -17,6 +17,17 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
+    --> {{.Dir}}/workflow.yml:7:23
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    6 |     steps:
+    7 |       # ghasec-ignore:unpinned-action
+      |                       ^^^^^^^^^^^^^^^ unused ignore directive for "unpinned-action" (unused-ignore)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md
+
     --> {{.Dir}}/workflow.yml:9:32
     ...
     3 | jobs:
@@ -28,16 +39,5 @@ expected:
       |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
-
-    --> {{.Dir}}/workflow.yml:7:23
-    ...
-    3 | jobs:
-    4 |   build:
-    ...
-    6 |     steps:
-    7 |       # ghasec-ignore:unpinned-action
-      |                       ^^^^^^^^^^^^^^^ unused ignore directive for "unpinned-action" (unused-ignore)
-    ...
-      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md
 
     2 errors found in 1 file

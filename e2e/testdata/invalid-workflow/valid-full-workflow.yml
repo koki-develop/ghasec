@@ -84,18 +84,14 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/valid-full-workflow.yml:53:32
+    --> {{.Dir}}/valid-full-workflow.yml:16:1
     ...
-    28 | jobs:
-    29 |   build:
+    16 | permissions:
+       | ^^^^^^^^^^^ "permissions" must be {}; grant permissions per job instead (default-permissions)
+    17 |   contents: read
+    18 |   issues: write
     ...
-    50 |     steps:
-    51 |       - id: checkout
-    ...
-    53 |         uses: actions/checkout@v4
-       |                                ^^ "actions/checkout@v4" must be pinned to a full length commit SHA (unpinned-action)
-    ...
-      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
 
     --> {{.Dir}}/valid-full-workflow.yml:53:15
     ...
@@ -110,13 +106,17 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
 
-    --> {{.Dir}}/valid-full-workflow.yml:16:1
+    --> {{.Dir}}/valid-full-workflow.yml:53:32
     ...
-    16 | permissions:
-       | ^^^^^^^^^^^ "permissions" must be {}; grant permissions per job instead (default-permissions)
-    17 |   contents: read
-    18 |   issues: write
+    28 | jobs:
+    29 |   build:
     ...
-      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
+    50 |     steps:
+    51 |       - id: checkout
+    ...
+    53 |         uses: actions/checkout@v4
+       |                                ^^ "actions/checkout@v4" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
     3 errors found in 1 file

@@ -313,6 +313,42 @@ func TestAnalyzeWorkflow_ParallelRuleOrdering(t *testing.T) {
 	assert.Equal(t, "rule-c", errs[2].RuleID)
 }
 
+func TestAnalyzeWorkflow_SortByPositionThenRuleOrder(t *testing.T) {
+	noopReq := &mockWorkflowRule{id: "req", required: true, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return nil
+	}}
+	// rule-a fires on line 3, rule-b fires on line 1 and line 3.
+	// Expected order: line 1 (rule-b), line 3 (rule-a), line 3 (rule-b).
+	src := "key1: val1\nkey2: val2\nkey3: val3\n"
+	f := parseYAML(t, src)
+	body := f.Docs[0].Body.(*ast.MappingNode)
+	line1Token := body.Values[0].Key.GetToken()
+	line3Token := body.Values[2].Key.GetToken()
+
+	ruleA := &mockWorkflowRule{id: "rule-a", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{{Token: line3Token, Message: "error from rule-a on line 3"}}
+	}}
+	ruleB := &mockWorkflowRule{id: "rule-b", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{
+			{Token: line1Token, Message: "error from rule-b on line 1"},
+			{Token: line3Token, Message: "error from rule-b on line 3"},
+		}
+	}}
+
+	a := analyzer.New(1, noopReq, ruleA, ruleB)
+	errs := a.AnalyzeWorkflow(f)
+
+	require.Len(t, errs, 3)
+	// line 1: rule-b
+	assert.Equal(t, "rule-b", errs[0].RuleID)
+	assert.Equal(t, "error from rule-b on line 1", errs[0].Message)
+	// line 3: rule-a first (registered before rule-b), then rule-b
+	assert.Equal(t, "rule-a", errs[1].RuleID)
+	assert.Equal(t, "error from rule-a on line 3", errs[1].Message)
+	assert.Equal(t, "rule-b", errs[2].RuleID)
+	assert.Equal(t, "error from rule-b on line 3", errs[2].Message)
+}
+
 func TestAnalyzeAction_ParallelRuleOrdering(t *testing.T) {
 	noopReq := &mockActionRule{id: "req", required: true, check: func(mapping workflow.ActionMapping) []*diagnostic.Error {
 		return nil

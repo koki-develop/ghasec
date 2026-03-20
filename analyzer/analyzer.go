@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"sync"
@@ -67,7 +68,9 @@ func (a *Analyzer) AnalyzeWorkflow(f *ast.File) []*diagnostic.Error {
 	}
 
 	if len(requiredErrs) > 0 {
-		return append(requiredErrs, requiredIgnoreErrs...)
+		result := append(requiredErrs, requiredIgnoreErrs...)
+		sortDiagnostics(result)
+		return result
 	}
 
 	ruleResults := make([][]*diagnostic.Error, len(nonRequiredRules))
@@ -97,7 +100,9 @@ func (a *Analyzer) AnalyzeWorkflow(f *ast.File) []*diagnostic.Error {
 
 	filtered := filterDiagnostics(directives, lintErrs)
 	unusedErrs := unusedIgnoreErrors(directives, knownIDs)
-	return slices.Concat(filtered, unusedErrs, requiredIgnoreErrs)
+	result := slices.Concat(filtered, unusedErrs, requiredIgnoreErrs)
+	sortDiagnostics(result)
+	return result
 }
 
 func (a *Analyzer) AnalyzeAction(f *ast.File) []*diagnostic.Error {
@@ -127,7 +132,9 @@ func (a *Analyzer) AnalyzeAction(f *ast.File) []*diagnostic.Error {
 	}
 
 	if len(requiredErrs) > 0 {
-		return append(requiredErrs, requiredIgnoreErrs...)
+		result := append(requiredErrs, requiredIgnoreErrs...)
+		sortDiagnostics(result)
+		return result
 	}
 
 	ruleResults := make([][]*diagnostic.Error, len(nonRequiredRules))
@@ -157,7 +164,9 @@ func (a *Analyzer) AnalyzeAction(f *ast.File) []*diagnostic.Error {
 
 	filtered := filterDiagnostics(directives, lintErrs)
 	unusedErrs := unusedIgnoreErrors(directives, knownIDs)
-	return slices.Concat(filtered, unusedErrs, requiredIgnoreErrs)
+	result := slices.Concat(filtered, unusedErrs, requiredIgnoreErrs)
+	sortDiagnostics(result)
+	return result
 }
 
 func (a *Analyzer) allRuleIDs() map[string]bool {
@@ -303,6 +312,24 @@ func workflowTopLevelMapping(f *ast.File) (workflow.WorkflowMapping, []*diagnost
 		}}
 	}
 	return workflow.WorkflowMapping{Mapping: workflow.Mapping{MappingNode: m}}, nil
+}
+
+func sortDiagnostics(errs []*diagnostic.Error) {
+	slices.SortStableFunc(errs, func(a, b *diagnostic.Error) int {
+		aLine, aCol := diagPosition(a)
+		bLine, bCol := diagPosition(b)
+		if c := cmp.Compare(aLine, bLine); c != 0 {
+			return c
+		}
+		return cmp.Compare(aCol, bCol)
+	})
+}
+
+func diagPosition(e *diagnostic.Error) (line, col int) {
+	if e.Token == nil || e.Token.Position == nil {
+		return 0, 0
+	}
+	return e.Token.Position.Line, e.Token.Position.Column
 }
 
 func actionTopLevelMapping(f *ast.File) (workflow.ActionMapping, []*diagnostic.Error) {
