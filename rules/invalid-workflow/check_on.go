@@ -20,13 +20,13 @@ func checkOn(mapping workflow.Mapping, fileStart *token.Token) []*diagnostic.Err
 
 	switch v := kv.Value.(type) {
 	case *ast.StringNode:
-		return checkOnEventName(v.Value, v.GetToken(), kv.Key.GetToken())
+		return checkOnEventName(v.Value, v.GetToken())
 	case *ast.LiteralNode:
-		return checkOnEventName(v.Value.Value, v.GetToken(), kv.Key.GetToken())
+		return checkOnEventName(v.Value.Value, v.GetToken())
 	case *ast.SequenceNode:
-		return checkOnSequence(v, kv.Key.GetToken())
+		return checkOnSequence(v)
 	case *ast.MappingNode:
-		return checkOnMapping(v, kv.Key.GetToken())
+		return checkOnMapping(v)
 	default:
 		return []*diagnostic.Error{{
 			Token:   kv.Value.GetToken(),
@@ -35,7 +35,7 @@ func checkOn(mapping workflow.Mapping, fileStart *token.Token) []*diagnostic.Err
 	}
 }
 
-func checkOnEventName(name string, tk *token.Token, onKeyToken *token.Token) []*diagnostic.Error {
+func checkOnEventName(name string, tk *token.Token) []*diagnostic.Error {
 	if knownOnEvents[name] {
 		return nil
 	}
@@ -45,7 +45,7 @@ func checkOnEventName(name string, tk *token.Token, onKeyToken *token.Token) []*
 	}}
 }
 
-func checkOnSequence(seq *ast.SequenceNode, onKeyToken *token.Token) []*diagnostic.Error {
+func checkOnSequence(seq *ast.SequenceNode) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	for _, item := range seq.Values {
 		name := stringValue(item)
@@ -68,7 +68,7 @@ func checkOnSequence(seq *ast.SequenceNode, onKeyToken *token.Token) []*diagnost
 	return errs
 }
 
-func checkOnMapping(m *ast.MappingNode, onKeyToken *token.Token) []*diagnostic.Error {
+func checkOnMapping(m *ast.MappingNode) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	for _, entry := range m.Values {
 		eventName := entry.Key.GetToken().Value
@@ -83,17 +83,17 @@ func checkOnMapping(m *ast.MappingNode, onKeyToken *token.Token) []*diagnostic.E
 		// Event-specific validation
 		switch eventName {
 		case "schedule":
-			errs = append(errs, checkOnSchedule(entry, onKeyToken)...)
+			errs = append(errs, checkOnSchedule(entry)...)
 		case "workflow_dispatch":
-			errs = append(errs, checkOnWorkflowDispatch(entry, onKeyToken)...)
+			errs = append(errs, checkOnWorkflowDispatch(entry)...)
 		default:
-			errs = append(errs, checkOnEventFilters(eventName, entry, onKeyToken)...)
+			errs = append(errs, checkOnEventFilters(entry)...)
 		}
 	}
 	return errs
 }
 
-func checkOnEventFilters(eventName string, entry *ast.MappingValueNode, onKeyToken *token.Token) []*diagnostic.Error {
+func checkOnEventFilters(entry *ast.MappingValueNode) []*diagnostic.Error {
 	filterMapping, ok := entry.Value.(*ast.MappingNode)
 	if !ok {
 		return nil
@@ -120,7 +120,7 @@ func checkOnEventFilters(eventName string, entry *ast.MappingValueNode, onKeyTok
 	return errs
 }
 
-func checkOnSchedule(entry *ast.MappingValueNode, onKeyToken *token.Token) []*diagnostic.Error {
+func checkOnSchedule(entry *ast.MappingValueNode) []*diagnostic.Error {
 	seq, ok := entry.Value.(*ast.SequenceNode)
 	if !ok {
 		return []*diagnostic.Error{{
@@ -150,7 +150,7 @@ func checkOnSchedule(entry *ast.MappingValueNode, onKeyToken *token.Token) []*di
 	return errs
 }
 
-func checkOnWorkflowDispatch(entry *ast.MappingValueNode, onKeyToken *token.Token) []*diagnostic.Error {
+func checkOnWorkflowDispatch(entry *ast.MappingValueNode) []*diagnostic.Error {
 	if _, ok := entry.Value.(*ast.NullNode); ok {
 		return nil // workflow_dispatch: (no value) is valid
 	}

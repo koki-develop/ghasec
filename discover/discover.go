@@ -1,7 +1,9 @@
 package discover
 
 import (
+	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -41,6 +43,7 @@ func Discover(baseDir string) (Result, error) {
 	// Discover action files via recursive walk.
 	err := filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: skipping %s: %v\n", path, err)
 			return nil
 		}
 		if d.IsDir() {
@@ -60,7 +63,7 @@ func Discover(baseDir string) (Result, error) {
 			var absErr error
 			cleanPath, absErr = filepath.Abs(cleanPath)
 			if absErr != nil {
-				return nil
+				return fmt.Errorf("failed to resolve absolute path for %s: %w", cleanPath, absErr)
 			}
 		}
 		if _, dup := workflowSet[cleanPath]; dup {

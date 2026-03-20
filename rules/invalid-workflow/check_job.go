@@ -36,7 +36,7 @@ func checkJobs(mapping workflow.Mapping, fileStart *token.Token) (*ast.MappingNo
 	return jobsMapping, nil
 }
 
-func checkJobEntries(jobs *ast.MappingNode, jobsKeyToken *token.Token) []*diagnostic.Error {
+func checkJobEntries(jobs *ast.MappingNode) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	for _, jobEntry := range jobs.Values {
 		jobMapping, ok := jobEntry.Value.(*ast.MappingNode)
@@ -47,12 +47,12 @@ func checkJobEntries(jobs *ast.MappingNode, jobsKeyToken *token.Token) []*diagno
 			})
 			continue
 		}
-		errs = append(errs, checkJob(jobsKeyToken, jobEntry.Key.GetToken(), workflow.JobMapping{Mapping: workflow.Mapping{MappingNode: jobMapping}})...)
+		errs = append(errs, checkJob(jobEntry.Key.GetToken(), workflow.JobMapping{Mapping: workflow.Mapping{MappingNode: jobMapping}})...)
 	}
 	return errs
 }
 
-func checkJob(jobsKeyToken *token.Token, jobKey *token.Token, job workflow.JobMapping) []*diagnostic.Error {
+func checkJob(jobKey *token.Token, job workflow.JobMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 
 	runsOnKV := job.FindKey("runs-on")
@@ -96,13 +96,13 @@ func checkJob(jobsKeyToken *token.Token, jobKey *token.Token, job workflow.JobMa
 	}
 
 	if hasRunsOn {
-		errs = append(errs, checkRunsOn(jobsKeyToken, jobKey, runsOnKV)...)
+		errs = append(errs, checkRunsOn(runsOnKV)...)
 	}
 	if hasSteps {
-		errs = append(errs, checkStepsType(jobsKeyToken, jobKey, stepsKV)...)
+		errs = append(errs, checkStepsType(stepsKV)...)
 	}
 	if hasUses {
-		errs = append(errs, checkUsesType(jobsKeyToken, jobKey, usesKV)...)
+		errs = append(errs, checkUsesType(usesKV)...)
 	}
 
 	// Strategy check
@@ -139,7 +139,7 @@ func checkJob(jobsKeyToken *token.Token, jobKey *token.Token, job workflow.JobMa
 	return errs
 }
 
-func checkRunsOn(jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.MappingValueNode) []*diagnostic.Error {
+func checkRunsOn(kv *ast.MappingValueNode) []*diagnostic.Error {
 	if isExpression(kv.Value) {
 		return nil
 	}
@@ -192,7 +192,7 @@ func checkRunsOnSequence(seq *ast.SequenceNode) []*diagnostic.Error {
 	return errs
 }
 
-func checkStepsType(jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.MappingValueNode) []*diagnostic.Error {
+func checkStepsType(kv *ast.MappingValueNode) []*diagnostic.Error {
 	_, ok := kv.Value.(*ast.SequenceNode)
 	if !ok {
 		return []*diagnostic.Error{{
@@ -203,7 +203,7 @@ func checkStepsType(jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.Mapp
 	return nil
 }
 
-func checkUsesType(jobsKeyToken *token.Token, jobKey *token.Token, kv *ast.MappingValueNode) []*diagnostic.Error {
+func checkUsesType(kv *ast.MappingValueNode) []*diagnostic.Error {
 	switch kv.Value.(type) {
 	case *ast.StringNode, *ast.LiteralNode:
 		return nil

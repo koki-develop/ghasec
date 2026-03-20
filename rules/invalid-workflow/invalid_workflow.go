@@ -40,8 +40,7 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 	errs = append(errs, jobsErrs...)
 
 	if jobsMapping != nil {
-		jobsKeyToken := mapping.FindKey("jobs").Key.GetToken()
-		errs = append(errs, checkJobEntries(jobsMapping, jobsKeyToken)...)
+		errs = append(errs, checkJobEntries(jobsMapping)...)
 	}
 
 	return errs

@@ -99,7 +99,7 @@ var knownReusableJobKeys = map[string]bool{
 	"strategy":    true,
 }
 
-// allJobKeys is the union of normalJobKeys and reusableJobKeys.
+// allJobKeys is the union of knownNormalJobKeys and knownReusableJobKeys.
 var allJobKeys = func() map[string]bool {
 	m := make(map[string]bool)
 	for k := range knownNormalJobKeys {

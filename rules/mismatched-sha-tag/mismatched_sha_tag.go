@@ -69,7 +69,7 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 
 	// Extract the comment from the next token.
 	tk := ref.Token()
-	if tk.Next == nil || tk.Next.Type.String() != "Comment" {
+	if tk.Next == nil || tk.Next.Type != token.CommentType {
 		return nil
 	}
 
