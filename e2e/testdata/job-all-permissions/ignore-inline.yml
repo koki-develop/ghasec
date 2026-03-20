@@ -1,0 +1,17 @@
+workflows:
+  - name: ignore-inline.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          permissions: read-all # ghasec-ignore:job-all-permissions
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

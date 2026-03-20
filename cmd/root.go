@@ -20,6 +20,7 @@ import (
 	defaultpermissions "github.com/koki-develop/ghasec/rules/default-permissions"
 	invalidaction "github.com/koki-develop/ghasec/rules/invalid-action"
 	invalidworkflow "github.com/koki-develop/ghasec/rules/invalid-workflow"
+	joballpermissions "github.com/koki-develop/ghasec/rules/job-all-permissions"
 	mismatchedshatag "github.com/koki-develop/ghasec/rules/mismatched-sha-tag"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	"github.com/spf13/cobra"
@@ -172,6 +173,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
 		&unpinnedaction.Rule{},
 		&checkoutpersistcredentials.Rule{},
 		&defaultpermissions.Rule{},
+		&joballpermissions.Rule{},
 		&mismatchedshatag.Rule{Resolver: newTagResolver()},
 	}
 	for _, r := range all {

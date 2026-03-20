@@ -5,21 +5,12 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
 )
 
 func checkTopLevelKeys(mapping workflow.Mapping) []*diagnostic.Error {
-	var errs []*diagnostic.Error
-	for _, entry := range mapping.Values {
-		key := entry.Key.GetToken().Value
-		if !knownTopLevelKeys[key] {
-			errs = append(errs, &diagnostic.Error{
-				Token:   entry.Key.GetToken(),
-				Message: fmt.Sprintf("unknown key %q", key),
-			})
-		}
-	}
-	return errs
+	return rules.CheckUnknownKeys(mapping, knownTopLevelKeys)
 }
 
 func checkDefaults(kv *ast.MappingValueNode) []*diagnostic.Error {

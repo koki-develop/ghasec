@@ -1,0 +1,43 @@
+workflows:
+  - name: multiple-jobs.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          permissions: read-all
+          steps:
+            - run: echo build
+        deploy:
+          runs-on: ubuntu-latest
+          permissions: write-all
+          steps:
+            - run: echo deploy
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/multiple-jobs.yml:6:18
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    6 |     permissions: read-all
+      |                  ^^^^^^^^ "permissions" must not be "read-all"; grant individual scopes instead (job-all-permissions)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/job-all-permissions/README.md
+
+    --> {{.Dir}}/multiple-jobs.yml:11:18
+    ...
+     3 | jobs:
+    ...
+     9 |   deploy:
+    ...
+    11 |     permissions: write-all
+       |                  ^^^^^^^^^ "permissions" must not be "write-all"; grant individual scopes instead (job-all-permissions)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/job-all-permissions/README.md
+
+    2 errors found in 1 file

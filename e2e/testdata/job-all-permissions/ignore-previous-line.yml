@@ -1,0 +1,18 @@
+workflows:
+  - name: ignore-previous-line.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          # ghasec-ignore:job-all-permissions
+          permissions: write-all
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found
