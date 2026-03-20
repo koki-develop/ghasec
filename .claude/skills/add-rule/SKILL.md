@@ -167,9 +167,83 @@ See `e2e/CLAUDE.md` for the test directory structure and `expected.yml` format.
 
 ### Part B: Add new E2E test cases
 
-1. Create `e2e/testdata/<rule-id>/workflows/` with violation and valid case workflows
-2. Generate `expected.yml` by running: `NO_COLOR= go run . e2e/testdata/<rule-id>/workflows/*.yml 2>&1`
-3. Replace the directory path with `{{.Dir}}/` in the output
+E2E tests are the primary safety net — they verify the full pipeline (parse -> analyze -> render) end-to-end for each rule. Aim for **comprehensive coverage** that exercises every detection path, boundary condition, and interaction the rule can encounter.
+
+#### Test case design
+
+Before writing test files, enumerate the full set of scenarios the rule needs to cover. Think systematically through these categories:
+
+**Core detection scenarios** — one test per distinct violation pattern:
+- The simplest/most common violation
+- Each variation of the violation (e.g., different values, different positions in the workflow)
+- Multiple violations in a single file (verifies all are reported, not just the first)
+
+**Valid cases** — confirm the rule does NOT fire when it should not:
+- The correct/recommended usage
+- Each distinct way the rule can be satisfied (e.g., different valid values)
+
+**Structural edge cases** — verify the rule handles unusual but valid YAML structures:
+- Empty jobs / no steps (reusable workflows)
+- Minimal workflow (only required keys)
+- The relevant key/value nested deeply (e.g., in a composite action step, not just a top-level job step)
+- The relevant key/value appearing in multiple jobs
+
+**Boundary conditions** — test the edges of the rule's detection logic:
+- Values at the exact boundary of valid/invalid (e.g., `read` vs `write` vs `read-all`)
+- Mixed valid and invalid entries in the same file
+- The key present but with an unusual type (if the rule checks types)
+
+**Interaction with ignore directives** — verify `ghasec-ignore` works for this rule:
+- Inline ignore (`# ghasec-ignore:<rule-id>`) suppresses the diagnostic
+- Previous-line ignore suppresses the diagnostic
+
+**Breadcrumb/rendering verification** — confirm the rendered output is correct:
+- Error token points to the right position (line, column)
+- Ancestor breadcrumb lines are present and correct (the renderer computes these automatically, but E2E tests catch regressions)
+- When the error is far from its parent keys, distant ancestor breadcrumbs appear with `...` separators
+
+#### Writing test files
+
+Each scenario gets its own `.yml` file under `e2e/testdata/<rule-id>/`. Use descriptive filenames that make the test's purpose obvious at a glance (e.g., `write-all.yml`, `scoped-permissions.yml`, `ignore-inline.yml`, `multiple-jobs.yml`, `empty-job-permissions.yml`).
+
+Follow the format in `e2e/CLAUDE.md`:
+
+```yaml
+workflows:
+  - name: <descriptive-filename>.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0  # or 1 if errors expected
+  stdout: ""
+  stderr: |
+    # exact expected output with {{.Dir}}/ prefix
+```
+
+To generate the expected stderr for a violation test case:
+1. Build the binary: `go build -o ghasec .`
+2. Run: `NO_COLOR= ./ghasec e2e/testdata/<rule-id>/<test>.yml 2>&1` (note: the test runner writes workflow content to a temp dir, so when generating expected output manually, create a temporary workflow file and run ghasec against it, then replace the directory path with `{{.Dir}}/`)
+3. Verify the output matches what you expect, then paste it into the `stderr` field with `{{.Dir}}/` replacing the actual path
+
+#### Coverage checklist
+
+Before considering E2E tests complete, verify you have test cases for:
+- [ ] Each distinct violation the rule detects
+- [ ] Multiple violations in one file
+- [ ] Each valid/correct case
+- [ ] Minimal workflow (fewest possible keys)
+- [ ] Rule behavior in composite action steps (if step-level rule)
+- [ ] Rule behavior across multiple jobs (if job-level or step-level rule)
+- [ ] Interaction with `ghasec-ignore` (inline and previous-line)
+- [ ] Correct error position (line, column) and breadcrumb rendering
+- [ ] Distant ancestor breadcrumbs when the error is deeply nested
 
 ## Phase 5: Documentation
 
@@ -201,7 +275,9 @@ Use this to track progress:
 - [ ] Rule registered in cmd/root.go
 - [ ] README created
 - [ ] Existing E2E tests updated
-- [ ] New E2E test cases added
+- [ ] E2E test scenarios enumerated (all categories from Phase 4)
+- [ ] New E2E test cases added (covering all enumerated scenarios)
+- [ ] E2E coverage checklist verified
 - [ ] All E2E tests passing
 - [ ] rules/CLAUDE.md updated
 - [ ] rules/README.md updated
