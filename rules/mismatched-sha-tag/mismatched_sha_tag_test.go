@@ -248,17 +248,3 @@ func TestRule_CheckAction_NonComposite(t *testing.T) {
 	errs := r.CheckAction(m)
 	assert.Empty(t, errs)
 }
-
-func TestRule_NilResolver_UsesDefault(t *testing.T) {
-	// When Resolver is nil, Check() lazily initializes a default GitHub client.
-	// The rule is only called when --online is passed, so it should always attempt resolution.
-	r := &mismatchedshatag.Rule{}
-	assert.Nil(t, r.Resolver)
-	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: ./local-action\n"
-	m := parseMapping(t, src)
-	// Local actions are skipped regardless of resolver, so no errors expected.
-	errs := r.CheckWorkflow(m)
-	assert.Empty(t, errs)
-	// After Check(), the resolver should have been initialized.
-	assert.NotNil(t, r.Resolver)
-}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/discover"
+	ghclient "github.com/koki-develop/ghasec/github"
 	"github.com/koki-develop/ghasec/parser"
 	"github.com/koki-develop/ghasec/renderer"
 	"github.com/koki-develop/ghasec/rules"
@@ -144,7 +145,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
 		&unpinnedaction.Rule{},
 		&checkoutpersistcredentials.Rule{},
 		&defaultpermissions.Rule{},
-		&mismatchedshatag.Rule{},
+		&mismatchedshatag.Rule{Resolver: newTagResolver()},
 	}
 	for _, r := range all {
 		if r.Online() && !onlineEnabled {
@@ -193,6 +194,14 @@ func pluralize(word string, count int) string {
 		return word
 	}
 	return word + "s"
+}
+
+func newTagResolver() mismatchedshatag.TagResolver {
+	var opts []ghclient.Option
+	if baseURL := os.Getenv("GHASEC_GITHUB_API_URL"); baseURL != "" {
+		opts = append(opts, ghclient.WithBaseURL(baseURL))
+	}
+	return ghclient.NewClient(opts...)
 }
 
 func Execute() error {
