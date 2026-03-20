@@ -14,14 +14,12 @@ import (
 )
 
 // Renderer handles diagnostic error rendering with consistent styling.
-// NO_COLOR is resolved once at construction time.
 type Renderer struct {
 	noColor bool
 }
 
-// New creates a Renderer. It checks the NO_COLOR environment variable once.
-func New() *Renderer {
-	_, noColor := os.LookupEnv("NO_COLOR")
+// New creates a Renderer. When noColor is true, all styling is disabled.
+func New(noColor bool) *Renderer {
 	return &Renderer{noColor: noColor}
 }
 

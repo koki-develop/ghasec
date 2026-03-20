@@ -24,10 +24,14 @@ import (
 
 var errValidationFailed = errors.New("validation errors found")
 
-var online bool
+var (
+	online  bool
+	noColor bool
+)
 
 func init() {
 	rootCmd.Flags().BoolVar(&online, "online", false, "enable rules that require network access")
+	rootCmd.Flags().BoolVar(&noColor, "no-color", false, "disable colored output")
 }
 
 type classifiedFiles struct {
@@ -72,7 +76,8 @@ var rootCmd = &cobra.Command{
 		}
 
 		a := analyzer.New(activeRules...)
-		rdr := renderer.New()
+		_, envNoColor := os.LookupEnv("NO_COLOR")
+		rdr := renderer.New(noColor || envNoColor)
 
 		var errorCount int
 		var errorFileCount int
