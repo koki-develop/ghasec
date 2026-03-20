@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/koki-develop/ghasec/analyzer"
+	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/discover"
 	ghclient "github.com/koki-develop/ghasec/github"
 	"github.com/koki-develop/ghasec/parser"
@@ -25,6 +27,8 @@ import (
 
 var errValidationFailed = errors.New("validation errors found")
 
+const concurrency = 4
+
 var (
 	online  bool
 	noColor bool
@@ -38,6 +42,17 @@ func init() {
 type classifiedFiles struct {
 	Workflows []string
 	Actions   []string
+}
+
+type fileTask struct {
+	path     string
+	isAction bool
+}
+
+type fileResult struct {
+	path     string
+	parseErr error
+	diagErrs []*diagnostic.Error
 }
 
 func classifyFile(path string) string {
@@ -76,53 +91,65 @@ var rootCmd = &cobra.Command{
 			}()
 		}
 
-		a := analyzer.New(activeRules...)
+		a := analyzer.New(concurrency, activeRules...)
 		_, envNoColor := os.LookupEnv("NO_COLOR")
 		rdr := renderer.New(noColor || envNoColor)
+
+		var tasks []fileTask
+		for _, f := range files.Workflows {
+			tasks = append(tasks, fileTask{path: f, isAction: false})
+		}
+		for _, f := range files.Actions {
+			tasks = append(tasks, fileTask{path: f, isAction: true})
+		}
+
+		results := make([]fileResult, len(tasks))
+		fileSem := make(chan struct{}, concurrency)
+		var wg sync.WaitGroup
+
+		for i, task := range tasks {
+			wg.Add(1)
+			go func(i int, task fileTask) {
+				defer wg.Done()
+				fileSem <- struct{}{}
+				defer func() { <-fileSem }()
+
+				astFile, err := parser.Parse(task.path)
+				if err != nil {
+					results[i] = fileResult{path: task.path, parseErr: err}
+					return
+				}
+
+				var errs []*diagnostic.Error
+				if task.isAction {
+					errs = a.AnalyzeAction(astFile)
+				} else {
+					errs = a.AnalyzeWorkflow(astFile)
+				}
+				results[i] = fileResult{path: task.path, diagErrs: errs}
+			}(i, task)
+		}
+		wg.Wait()
 
 		var errorCount int
 		var errorFileCount int
 
-		for _, f := range files.Workflows {
-			astFile, err := parser.Parse(f)
-			if err != nil {
-				if printErr := rdr.PrintParseError(f, err); printErr != nil {
+		for _, r := range results {
+			if r.parseErr != nil {
+				if printErr := rdr.PrintParseError(r.path, r.parseErr); printErr != nil {
 					return printErr
 				}
 				errorCount++
 				errorFileCount++
 				continue
 			}
-			errs := a.AnalyzeWorkflow(astFile)
-			if len(errs) > 0 {
-				for _, e := range errs {
-					if err := rdr.PrintDiagnosticError(f, e); err != nil {
+			if len(r.diagErrs) > 0 {
+				for _, e := range r.diagErrs {
+					if err := rdr.PrintDiagnosticError(r.path, e); err != nil {
 						return err
 					}
 				}
-				errorCount += len(errs)
-				errorFileCount++
-			}
-		}
-
-		for _, f := range files.Actions {
-			astFile, err := parser.Parse(f)
-			if err != nil {
-				if printErr := rdr.PrintParseError(f, err); printErr != nil {
-					return printErr
-				}
-				errorCount++
-				errorFileCount++
-				continue
-			}
-			errs := a.AnalyzeAction(astFile)
-			if len(errs) > 0 {
-				for _, e := range errs {
-					if err := rdr.PrintDiagnosticError(f, e); err != nil {
-						return err
-					}
-				}
-				errorCount += len(errs)
+				errorCount += len(r.diagErrs)
 				errorFileCount++
 			}
 		}

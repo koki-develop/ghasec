@@ -48,7 +48,7 @@ func parseYAML(t *testing.T, src string) *ast.File {
 func TestAnalyzeWorkflow_EmptyDocument(t *testing.T) {
 	f, err := yamlparser.ParseBytes([]byte(""), 0)
 	require.NoError(t, err)
-	a := analyzer.New()
+	a := analyzer.New(1)
 	errs := a.AnalyzeWorkflow(f)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "workflow")
@@ -57,7 +57,7 @@ func TestAnalyzeWorkflow_EmptyDocument(t *testing.T) {
 
 func TestAnalyzeWorkflow_NonMappingDocument(t *testing.T) {
 	f := parseYAML(t, "- item1\n- item2\n")
-	a := analyzer.New()
+	a := analyzer.New(1)
 	errs := a.AnalyzeWorkflow(f)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "mapping")
@@ -72,7 +72,7 @@ func TestAnalyzeWorkflow_RequiredRuleError_SkipsNonRequired(t *testing.T) {
 		lintCalled = true
 		return []*diagnostic.Error{{Message: "lint error"}}
 	}}
-	a := analyzer.New(reqRule, lintRule)
+	a := analyzer.New(1, reqRule, lintRule)
 	f := parseYAML(t, "key: value")
 	errs := a.AnalyzeWorkflow(f)
 	require.Len(t, errs, 1)
@@ -88,7 +88,7 @@ func TestAnalyzeWorkflow_RequiredRulePass_RunsNonRequired(t *testing.T) {
 	lintRule := &mockWorkflowRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 		return []*diagnostic.Error{{Message: "lint error"}}
 	}}
-	a := analyzer.New(reqRule, lintRule)
+	a := analyzer.New(1, reqRule, lintRule)
 	f := parseYAML(t, "key: value")
 	errs := a.AnalyzeWorkflow(f)
 	require.Len(t, errs, 1)
@@ -97,7 +97,7 @@ func TestAnalyzeWorkflow_RequiredRulePass_RunsNonRequired(t *testing.T) {
 }
 
 func TestAnalyzeWorkflow_NoRules(t *testing.T) {
-	a := analyzer.New()
+	a := analyzer.New(1)
 	f := parseYAML(t, "key: value")
 	errs := a.AnalyzeWorkflow(f)
 	assert.Empty(t, errs)
@@ -105,7 +105,7 @@ func TestAnalyzeWorkflow_NoRules(t *testing.T) {
 
 func TestAnalyzeWorkflow_AllPass(t *testing.T) {
 	noErr := func(mapping workflow.WorkflowMapping) []*diagnostic.Error { return nil }
-	a := analyzer.New(
+	a := analyzer.New(1,
 		&mockWorkflowRule{id: "req", required: true, check: noErr},
 		&mockWorkflowRule{id: "lint", required: false, check: noErr},
 	)
@@ -117,7 +117,7 @@ func TestAnalyzeWorkflow_AllPass(t *testing.T) {
 func TestAnalyzeAction_EmptyDocument(t *testing.T) {
 	f, err := yamlparser.ParseBytes([]byte(""), 0)
 	require.NoError(t, err)
-	a := analyzer.New()
+	a := analyzer.New(1)
 	errs := a.AnalyzeAction(f)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "action")
@@ -133,7 +133,7 @@ func TestAnalyzeWorkflow_IgnoreSuppressesDiagnostic(t *testing.T) {
 			Message: "lint error",
 		}}
 	}}
-	a := analyzer.New(lintRule)
+	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:lint")
 	errs := a.AnalyzeWorkflow(f)
 	assert.Empty(t, errs)
@@ -146,7 +146,7 @@ func TestAnalyzeWorkflow_IgnoreDoesNotSuppressRequiredRule(t *testing.T) {
 			Message: "required error",
 		}}
 	}}
-	a := analyzer.New(reqRule)
+	a := analyzer.New(1, reqRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:req")
 	errs := a.AnalyzeWorkflow(f)
 	require.Len(t, errs, 2)
@@ -159,7 +159,7 @@ func TestAnalyzeWorkflow_RequiredIgnoreError_WhenRequiredRulePasses(t *testing.T
 	reqRule := &mockWorkflowRule{id: "req", required: true, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 		return nil
 	}}
-	a := analyzer.New(reqRule)
+	a := analyzer.New(1, reqRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:req")
 	errs := a.AnalyzeWorkflow(f)
 	require.Len(t, errs, 1)
@@ -174,7 +174,7 @@ func TestAnalyzeWorkflow_AllRulesIgnore_SkipsRequiredSilently(t *testing.T) {
 			Message: "required error",
 		}}
 	}}
-	a := analyzer.New(reqRule)
+	a := analyzer.New(1, reqRule)
 	f := parseYAML(t, "key: value # ghasec-ignore")
 	errs := a.AnalyzeWorkflow(f)
 	// All-rules ignore must NOT suppress required rule errors and must NOT
@@ -185,7 +185,7 @@ func TestAnalyzeWorkflow_AllRulesIgnore_SkipsRequiredSilently(t *testing.T) {
 }
 
 func TestAnalyzeWorkflow_UnusedIgnore_UnknownRule(t *testing.T) {
-	a := analyzer.New()
+	a := analyzer.New(1)
 	f := parseYAML(t, "key: value # ghasec-ignore:nonexistent")
 	errs := a.AnalyzeWorkflow(f)
 	require.Len(t, errs, 1)
@@ -197,7 +197,7 @@ func TestAnalyzeWorkflow_UnusedIgnore_NotFired(t *testing.T) {
 	lintRule := &mockWorkflowRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 		return nil
 	}}
-	a := analyzer.New(lintRule)
+	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:lint")
 	errs := a.AnalyzeWorkflow(f)
 	require.Len(t, errs, 1)
@@ -212,14 +212,14 @@ func TestAnalyzeWorkflow_IgnoreAllRules(t *testing.T) {
 			Message: "lint error",
 		}}
 	}}
-	a := analyzer.New(lintRule)
+	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, "key: value # ghasec-ignore")
 	errs := a.AnalyzeWorkflow(f)
 	assert.Empty(t, errs)
 }
 
 func TestAnalyzeWorkflow_UnusedIgnoreAllRules(t *testing.T) {
-	a := analyzer.New()
+	a := analyzer.New(1)
 	f := parseYAML(t, "key: value # ghasec-ignore")
 	errs := a.AnalyzeWorkflow(f)
 	require.Len(t, errs, 1)
@@ -228,7 +228,7 @@ func TestAnalyzeWorkflow_UnusedIgnoreAllRules(t *testing.T) {
 }
 
 func TestAnalyzeWorkflow_TopLevelMappingError_NotSuppressed(t *testing.T) {
-	a := analyzer.New()
+	a := analyzer.New(1)
 	f := parseYAML(t, "- item1 # ghasec-ignore")
 	errs := a.AnalyzeWorkflow(f)
 	require.Len(t, errs, 1)
@@ -242,7 +242,7 @@ func TestAnalyzeWorkflow_IgnoreMixedValidAndInvalid(t *testing.T) {
 			Message: "lint error",
 		}}
 	}}
-	a := analyzer.New(lintRule)
+	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:lint,nonexistent")
 	errs := a.AnalyzeWorkflow(f)
 	// lint error suppressed, but "nonexistent" produces unknown-rule error
@@ -257,14 +257,14 @@ func TestAnalyzeAction_IgnoreSuppressesDiagnostic(t *testing.T) {
 			Message: "lint error",
 		}}
 	}}
-	a := analyzer.New(lintRule)
+	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:lint")
 	errs := a.AnalyzeAction(f)
 	assert.Empty(t, errs)
 }
 
 func TestAnalyzeAction_UnusedIgnore(t *testing.T) {
-	a := analyzer.New()
+	a := analyzer.New(1)
 	f := parseYAML(t, "key: value # ghasec-ignore:nonexistent")
 	errs := a.AnalyzeAction(f)
 	require.Len(t, errs, 1)
@@ -280,11 +280,59 @@ func TestAnalyzeAction_RequiredRuleError_SkipsNonRequired(t *testing.T) {
 		lintCalled = true
 		return []*diagnostic.Error{{Message: "lint error"}}
 	}}
-	a := analyzer.New(reqRule, lintRule)
+	a := analyzer.New(1, reqRule, lintRule)
 	f := parseYAML(t, "key: value")
 	errs := a.AnalyzeAction(f)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "required error", errs[0].Message)
 	assert.Equal(t, "req", errs[0].RuleID)
 	assert.False(t, lintCalled)
+}
+
+func TestAnalyzeWorkflow_ParallelRuleOrdering(t *testing.T) {
+	noopReq := &mockWorkflowRule{id: "req", required: true, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return nil
+	}}
+	ruleA := &mockWorkflowRule{id: "rule-a", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{{Token: mapping.GetToken(), Message: "error from rule-a"}}
+	}}
+	ruleB := &mockWorkflowRule{id: "rule-b", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{{Token: mapping.GetToken(), Message: "error from rule-b"}}
+	}}
+	ruleC := &mockWorkflowRule{id: "rule-c", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{{Token: mapping.GetToken(), Message: "error from rule-c"}}
+	}}
+
+	a := analyzer.New(4, noopReq, ruleA, ruleB, ruleC)
+	f := parseYAML(t, "key: value")
+	errs := a.AnalyzeWorkflow(f)
+
+	require.Len(t, errs, 3)
+	assert.Equal(t, "rule-a", errs[0].RuleID)
+	assert.Equal(t, "rule-b", errs[1].RuleID)
+	assert.Equal(t, "rule-c", errs[2].RuleID)
+}
+
+func TestAnalyzeAction_ParallelRuleOrdering(t *testing.T) {
+	noopReq := &mockActionRule{id: "req", required: true, check: func(mapping workflow.ActionMapping) []*diagnostic.Error {
+		return nil
+	}}
+	ruleA := &mockActionRule{id: "rule-a", required: false, check: func(mapping workflow.ActionMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{{Token: mapping.GetToken(), Message: "error from rule-a"}}
+	}}
+	ruleB := &mockActionRule{id: "rule-b", required: false, check: func(mapping workflow.ActionMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{{Token: mapping.GetToken(), Message: "error from rule-b"}}
+	}}
+	ruleC := &mockActionRule{id: "rule-c", required: false, check: func(mapping workflow.ActionMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{{Token: mapping.GetToken(), Message: "error from rule-c"}}
+	}}
+
+	a := analyzer.New(4, noopReq, ruleA, ruleB, ruleC)
+	f := parseYAML(t, "key: value")
+	errs := a.AnalyzeAction(f)
+
+	require.Len(t, errs, 3)
+	assert.Equal(t, "rule-a", errs[0].RuleID)
+	assert.Equal(t, "rule-b", errs[1].RuleID)
+	assert.Equal(t, "rule-c", errs[2].RuleID)
 }

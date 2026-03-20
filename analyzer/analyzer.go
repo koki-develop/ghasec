@@ -3,6 +3,7 @@ package analyzer
 import (
 	"fmt"
 	"slices"
+	"sync"
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
@@ -13,12 +14,16 @@ import (
 )
 
 type Analyzer struct {
+	concurrency   int
 	workflowRules []rules.WorkflowRule
 	actionRules   []rules.ActionRule
 }
 
-func New(rr ...rules.Rule) *Analyzer {
-	a := &Analyzer{}
+func New(concurrency int, rr ...rules.Rule) *Analyzer {
+	if concurrency < 1 {
+		panic("concurrency must be >= 1")
+	}
+	a := &Analyzer{concurrency: concurrency}
 	for _, r := range rr {
 		wr, isWorkflow := r.(rules.WorkflowRule)
 		ar, isAction := r.(rules.ActionRule)
@@ -65,12 +70,29 @@ func (a *Analyzer) AnalyzeWorkflow(f *ast.File) []*diagnostic.Error {
 		return append(requiredErrs, requiredIgnoreErrs...)
 	}
 
+	ruleResults := make([][]*diagnostic.Error, len(nonRequiredRules))
+	sem := make(chan struct{}, a.concurrency)
+	var wg sync.WaitGroup
+
+	for i, r := range nonRequiredRules {
+		wg.Add(1)
+		go func(i int, r rules.WorkflowRule) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			var errs []*diagnostic.Error
+			for _, e := range r.CheckWorkflow(mapping) {
+				e.RuleID = r.ID()
+				errs = append(errs, e)
+			}
+			ruleResults[i] = errs
+		}(i, r)
+	}
+	wg.Wait()
+
 	var lintErrs []*diagnostic.Error
-	for _, r := range nonRequiredRules {
-		for _, e := range r.CheckWorkflow(mapping) {
-			e.RuleID = r.ID()
-			lintErrs = append(lintErrs, e)
-		}
+	for _, errs := range ruleResults {
+		lintErrs = append(lintErrs, errs...)
 	}
 
 	filtered := filterDiagnostics(directives, lintErrs)
@@ -108,12 +130,29 @@ func (a *Analyzer) AnalyzeAction(f *ast.File) []*diagnostic.Error {
 		return append(requiredErrs, requiredIgnoreErrs...)
 	}
 
+	ruleResults := make([][]*diagnostic.Error, len(nonRequiredRules))
+	sem := make(chan struct{}, a.concurrency)
+	var wg sync.WaitGroup
+
+	for i, r := range nonRequiredRules {
+		wg.Add(1)
+		go func(i int, r rules.ActionRule) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			var errs []*diagnostic.Error
+			for _, e := range r.CheckAction(mapping) {
+				e.RuleID = r.ID()
+				errs = append(errs, e)
+			}
+			ruleResults[i] = errs
+		}(i, r)
+	}
+	wg.Wait()
+
 	var lintErrs []*diagnostic.Error
-	for _, r := range nonRequiredRules {
-		for _, e := range r.CheckAction(mapping) {
-			e.RuleID = r.ID()
-			lintErrs = append(lintErrs, e)
-		}
+	for _, errs := range ruleResults {
+		lintErrs = append(lintErrs, errs...)
 	}
 
 	filtered := filterDiagnostics(directives, lintErrs)

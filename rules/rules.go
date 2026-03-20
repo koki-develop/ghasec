@@ -13,12 +13,14 @@ type Rule interface {
 }
 
 // WorkflowRule validates workflow files (.github/workflows/*.yml|yaml).
+// CheckWorkflow must be safe for concurrent use from multiple goroutines.
 type WorkflowRule interface {
 	Rule
 	CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error
 }
 
 // ActionRule validates action metadata files (action.yml|yaml).
+// CheckAction must be safe for concurrent use from multiple goroutines.
 type ActionRule interface {
 	Rule
 	CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error
