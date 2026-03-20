@@ -1,0 +1,24 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push # ghasec-ignore:invalid-workflow
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:1:26
+    1 | on: push # ghasec-ignore:invalid-workflow
+      |                          ^^^^^^^^^^^^^^^^ "invalid-workflow" is a required rule and cannot be ignored (unused-ignore)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md
+
+    1 error found in 1 file

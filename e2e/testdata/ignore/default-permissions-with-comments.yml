@@ -1,0 +1,21 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      # comment 1
+      on: push # comment 2
+      # comment 3
+      permissions: # ghasec-ignore:default-permissions
+        contents: read # comment 4
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

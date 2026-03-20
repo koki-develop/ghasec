@@ -1,0 +1,33 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      # This is a regular comment
+      on: push
+      # Another comment
+      permissions: {}
+      jobs:
+        build: # inline comment on job
+          runs-on: ubuntu-latest
+          steps:
+            # step comment
+            - uses: actions/checkout@v6
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:10:32
+    ...
+     5 | jobs:
+     6 |   build: # inline comment on job
+    ...
+     8 |     steps:
+    ...
+    10 |       - uses: actions/checkout@v6
+       |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    1 error found in 1 file

@@ -1,0 +1,22 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+
+      permissions: {}
+
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+
+            # ghasec-ignore:unpinned-action
+            - uses: actions/checkout@v6
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

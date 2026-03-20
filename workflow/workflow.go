@@ -25,9 +25,9 @@ func (m Mapping) FindKey(key string) *ast.MappingValueNode {
 	return nil
 }
 
-// FirstToken walks the token chain backward to the first token in the file.
-// It returns a copy of that token with its Value trimmed to the first byte.
-// Returns nil if the MappingNode is nil.
+// FirstToken walks the token chain backward to the first non-comment token
+// in the file. It returns a copy of that token with its Value trimmed to the
+// first byte. Returns nil if the MappingNode is nil.
 func (m Mapping) FirstToken() *token.Token {
 	if m.MappingNode == nil {
 		return nil
@@ -35,6 +35,13 @@ func (m Mapping) FirstToken() *token.Token {
 	tk := m.GetToken()
 	for tk.Prev != nil {
 		tk = tk.Prev
+	}
+	// Skip leading comment tokens so file-level errors point to actual YAML content.
+	for tk != nil && tk.Type == token.CommentType {
+		tk = tk.Next
+	}
+	if tk == nil {
+		tk = m.GetToken()
 	}
 	cp := *tk
 	if len(tk.Value) > 0 {

@@ -11,6 +11,16 @@ Each rule lives in its own subdirectory under `rules/`. Run `ls rules/` to see a
 - `invalid-workflow` and `invalid-action` are **required** rules (structural validation). All others are non-required (lint checks).
 - `mismatched-sha-tag` is the only **online** rule (requires `--online` flag).
 
+## Ignore Directives
+
+Users can suppress diagnostics with `# ghasec-ignore[:rule-id,...]` comments (inline or previous-line). The `ignore` package parses these; the `analyzer` filters diagnostics accordingly. Individual rules do not need to handle ignore directives — filtering is centralized in the analyzer.
+
+- Required rules (`invalid-workflow`, `invalid-action`) cannot be ignored.
+- Unused or invalid ignore directives produce `unused-ignore` diagnostics.
+- `unused-ignore` is not a real `Rule` implementation — it is a RuleID string set directly by the analyzer.
+
+See `rules/unused-ignore/README.md` for full syntax documentation.
+
 ## Key Design Decisions
 
 - Uses `goccy/go-yaml` AST (not `gopkg.in/yaml.v3`) — all rule checks operate on typed wrappers from the `workflow` package (`workflow.WorkflowMapping`, `workflow.ActionMapping`, `workflow.JobMapping`, `workflow.StepMapping`) which embed `workflow.Mapping` (wrapping `*ast.MappingNode`). The analyzer extracts the top-level mapping from `*ast.File` and passes it to each rule's check method; rules never see `*ast.File` directly.

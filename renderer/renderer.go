@@ -122,10 +122,12 @@ func computeAncestors(tk *token.Token) []*token.Token {
 }
 
 // tokenSpan converts a YAML token's position into an annotate.Span over src.
-// The token's Offset is 1-based, so it is adjusted to 0-based. The span is
-// clamped to a single line and guaranteed to have non-zero length.
+// It derives the byte offset from Line and Column rather than relying on
+// Token.Offset, which can be incorrect in files containing YAML comments
+// (a known goccy/go-yaml bug where each comment shifts subsequent Offsets by -1).
+// The span is clamped to a single line and guaranteed to have non-zero length.
 func tokenSpan(src []byte, tk *token.Token) annotate.Span {
-	start := min(max(tk.Position.Offset-1, 0), len(src))
+	start := min(lineColumnOffset(src, tk.Position.Line, tk.Position.Column), len(src))
 	if start < len(src) && (src[start] == '"' || src[start] == '\'') {
 		start++
 	}
@@ -138,6 +140,23 @@ func tokenSpan(src []byte, tk *token.Token) annotate.Span {
 		span.End = span.Start + 1
 	}
 	return span
+}
+
+// lineColumnOffset returns the 0-based byte offset for a given 1-based line
+// and 1-based column in src. This is used instead of Token.Offset to work
+// around a goccy/go-yaml bug where comment tokens cause subsequent tokens'
+// Offsets to drift by -1 per comment.
+func lineColumnOffset(src []byte, line, column int) int {
+	currentLine := 1
+	for i, b := range src {
+		if currentLine == line {
+			return i + column - 1
+		}
+		if b == '\n' {
+			currentLine++
+		}
+	}
+	return len(src)
 }
 
 type annotationParams struct {
@@ -197,7 +216,7 @@ func (r *Renderer) buildLabels(src []byte, p annotationParams) []annotate.Label 
 
 func (r *Renderer) formatHeader(path string, src []byte, tk *token.Token) string {
 	col := tk.Position.Column
-	offset := min(max(tk.Position.Offset-1, 0), len(src))
+	offset := min(lineColumnOffset(src, tk.Position.Line, tk.Position.Column), len(src))
 	if offset < len(src) && (src[offset] == '"' || src[offset] == '\'') {
 		col++
 	}

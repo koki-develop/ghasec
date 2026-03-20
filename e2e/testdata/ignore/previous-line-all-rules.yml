@@ -1,0 +1,17 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            # ghasec-ignore
+            - uses: actions/checkout@v6
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found
