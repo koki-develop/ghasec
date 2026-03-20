@@ -56,7 +56,13 @@ type expected struct {
 
 type testCase struct {
 	Workflows []testWorkflow `yaml:"workflows"`
+	Actions   []testAction   `yaml:"actions"`
 	Expected  expected       `yaml:"expected"`
+}
+
+type testAction struct {
+	Name    string `yaml:"name"`
+	Content string `yaml:"content"`
 }
 
 type testWorkflow struct {
@@ -135,6 +141,9 @@ func runTestCase(t *testing.T, name string) {
 
 	tmpDir := t.TempDir()
 	files := writeWorkflows(t, tc.Workflows, tmpDir)
+	actionFiles := writeActions(t, tc.Actions, tmpDir)
+	files = append(files, actionFiles...)
+	sort.Strings(files)
 
 	var extraArgs []string
 	if args, ok := lookupTestConfig(extraCLIArgs, name); ok {
@@ -182,6 +191,20 @@ func writeWorkflows(t *testing.T, workflows []testWorkflow, tmpDir string) []str
 	for _, w := range workflows {
 		dst := filepath.Join(tmpDir, w.Name)
 		require.NoError(t, os.WriteFile(dst, []byte(w.Content), 0o644))
+		files = append(files, dst)
+	}
+	sort.Strings(files)
+	return files
+}
+
+func writeActions(t *testing.T, actions []testAction, tmpDir string) []string {
+	t.Helper()
+	var files []string
+	for _, a := range actions {
+		dst := filepath.Join(tmpDir, a.Name)
+		dir := filepath.Dir(dst)
+		require.NoError(t, os.MkdirAll(dir, 0o755))
+		require.NoError(t, os.WriteFile(dst, []byte(a.Content), 0o644))
 		files = append(files, dst)
 	}
 	sort.Strings(files)
@@ -260,7 +283,7 @@ func TestE2E_NoWorkflowFiles(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, 1, exitErr.ExitCode())
 	assert.Empty(t, stdoutBuf.String())
-	assert.Equal(t, "error: no workflow files found\n", stderrBuf.String())
+	assert.Equal(t, "error: no files found\n", stderrBuf.String())
 }
 
 func TestE2E_DirectoryArgument(t *testing.T) {
@@ -279,7 +302,30 @@ func TestE2E_DirectoryArgument(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, 1, exitErr.ExitCode())
 	assert.Empty(t, stdoutBuf.String())
-	assert.Equal(t, fmt.Sprintf("error: %s is a directory; specify workflow files directly\n", tmpDir), stderrBuf.String())
+	assert.Equal(t, fmt.Sprintf("error: %s is a directory; specify files directly\n", tmpDir), stderrBuf.String())
+}
+
+func TestE2E_AutoDiscoverWithActions(t *testing.T) {
+	tmpDir := t.TempDir()
+	workflowDir := filepath.Join(tmpDir, ".github", "workflows")
+	require.NoError(t, os.MkdirAll(workflowDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(workflowDir, "ci.yml"), []byte("on: push\npermissions: {}\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n        with:\n          persist-credentials: false\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "action.yml"), []byte("runs:\n  using: composite\n  steps:\n    - uses: actions/checkout@v6\n      with:\n        persist-credentials: false\n"), 0o644))
+
+	cmd := exec.Command(binaryPath)
+	cmd.Dir = tmpDir
+	cmd.Env = append(os.Environ(), "NO_COLOR=", "GHASEC_DISABLE_OFFLINE_WARNING=")
+
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	err := cmd.Run()
+	require.Error(t, err)
+	exitErr, ok := err.(*exec.ExitError)
+	require.True(t, ok)
+	assert.Equal(t, 1, exitErr.ExitCode())
+	assert.Contains(t, stderrBuf.String(), "2 errors found in 2 files")
 }
 
 func expandTemplate(t *testing.T, text, tmpDir string) string {

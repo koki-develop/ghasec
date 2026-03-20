@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/discover"
@@ -12,6 +15,7 @@ import (
 	"github.com/koki-develop/ghasec/rules"
 	checkoutpersistcredentials "github.com/koki-develop/ghasec/rules/checkout-persist-credentials"
 	defaultpermissions "github.com/koki-develop/ghasec/rules/default-permissions"
+	invalidaction "github.com/koki-develop/ghasec/rules/invalid-action"
 	invalidworkflow "github.com/koki-develop/ghasec/rules/invalid-workflow"
 	mismatchedshatag "github.com/koki-develop/ghasec/rules/mismatched-sha-tag"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
@@ -26,6 +30,23 @@ func init() {
 	rootCmd.Flags().BoolVar(&online, "online", false, "enable rules that require network access")
 }
 
+type classifiedFiles struct {
+	Workflows []string
+	Actions   []string
+}
+
+func classifyFile(path string) string {
+	clean := filepath.ToSlash(filepath.Clean(path))
+	if strings.Contains(clean, ".github/workflows/") {
+		return "workflow"
+	}
+	base := filepath.Base(path)
+	if base == "action.yml" || base == "action.yaml" {
+		return "action"
+	}
+	return "workflow"
+}
+
 var rootCmd = &cobra.Command{
 	Use:           "ghasec [files...]",
 	SilenceUsage:  true,
@@ -35,8 +56,8 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if len(files) == 0 {
-			return errors.New("no workflow files found")
+		if len(files.Workflows) == 0 && len(files.Actions) == 0 {
+			return errors.New("no files found")
 		}
 
 		activeRules, skippedOnline := buildRules(online)
@@ -55,7 +76,8 @@ var rootCmd = &cobra.Command{
 
 		var errorCount int
 		var errorFileCount int
-		for _, f := range files {
+
+		for _, f := range files.Workflows {
 			astFile, err := parser.Parse(f)
 			if err != nil {
 				if printErr := rdr.PrintParseError(f, err); printErr != nil {
@@ -65,7 +87,7 @@ var rootCmd = &cobra.Command{
 				errorFileCount++
 				continue
 			}
-			errs := a.Analyze(astFile)
+			errs := a.AnalyzeWorkflow(astFile)
 			if len(errs) > 0 {
 				for _, e := range errs {
 					if err := rdr.PrintDiagnosticError(f, e); err != nil {
@@ -76,6 +98,29 @@ var rootCmd = &cobra.Command{
 				errorFileCount++
 			}
 		}
+
+		for _, f := range files.Actions {
+			astFile, err := parser.Parse(f)
+			if err != nil {
+				if printErr := rdr.PrintParseError(f, err); printErr != nil {
+					return printErr
+				}
+				errorCount++
+				errorFileCount++
+				continue
+			}
+			errs := a.AnalyzeAction(astFile)
+			if len(errs) > 0 {
+				for _, e := range errs {
+					if err := rdr.PrintDiagnosticError(f, e); err != nil {
+						return err
+					}
+				}
+				errorCount += len(errs)
+				errorFileCount++
+			}
+		}
+
 		if errorCount > 0 {
 			fmt.Fprintf(os.Stderr, "%d %s found in %d %s\n",
 				errorCount, pluralize("error", errorCount),
@@ -90,6 +135,7 @@ var rootCmd = &cobra.Command{
 func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
 	all := []rules.Rule{
 		&invalidworkflow.Rule{},
+		&invalidaction.Rule{},
 		&unpinnedaction.Rule{},
 		&checkoutpersistcredentials.Rule{},
 		&defaultpermissions.Rule{},
@@ -105,20 +151,36 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
 	return
 }
 
-func resolveFiles(args []string) ([]string, error) {
+func resolveFiles(args []string) (classifiedFiles, error) {
 	if len(args) > 0 {
+		var cf classifiedFiles
 		for _, arg := range args {
 			info, err := os.Stat(arg)
 			if err != nil {
-				return nil, err
+				return classifiedFiles{}, err
 			}
 			if info.IsDir() {
-				return nil, fmt.Errorf("%s is a directory; specify workflow files directly", arg)
+				return classifiedFiles{}, fmt.Errorf("%s is a directory; specify files directly", arg)
+			}
+			switch classifyFile(arg) {
+			case "action":
+				cf.Actions = append(cf.Actions, arg)
+			default:
+				cf.Workflows = append(cf.Workflows, arg)
 			}
 		}
-		return args, nil
+		sort.Strings(cf.Workflows)
+		sort.Strings(cf.Actions)
+		return cf, nil
 	}
-	return discover.Discover(".")
+	res, err := discover.Discover(".")
+	if err != nil {
+		return classifiedFiles{}, err
+	}
+	return classifiedFiles{
+		Workflows: res.Workflows,
+		Actions:   res.Actions,
+	}, nil
 }
 
 func pluralize(word string, count int) string {

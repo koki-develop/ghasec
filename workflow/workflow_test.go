@@ -86,6 +86,76 @@ func TestWorkflowMapping_EachStep_NoSteps(t *testing.T) {
 	assert.Equal(t, 0, count)
 }
 
+func parseAction(t *testing.T, src string) workflow.ActionMapping {
+	t.Helper()
+	m := parseMapping(t, src)
+	return workflow.ActionMapping{Mapping: m}
+}
+
+func TestActionMapping_EachStep_CompositeWithSteps(t *testing.T) {
+	src := `name: My Action
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
+    - run: echo hello
+    - uses: actions/setup-go@v5`
+	a := parseAction(t, src)
+	var count int
+	a.EachStep(func(step workflow.StepMapping) {
+		count++
+	})
+	assert.Equal(t, 3, count)
+}
+
+func TestActionMapping_EachStep_NonComposite(t *testing.T) {
+	src := `name: My Action
+runs:
+  using: node20
+  main: index.js`
+	a := parseAction(t, src)
+	var count int
+	a.EachStep(func(step workflow.StepMapping) {
+		count++
+	})
+	assert.Equal(t, 0, count)
+}
+
+func TestActionMapping_EachStep_RunsNotMapping(t *testing.T) {
+	src := `name: My Action
+runs: not-a-mapping`
+	a := parseAction(t, src)
+	var count int
+	a.EachStep(func(step workflow.StepMapping) {
+		count++
+	})
+	assert.Equal(t, 0, count)
+}
+
+func TestActionMapping_EachStep_RunsMissing(t *testing.T) {
+	src := `name: My Action
+description: no runs key`
+	a := parseAction(t, src)
+	var count int
+	a.EachStep(func(step workflow.StepMapping) {
+		count++
+	})
+	assert.Equal(t, 0, count)
+}
+
+func TestActionMapping_EachStep_StepsNotSequence(t *testing.T) {
+	src := `name: My Action
+runs:
+  using: composite
+  steps: not-a-sequence`
+	a := parseAction(t, src)
+	var count int
+	a.EachStep(func(step workflow.StepMapping) {
+		count++
+	})
+	assert.Equal(t, 0, count)
+}
+
 func TestStepMapping_Uses(t *testing.T) {
 	src := `jobs:
   build:

@@ -1,0 +1,15 @@
+actions:
+  - name: action.yml
+    content: |
+      runs:
+        using: node20
+        main: index.js
+        pre: setup.js
+        pre-if: runner.os == 'Linux'
+        post: cleanup.js
+        post-if: always()
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: "no errors found\n"

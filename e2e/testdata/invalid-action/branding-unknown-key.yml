@@ -1,0 +1,26 @@
+actions:
+  - name: action.yml
+    content: |
+      branding:
+        color: blue
+        icon: activity
+        foo: bar
+      runs:
+        using: composite
+        steps:
+          - run: echo hi
+            shell: bash
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:4:3
+    1 | branding:
+    ...
+    4 |   foo: bar
+      |   ^^^ "branding" has unknown key "foo" (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    1 error found in 1 file

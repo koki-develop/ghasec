@@ -20,7 +20,7 @@ expected:
     3 |   build:
     ...
     5 |     strategy:
-      |     ^^^^^^^^ "strategy" must have a "matrix" key (invalid-workflow)
+      |     ^^^^^^^^ "matrix" is required (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

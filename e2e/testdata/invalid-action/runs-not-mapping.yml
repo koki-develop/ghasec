@@ -1,0 +1,15 @@
+actions:
+  - name: action.yml
+    content: |
+      runs: notamap
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:1:7
+    1 | runs: notamap
+      |       ^^^^^^^ "runs" must be a mapping, but got String (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    1 error found in 1 file

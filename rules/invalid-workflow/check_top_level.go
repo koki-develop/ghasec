@@ -87,7 +87,7 @@ func checkConcurrencyMapping(kv *ast.MappingValueNode) []*diagnostic.Error {
 	if groupKV == nil {
 		return []*diagnostic.Error{{
 			Token:   kv.Key.GetToken(),
-			Message: "\"concurrency\" must have a \"group\" key",
+			Message: "\"group\" is required",
 		}}
 	}
 

@@ -46,6 +46,38 @@ func (m Mapping) FirstToken() *token.Token {
 // WorkflowMapping represents the top-level workflow mapping.
 type WorkflowMapping struct{ Mapping }
 
+// ActionMapping represents the top-level action metadata mapping.
+type ActionMapping struct{ Mapping }
+
+// EachStep iterates over all steps in a composite action's runs.steps.
+// It is a no-op for non-composite actions (where runs.steps does not exist).
+// It silently skips malformed sections, consistent with WorkflowMapping.EachStep.
+func (m ActionMapping) EachStep(fn func(step StepMapping)) {
+	runsKV := m.FindKey("runs")
+	if runsKV == nil {
+		return
+	}
+	runsMapping, ok := runsKV.Value.(*ast.MappingNode)
+	if !ok {
+		return
+	}
+	stepsKV := Mapping{runsMapping}.FindKey("steps")
+	if stepsKV == nil {
+		return
+	}
+	stepsSeq, ok := stepsKV.Value.(*ast.SequenceNode)
+	if !ok {
+		return
+	}
+	for _, stepNode := range stepsSeq.Values {
+		stepMapping, ok := stepNode.(*ast.MappingNode)
+		if !ok {
+			continue
+		}
+		fn(StepMapping{Mapping: Mapping{stepMapping}})
+	}
+}
+
 // JobMapping represents a job-level mapping.
 type JobMapping struct{ Mapping }
 

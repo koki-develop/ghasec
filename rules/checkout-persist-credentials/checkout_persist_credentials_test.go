@@ -22,6 +22,16 @@ func parseMapping(t *testing.T, src string) workflow.WorkflowMapping {
 	return workflow.WorkflowMapping{Mapping: workflow.Mapping{MappingNode: m}}
 }
 
+func parseActionMapping(t *testing.T, src string) workflow.ActionMapping {
+	t.Helper()
+	f, err := yamlparser.ParseBytes([]byte(src), 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, f.Docs)
+	m, ok := f.Docs[0].Body.(*ast.MappingNode)
+	require.True(t, ok)
+	return workflow.ActionMapping{Mapping: workflow.Mapping{MappingNode: m}}
+}
+
 func TestRule_ID(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
 	assert.Equal(t, "checkout-persist-credentials", r.ID())
@@ -50,7 +60,7 @@ func TestRule_PersistCredentialsFalse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := parseMapping(t, tt.src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			assert.Empty(t, errs)
 		})
 	}
@@ -78,7 +88,7 @@ func TestRule_MissingPersistCredentials(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := parseMapping(t, tt.src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			require.Len(t, errs, 1)
 			assert.Contains(t, errs[0].Message, "persist-credentials: false")
 		})
@@ -89,7 +99,7 @@ func TestRule_PersistCredentialsTrue_TokenPointsToValue(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n        with:\n          persist-credentials: true\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "true", errs[0].Token.Value)
 }
@@ -98,7 +108,7 @@ func TestRule_MissingPersistCredentials_TokenPointsToUses(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd", errs[0].Token.Value)
 }
@@ -107,7 +117,7 @@ func TestRule_NonCheckoutAction(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/setup-go@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 }
 
@@ -126,7 +136,7 @@ func TestRule_MixedSteps(t *testing.T) {
 		"      - uses: actions/setup-go@de0fac2e4500dabe0009e67214ff5f5447ce83dd",
 	)
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "persist-credentials: false")
 }
@@ -134,6 +144,31 @@ func TestRule_MixedSteps(t *testing.T) {
 func TestRule_NoSteps(t *testing.T) {
 	r := &checkoutpersistcredentials.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
+	assert.Empty(t, errs)
+}
+
+func TestRule_CheckAction_MissingPersistCredentials(t *testing.T) {
+	r := &checkoutpersistcredentials.Rule{}
+	src := "name: My Action\nruns:\n  using: composite\n  steps:\n    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
+	m := parseActionMapping(t, src)
+	errs := r.CheckAction(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "persist-credentials: false")
+}
+
+func TestRule_CheckAction_Valid(t *testing.T) {
+	r := &checkoutpersistcredentials.Rule{}
+	src := "name: My Action\nruns:\n  using: composite\n  steps:\n    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n      with:\n        persist-credentials: false\n"
+	m := parseActionMapping(t, src)
+	errs := r.CheckAction(m)
+	assert.Empty(t, errs)
+}
+
+func TestRule_CheckAction_NonComposite(t *testing.T) {
+	r := &checkoutpersistcredentials.Rule{}
+	src := "name: My Action\nruns:\n  using: node20\n  main: index.js\n"
+	m := parseActionMapping(t, src)
+	errs := r.CheckAction(m)
 	assert.Empty(t, errs)
 }

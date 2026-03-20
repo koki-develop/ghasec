@@ -13,7 +13,7 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return true }
 func (r *Rule) Online() bool   { return false }
 
-func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	fileStart := mapping.FirstToken()
 
 	var errs []*diagnostic.Error

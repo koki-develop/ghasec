@@ -17,7 +17,7 @@ expected:
     --> {{.Dir}}/top-level-concurrency-missing-group.yml:2:1
     ...
     2 | concurrency:
-      | ^^^^^^^^^^^ "concurrency" must have a "group" key (invalid-workflow)
+      | ^^^^^^^^^^^ "group" is required (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

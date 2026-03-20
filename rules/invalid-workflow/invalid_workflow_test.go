@@ -34,14 +34,14 @@ func TestRule_Required(t *testing.T) {
 func TestRule_ValidWorkflow(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 }
 
 func TestRule_MissingOn(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "jobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "on")
 }
@@ -49,7 +49,7 @@ func TestRule_MissingOn(t *testing.T) {
 func TestRule_InvalidOnType(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: 123\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "on")
 }
@@ -67,7 +67,7 @@ func TestRule_ValidOnTypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := parseMapping(t, tt.src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			assert.Empty(t, errs)
 		})
 	}
@@ -76,7 +76,7 @@ func TestRule_ValidOnTypes(t *testing.T) {
 func TestRule_MissingJobs(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "jobs")
 }
@@ -84,7 +84,7 @@ func TestRule_MissingJobs(t *testing.T) {
 func TestRule_EmptyJobs(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "jobs")
 }
@@ -92,7 +92,7 @@ func TestRule_EmptyJobs(t *testing.T) {
 func TestRule_InvalidJobsType(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs: hello\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "jobs")
 }
@@ -100,7 +100,7 @@ func TestRule_InvalidJobsType(t *testing.T) {
 func TestRule_JobMissingRunsOnAndUses(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "runs-on")
 	assert.Contains(t, errs[0].Message, "uses")
@@ -109,7 +109,7 @@ func TestRule_JobMissingRunsOnAndUses(t *testing.T) {
 func TestRule_JobHasBothRunsOnAndUses(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    uses: org/repo/.github/workflows/ci.yml@main\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "runs-on")
 	assert.Contains(t, errs[0].Message, "uses")
@@ -118,7 +118,7 @@ func TestRule_JobHasBothRunsOnAndUses(t *testing.T) {
 func TestRule_JobHasBothUsesAndSteps(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    uses: org/repo/.github/workflows/ci.yml@main\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "uses")
 	assert.Contains(t, errs[0].Message, "steps")
@@ -127,14 +127,14 @@ func TestRule_JobHasBothUsesAndSteps(t *testing.T) {
 func TestRule_ValidReusableWorkflowJob(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 }
 
 func TestRule_InvalidRunsOnType(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: 123\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "runs-on")
 }
@@ -152,7 +152,7 @@ func TestRule_ValidRunsOnTypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := parseMapping(t, tt.src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			assert.Empty(t, errs)
 		})
 	}
@@ -161,7 +161,7 @@ func TestRule_ValidRunsOnTypes(t *testing.T) {
 func TestRule_InvalidStepsType(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps: not-a-sequence\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "steps")
 }
@@ -169,7 +169,7 @@ func TestRule_InvalidStepsType(t *testing.T) {
 func TestRule_InvalidUsesType(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: [not, a, string]\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "uses")
 }
@@ -177,7 +177,7 @@ func TestRule_InvalidUsesType(t *testing.T) {
 func TestRule_MultipleErrors(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "name: test\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 2)
 	assert.Contains(t, errs[0].Message, "on")
 	assert.Contains(t, errs[1].Message, "jobs")
@@ -187,6 +187,6 @@ func TestRule_MultipleJobErrors(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	src := "on: push\njobs:\n  job1:\n    steps:\n      - run: echo\n  job2:\n    runs-on: ubuntu-latest\n    uses: org/repo/.github/workflows/ci.yml@main\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 2)
 }

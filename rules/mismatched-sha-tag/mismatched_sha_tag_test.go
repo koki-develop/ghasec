@@ -40,6 +40,16 @@ func (m *mockResolver) ResolveTagSHA(ctx context.Context, owner, repo, tag strin
 	return sha, nil
 }
 
+func parseActionMapping(t *testing.T, src string) workflow.ActionMapping {
+	t.Helper()
+	f, err := yamlparser.ParseBytes([]byte(src), 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, f.Docs)
+	m, ok := f.Docs[0].Body.(*ast.MappingNode)
+	require.True(t, ok)
+	return workflow.ActionMapping{Mapping: workflow.Mapping{MappingNode: m}}
+}
+
 func TestRule_ID(t *testing.T) {
 	r := &mismatchedshatag.Rule{}
 	assert.Equal(t, "mismatched-sha-tag", r.ID())
@@ -60,7 +70,7 @@ func TestRule_MatchingSHA(t *testing.T) {
 	}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 }
 
@@ -74,7 +84,7 @@ func TestRule_MismatchedSHA(t *testing.T) {
 	}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `"v4" points to commit "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", not the pinned commit`)
 }
@@ -89,7 +99,7 @@ func TestRule_SemverTag(t *testing.T) {
 	}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88eb36e1752db003a # v5.4.0\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 }
 
@@ -99,7 +109,7 @@ func TestRule_NoComment(t *testing.T) {
 	}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 }
 
@@ -119,7 +129,7 @@ func TestRule_NotPinnedToSHA(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
 			m := parseMapping(t, src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			assert.Empty(t, errs)
 		})
 	}
@@ -140,7 +150,7 @@ func TestRule_LocalAndDockerActions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
 			m := parseMapping(t, src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			assert.Empty(t, errs)
 		})
 	}
@@ -151,7 +161,7 @@ func TestRule_NoSteps(t *testing.T) {
 		Resolver: &mockResolver{},
 	}
 	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 }
 
@@ -163,7 +173,7 @@ func TestRule_ResolverError(t *testing.T) {
 	}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "failed to resolve tag")
 	assert.Contains(t, errs[0].Message, "network error")
@@ -177,7 +187,7 @@ func TestRule_TagNotFound(t *testing.T) {
 	}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v999\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "failed to resolve tag")
 }
@@ -192,7 +202,7 @@ func TestRule_TokenPosition(t *testing.T) {
 	}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "v4", errs[0].Token.Value)
 }
@@ -209,10 +219,34 @@ func TestRule_MultipleSteps(t *testing.T) {
 	}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4\n      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88eb36e1752db003a # v5\n      - uses: actions/setup-node@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v4\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 2)
 	assert.Contains(t, errs[0].Message, "v5")
 	assert.Contains(t, errs[1].Message, "v4")
+}
+
+func TestRule_CheckAction_Matched(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{
+			shas: map[string]string{
+				"actions/checkout@v4": "de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+			},
+		},
+	}
+	src := "name: My Action\nruns:\n  using: composite\n  steps:\n    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4\n"
+	m := parseActionMapping(t, src)
+	errs := r.CheckAction(m)
+	assert.Empty(t, errs)
+}
+
+func TestRule_CheckAction_NonComposite(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{},
+	}
+	src := "name: My Action\nruns:\n  using: node20\n  main: index.js\n"
+	m := parseActionMapping(t, src)
+	errs := r.CheckAction(m)
+	assert.Empty(t, errs)
 }
 
 func TestRule_NilResolver_UsesDefault(t *testing.T) {
@@ -223,7 +257,7 @@ func TestRule_NilResolver_UsesDefault(t *testing.T) {
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: ./local-action\n"
 	m := parseMapping(t, src)
 	// Local actions are skipped regardless of resolver, so no errors expected.
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 	// After Check(), the resolver should have been initialized.
 	assert.NotNil(t, r.Resolver)

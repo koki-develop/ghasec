@@ -143,7 +143,7 @@ func checkOnSchedule(entry *ast.MappingValueNode, onKeyToken *token.Token) []*di
 		if cronKV == nil {
 			errs = append(errs, &diagnostic.Error{
 				Token:   item.GetToken(),
-				Message: "\"schedule\" element must have a \"cron\" key",
+				Message: "\"cron\" is required",
 			})
 		}
 	}

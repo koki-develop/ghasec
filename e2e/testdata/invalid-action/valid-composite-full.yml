@@ -1,0 +1,39 @@
+actions:
+  - name: action.yml
+    content: |
+      name: My Composite Action
+      description: A comprehensive composite action
+      author: test-author
+      inputs:
+        my-input:
+          description: An input
+          required: true
+          default: hello
+          deprecationMessage: Use something else
+      outputs:
+        my-output:
+          description: An output
+          value: ${{ steps.step1.outputs.result }}
+      branding:
+        color: blue
+        icon: activity
+      runs:
+        using: composite
+        steps:
+          - id: step1
+            run: echo hi
+            shell: bash
+            env:
+              FOO: bar
+            working-directory: /tmp
+            if: always()
+            continue-on-error: true
+            name: Run step
+          - uses: ./local-action
+            with:
+              foo: bar
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: "no errors found\n"

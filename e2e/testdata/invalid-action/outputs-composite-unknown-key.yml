@@ -1,0 +1,28 @@
+actions:
+  - name: action.yml
+    content: |
+      runs:
+        using: composite
+        steps:
+          - run: echo hi
+            shell: bash
+      outputs:
+        my-output:
+          description: test
+          value: test
+          bogus: bad
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:10:5
+    ...
+     6 | outputs:
+     7 |   my-output:
+    ...
+    10 |     bogus: bad
+       |     ^^^^^ output "my-output" has unknown key "bogus" (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    1 error found in 1 file

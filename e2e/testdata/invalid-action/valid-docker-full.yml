@@ -1,0 +1,23 @@
+actions:
+  - name: action.yml
+    content: |
+      name: My Docker Action
+      description: A comprehensive docker action
+      runs:
+        using: docker
+        image: Dockerfile
+        env:
+          FOO: bar
+        entrypoint: /entrypoint.sh
+        pre-entrypoint: /pre.sh
+        pre-if: always()
+        post-entrypoint: /post.sh
+        post-if: always()
+        args:
+          - --flag
+          - value
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: "no errors found\n"

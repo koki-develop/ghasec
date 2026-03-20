@@ -1,0 +1,19 @@
+actions:
+  - name: action.yml
+    content: |
+      runs:
+        using: composite
+        steps: notalist
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:3:10
+    1 | runs:
+    ...
+    3 |   steps: notalist
+      |          ^^^^^^^^ "steps" must be a sequence, but got String (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    1 error found in 1 file

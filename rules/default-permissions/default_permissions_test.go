@@ -35,7 +35,7 @@ func TestRule_PermissionsEmptyMapping(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\npermissions: {}\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 }
 
@@ -43,7 +43,7 @@ func TestRule_MissingPermissions(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `permissions`)
 }
@@ -52,7 +52,7 @@ func TestRule_MissingPermissions_TokenPointsToDocStart(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, 1, errs[0].Token.Position.Line)
 }
@@ -61,7 +61,7 @@ func TestRule_PermissionsNonEmptyMapping(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\npermissions:\n  contents: read\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `permissions`)
 }
@@ -70,7 +70,7 @@ func TestRule_PermissionsNonEmptyMapping_TokenPointsToKey(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\npermissions:\n  contents: read\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "permissions", errs[0].Token.Value)
 }
@@ -93,7 +93,7 @@ func TestRule_PermissionsString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := parseMapping(t, tt.src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			require.Len(t, errs, 1)
 			assert.Contains(t, errs[0].Message, `permissions`)
 		})
@@ -104,7 +104,7 @@ func TestRule_PermissionsString_TokenPointsToKey(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\npermissions: read-all\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Equal(t, "permissions", errs[0].Token.Value)
 }
@@ -113,7 +113,7 @@ func TestRule_PermissionsNull(t *testing.T) {
 	r := &defaultpermissions.Rule{}
 	src := "on: push\npermissions:\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `permissions`)
 }

@@ -1,0 +1,11 @@
+actions:
+  - name: action.yml
+    content: |
+      runs:
+        using: docker
+        image: Dockerfile
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: "no errors found\n"

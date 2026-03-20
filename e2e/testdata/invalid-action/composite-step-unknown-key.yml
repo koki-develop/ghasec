@@ -1,0 +1,25 @@
+actions:
+  - name: action.yml
+    content: |
+      runs:
+        using: composite
+        steps:
+          - run: echo hi
+            shell: bash
+            timeout-minutes: 10
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:6:7
+    1 | runs:
+    ...
+    3 |   steps:
+    4 |     - run: echo hi
+    ...
+    6 |       timeout-minutes: 10
+      |       ^^^^^^^^^^^^^^^ unknown key "timeout-minutes" (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    1 error found in 1 file

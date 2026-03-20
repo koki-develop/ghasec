@@ -11,7 +11,7 @@ import (
 func TestRule_StepMissingUsesAndRun(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - name: no action\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "is required")
 	assert.Contains(t, errs[0].Message, "uses")
@@ -21,7 +21,7 @@ func TestRule_StepMissingUsesAndRun(t *testing.T) {
 func TestRule_StepHasBothUsesAndRun(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@abc123\n        run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "mutually exclusive")
 	assert.Contains(t, errs[0].Message, "uses")
@@ -31,7 +31,7 @@ func TestRule_StepHasBothUsesAndRun(t *testing.T) {
 func TestRule_StepUnknownKey(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n        unknown: value\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "unknown key")
 	assert.Contains(t, errs[0].Message, "unknown")
@@ -40,7 +40,7 @@ func TestRule_StepUnknownKey(t *testing.T) {
 func TestRule_StepNotMapping(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - not a mapping\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "step")
 	assert.Contains(t, errs[0].Message, "mapping")
@@ -49,7 +49,7 @@ func TestRule_StepNotMapping(t *testing.T) {
 func TestRule_StepRemoteActionMissingRef(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "must have a ref")
 	assert.Contains(t, errs[0].Message, "actions/checkout")
@@ -67,7 +67,7 @@ func TestRule_StepLocalAndDockerActionNoRef(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := parseMapping(t, tt.src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			assert.Empty(t, errs)
 		})
 	}
@@ -85,7 +85,7 @@ func TestRule_ValidStepKeys(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := parseMapping(t, tt.src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			assert.Empty(t, errs)
 		})
 	}

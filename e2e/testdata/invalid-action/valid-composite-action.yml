@@ -1,0 +1,13 @@
+actions:
+  - name: action.yml
+    content: |
+      runs:
+        using: composite
+        steps:
+          - run: echo hi
+            shell: bash
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: "no errors found\n"

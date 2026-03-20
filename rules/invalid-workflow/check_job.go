@@ -43,7 +43,7 @@ func checkJobEntries(jobs *ast.MappingNode, jobsKeyToken *token.Token) []*diagno
 		if !ok {
 			errs = append(errs, &diagnostic.Error{
 				Token:   jobEntry.Value.GetToken(),
-				Message: fmt.Sprintf("job must be a mapping, but got %s", jobEntry.Value.Type()),
+				Message: fmt.Sprintf("job %q must be a mapping, but got %s", jobEntry.Key.GetToken().Value, jobEntry.Value.Type()),
 			})
 			continue
 		}
@@ -232,7 +232,7 @@ func checkStrategy(kv *ast.MappingValueNode) []*diagnostic.Error {
 	if matrixKV == nil {
 		return []*diagnostic.Error{{
 			Token:   kv.Key.GetToken(),
-			Message: "\"strategy\" must have a \"matrix\" key",
+			Message: "\"matrix\" is required",
 		}}
 	}
 	return nil

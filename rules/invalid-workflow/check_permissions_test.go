@@ -11,7 +11,7 @@ import (
 func TestRule_PermissionsInvalidType(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\npermissions: 123\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "permissions")
 	assert.Contains(t, errs[0].Message, "must be a string or mapping")
@@ -20,7 +20,7 @@ func TestRule_PermissionsInvalidType(t *testing.T) {
 func TestRule_PermissionsInvalidStringValue(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\npermissions: admin\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "permissions")
 	assert.Contains(t, errs[0].Message, "admin")
@@ -29,7 +29,7 @@ func TestRule_PermissionsInvalidStringValue(t *testing.T) {
 func TestRule_PermissionsUnknownScope(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\npermissions:\n  unknown-scope: read\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "permissions")
 	assert.Contains(t, errs[0].Message, "unknown scope")
@@ -39,7 +39,7 @@ func TestRule_PermissionsUnknownScope(t *testing.T) {
 func TestRule_PermissionsInvalidLevel(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\npermissions:\n  contents: admin\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "permissions")
 	assert.Contains(t, errs[0].Message, "admin")
@@ -48,7 +48,7 @@ func TestRule_PermissionsInvalidLevel(t *testing.T) {
 func TestRule_PermissionsModelsWriteInvalid(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\npermissions:\n  models: write\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "models")
 	assert.Contains(t, errs[0].Message, "write")
@@ -70,7 +70,7 @@ func TestRule_PermissionsValid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := parseMapping(t, tt.src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			assert.Empty(t, errs)
 		})
 	}
@@ -79,7 +79,7 @@ func TestRule_PermissionsValid(t *testing.T) {
 func TestRule_PermissionsScopeNonStringValue(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\npermissions:\n  contents:\n    - read\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "contents")
 	assert.Contains(t, errs[0].Message, "must be a string")
@@ -88,14 +88,14 @@ func TestRule_PermissionsScopeNonStringValue(t *testing.T) {
 func TestRule_PermissionsScopeLevelExpression(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\npermissions:\n  contents: ${{ inputs.level }}\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 }
 
 func TestRule_JobPermissionsInvalid(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    permissions: 123\n    steps:\n      - run: echo hi\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "permissions")
 }

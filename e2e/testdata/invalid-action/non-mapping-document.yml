@@ -1,0 +1,16 @@
+actions:
+  - name: action.yml
+    content: |
+      - foo
+      - bar
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:1:1
+    1 | - foo
+      | ^ action must be a YAML mapping
+    ...
+
+    1 error found in 1 file

@@ -22,6 +22,16 @@ func parseMapping(t *testing.T, src string) workflow.WorkflowMapping {
 	return workflow.WorkflowMapping{Mapping: workflow.Mapping{MappingNode: m}}
 }
 
+func parseActionMapping(t *testing.T, src string) workflow.ActionMapping {
+	t.Helper()
+	f, err := yamlparser.ParseBytes([]byte(src), 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, f.Docs)
+	m, ok := f.Docs[0].Body.(*ast.MappingNode)
+	require.True(t, ok)
+	return workflow.ActionMapping{Mapping: workflow.Mapping{MappingNode: m}}
+}
+
 func TestRule_ID(t *testing.T) {
 	r := &unpinnedaction.Rule{}
 	assert.Equal(t, "unpinned-action", r.ID())
@@ -36,7 +46,7 @@ func TestRule_PinnedToFullSHA(t *testing.T) {
 	r := &unpinnedaction.Rule{}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
 	m := parseMapping(t, src)
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
 }
 
@@ -54,7 +64,7 @@ func TestRule_NotPinned(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
 			m := parseMapping(t, src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			require.Len(t, errs, 1)
 			assert.Contains(t, errs[0].Message, "pinned to a full length commit SHA")
 		})
@@ -74,7 +84,7 @@ func TestRule_LocalAndDockerActions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
 			m := parseMapping(t, src)
-			errs := r.Check(m)
+			errs := r.CheckWorkflow(m)
 			assert.Empty(t, errs)
 		})
 	}
@@ -83,6 +93,31 @@ func TestRule_LocalAndDockerActions(t *testing.T) {
 func TestRule_NoSteps(t *testing.T) {
 	r := &unpinnedaction.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n")
-	errs := r.Check(m)
+	errs := r.CheckWorkflow(m)
+	assert.Empty(t, errs)
+}
+
+func TestRule_CheckAction_NotPinned(t *testing.T) {
+	r := &unpinnedaction.Rule{}
+	src := "name: My Action\nruns:\n  using: composite\n  steps:\n    - uses: actions/checkout@v6\n"
+	m := parseActionMapping(t, src)
+	errs := r.CheckAction(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "pinned to a full length commit SHA")
+}
+
+func TestRule_CheckAction_Pinned(t *testing.T) {
+	r := &unpinnedaction.Rule{}
+	src := "name: My Action\nruns:\n  using: composite\n  steps:\n    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
+	m := parseActionMapping(t, src)
+	errs := r.CheckAction(m)
+	assert.Empty(t, errs)
+}
+
+func TestRule_CheckAction_NonComposite(t *testing.T) {
+	r := &unpinnedaction.Rule{}
+	src := "name: My Action\nruns:\n  using: node20\n  main: index.js\n"
+	m := parseActionMapping(t, src)
+	errs := r.CheckAction(m)
 	assert.Empty(t, errs)
 }

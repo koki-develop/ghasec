@@ -29,7 +29,19 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return true }
 
-func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+	if r.Resolver == nil {
+		r.Resolver = defaultResolver()
+	}
+
+	var errs []*diagnostic.Error
+	mapping.EachStep(func(step workflow.StepMapping) {
+		errs = append(errs, r.checkStep(step)...)
+	})
+	return errs
+}
+
+func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 	if r.Resolver == nil {
 		r.Resolver = defaultResolver()
 	}

@@ -10,7 +10,7 @@ e2e/testdata/
   <subdir>/<name>.yml  # Test case organized in a subdirectory
 ```
 
-Each `.yml` file contains both workflow inputs and expected outputs.
+Each `.yml` file contains inputs (workflows and/or actions) and expected outputs.
 
 ## Adding a Test Case
 
@@ -44,10 +44,11 @@ expected:
     N error(s) found in M file(s)
 ```
 
-- `workflows`: list of objects with `name` (filename) and `content` (workflow YAML as block scalar).
+- `workflows`: list of objects with `name` (filename) and `content` (workflow YAML as block scalar). Files are written to `{{.Dir}}/`.
+- `actions`: list of objects with `name` (filename, e.g. `action.yml`) and `content` (action YAML as block scalar). Files are written to the temp directory root (`{{.Dir}}/`), not `.github/workflows/`.
 - `expected`: exit_code, stdout, stderr.
 - `{{.Dir}}` is a Go template variable replaced with the temp directory path at test time.
-- The test runner sorts workflow files alphabetically before passing them to ghasec. Errors in `stderr` must follow that alphabetical file order.
+- The test runner sorts all file paths (workflows and actions combined) alphabetically before passing them to ghasec. Errors in `stderr` must follow that alphabetical file order.
 - The test runner sets `NO_COLOR=` to disable ANSI codes. All expected output is plain text.
 - Valid workflow files (no errors) produce no output entries.
 - The summary line counts only files that had errors, not total files processed.
