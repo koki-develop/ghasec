@@ -1,7 +1,7 @@
 # Within each file, errors are sorted by position.
 # File order is alphabetical (a.yml before b.yml).
-# In b.yml, unpinned-action on setup-go (line 6) comes before
-# checkout-persist-credentials (line 7) and unpinned-action on checkout (line 7).
+# In b.yml, unpinned-action on setup-go (line 7) comes before
+# checkout-persist-credentials (line 8) and unpinned-action on checkout (line 8).
 workflows:
   - name: a.yml
     content: |
@@ -9,6 +9,7 @@ workflows:
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - uses: actions/checkout@v6
   - name: b.yml
@@ -17,6 +18,7 @@ workflows:
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - uses: actions/setup-go@v5
             - uses: actions/checkout@v6
@@ -31,23 +33,23 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
 
-    --> {{.Dir}}/a.yml:6:15
+    --> {{.Dir}}/a.yml:7:15
     ...
     2 | jobs:
     3 |   build:
     ...
-    5 |     steps:
-    6 |       - uses: actions/checkout@v6
+    6 |     steps:
+    7 |       - uses: actions/checkout@v6
       |               ^^^^^^^^^^^^^^^^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
 
-    --> {{.Dir}}/a.yml:6:32
+    --> {{.Dir}}/a.yml:7:32
     ...
     2 | jobs:
     3 |   build:
     ...
-    5 |     steps:
-    6 |       - uses: actions/checkout@v6
+    6 |     steps:
+    7 |       - uses: actions/checkout@v6
       |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
@@ -57,36 +59,36 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
 
-    --> {{.Dir}}/b.yml:6:32
-    ...
-    2 | jobs:
-    3 |   build:
-    ...
-    5 |     steps:
-    6 |       - uses: actions/setup-go@v5
-      |                                ^^ "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
-    ...
-      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
-
-    --> {{.Dir}}/b.yml:7:15
-    ...
-    2 | jobs:
-    3 |   build:
-    ...
-    5 |     steps:
-    ...
-    7 |       - uses: actions/checkout@v6
-      |               ^^^^^^^^^^^^^^^^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)
-      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
-
     --> {{.Dir}}/b.yml:7:32
     ...
     2 | jobs:
     3 |   build:
     ...
-    5 |     steps:
+    6 |     steps:
+    7 |       - uses: actions/setup-go@v5
+      |                                ^^ "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
     ...
-    7 |       - uses: actions/checkout@v6
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/b.yml:8:15
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    6 |     steps:
+    ...
+    8 |       - uses: actions/checkout@v6
+      |               ^^^^^^^^^^^^^^^^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
+
+    --> {{.Dir}}/b.yml:8:32
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    6 |     steps:
+    ...
+    8 |       - uses: actions/checkout@v6
       |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 

@@ -6,6 +6,7 @@ workflows:
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - uses: actions/checkout@v6 # ghasec-ignore:unpinned-action,nonexistent
               with:
@@ -15,13 +16,13 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/workflow.yml:7:67
+    --> {{.Dir}}/workflow.yml:8:67
     ...
     3 | jobs:
     4 |   build:
     ...
-    6 |     steps:
-    7 |       - uses: actions/checkout@v6 # ghasec-ignore:unpinned-action,nonexistent
+    7 |     steps:
+    8 |       - uses: actions/checkout@v6 # ghasec-ignore:unpinned-action,nonexistent
       |                                                                   ^^^^^^^^^^^ unknown rule "nonexistent" (unused-ignore)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md

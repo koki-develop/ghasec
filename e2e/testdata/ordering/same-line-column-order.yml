@@ -9,6 +9,7 @@ workflows:
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - uses: actions/checkout@v6
 
@@ -16,23 +17,23 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/same-line-column-order.yml:7:15
+    --> {{.Dir}}/same-line-column-order.yml:8:15
     ...
     3 | jobs:
     4 |   build:
     ...
-    6 |     steps:
-    7 |       - uses: actions/checkout@v6
+    7 |     steps:
+    8 |       - uses: actions/checkout@v6
       |               ^^^^^^^^^^^^^^^^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
 
-    --> {{.Dir}}/same-line-column-order.yml:7:32
+    --> {{.Dir}}/same-line-column-order.yml:8:32
     ...
     3 | jobs:
     4 |   build:
     ...
-    6 |     steps:
-    7 |       - uses: actions/checkout@v6
+    7 |     steps:
+    8 |       - uses: actions/checkout@v6
       |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 

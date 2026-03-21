@@ -84,15 +84,26 @@ func checkJob(jobKey *token.Token, job workflow.JobMapping) []*diagnostic.Error 
 		})
 	}
 
-	// Unknown key check (uses union set to avoid duplication with mutual-exclusivity checks)
+	// Unknown key check (type-aware: normal vs reusable job)
+	var knownKeys map[string]bool
+	if hasUses {
+		knownKeys = knownReusableJobKeys
+	} else {
+		knownKeys = knownNormalJobKeys
+	}
 	for _, entry := range job.Values {
 		key := entry.Key.GetToken().Value
-		if !allJobKeys[key] {
-			errs = append(errs, &diagnostic.Error{
-				Token:   entry.Key.GetToken(),
-				Message: fmt.Sprintf("unknown key %q", key),
-			})
+		if knownKeys[key] {
+			continue
 		}
+		// Skip keys handled by mutual-exclusivity checks above
+		if key == "runs-on" || key == "uses" || key == "steps" {
+			continue
+		}
+		errs = append(errs, &diagnostic.Error{
+			Token:   entry.Key.GetToken(),
+			Message: fmt.Sprintf("unknown key %q", key),
+		})
 	}
 
 	if hasRunsOn {

@@ -26,6 +26,33 @@ func TestRule_UnknownReusableJobKey(t *testing.T) {
 	assert.Contains(t, errs[0].Message, "unknown")
 }
 
+func TestRule_ReusableJobWithTimeoutMinutes(t *testing.T) {
+	r := &invalidworkflow.Rule{}
+	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n    timeout-minutes: 10\n")
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "unknown key")
+	assert.Contains(t, errs[0].Message, "timeout-minutes")
+}
+
+func TestRule_NormalJobWithReusableOnlyKeys(t *testing.T) {
+	r := &invalidworkflow.Rule{}
+	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    with:\n      param: value\n    secrets:\n      token: secret\n    steps:\n      - run: echo hi\n")
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 2)
+	assert.Contains(t, errs[0].Message, "unknown key")
+	assert.Contains(t, errs[0].Message, "with")
+	assert.Contains(t, errs[1].Message, "unknown key")
+	assert.Contains(t, errs[1].Message, "secrets")
+}
+
+func TestRule_NormalJobWithTimeoutMinutes(t *testing.T) {
+	r := &invalidworkflow.Rule{}
+	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    timeout-minutes: 30\n    steps:\n      - run: echo hi\n")
+	errs := r.CheckWorkflow(m)
+	assert.Empty(t, errs)
+}
+
 func TestRule_StrategyMissingMatrix(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    strategy:\n      fail-fast: false\n    steps:\n      - run: echo hi\n")

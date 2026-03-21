@@ -1,7 +1,7 @@
 # Errors are sorted by position (line, column) within a file,
 # not by rule registration order.
 # Rule registration order: unpinned-action, checkout-persist-credentials, default-permissions.
-# Position order: default-permissions (1:1), checkout-persist-credentials (6:15), unpinned-action (6:32).
+# Position order: default-permissions (1:1), checkout-persist-credentials (7:15), unpinned-action (7:32).
 workflows:
   - name: position-before-rule-order.yml
     content: |
@@ -9,6 +9,7 @@ workflows:
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - uses: actions/checkout@v6
 
@@ -22,23 +23,23 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
 
-    --> {{.Dir}}/position-before-rule-order.yml:6:15
+    --> {{.Dir}}/position-before-rule-order.yml:7:15
     ...
     2 | jobs:
     3 |   build:
     ...
-    5 |     steps:
-    6 |       - uses: actions/checkout@v6
+    6 |     steps:
+    7 |       - uses: actions/checkout@v6
       |               ^^^^^^^^^^^^^^^^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
 
-    --> {{.Dir}}/position-before-rule-order.yml:6:32
+    --> {{.Dir}}/position-before-rule-order.yml:7:32
     ...
     2 | jobs:
     3 |   build:
     ...
-    5 |     steps:
-    6 |       - uses: actions/checkout@v6
+    6 |     steps:
+    7 |       - uses: actions/checkout@v6
       |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 

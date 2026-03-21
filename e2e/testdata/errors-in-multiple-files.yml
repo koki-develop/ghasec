@@ -6,6 +6,7 @@ workflows:
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - uses: actions/checkout@v6
               with:
@@ -17,6 +18,7 @@ workflows:
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - uses: actions/setup-go@v5
 
@@ -24,24 +26,24 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/a.yml:7:32
+    --> {{.Dir}}/a.yml:8:32
     ...
     3 | jobs:
     4 |   build:
     ...
-    6 |     steps:
-    7 |       - uses: actions/checkout@v6
+    7 |     steps:
+    8 |       - uses: actions/checkout@v6
       |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
-    --> {{.Dir}}/b.yml:7:32
+    --> {{.Dir}}/b.yml:8:32
     ...
     3 | jobs:
     4 |   build:
     ...
-    6 |     steps:
-    7 |       - uses: actions/setup-go@v5
+    7 |     steps:
+    8 |       - uses: actions/setup-go@v5
       |                                ^^ "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 

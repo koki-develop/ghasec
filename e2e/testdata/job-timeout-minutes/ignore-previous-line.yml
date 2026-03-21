@@ -1,20 +1,14 @@
 workflows:
-  - name: workflow.yml
+  - name: ignore-previous-line.yml
     content: |
       on: push
-
       permissions: {}
-
       jobs:
+        # ghasec-ignore:job-timeout-minutes
         build:
           runs-on: ubuntu-latest
-          timeout-minutes: 10
           steps:
-
-            # ghasec-ignore:unpinned-action
-            - uses: actions/checkout@v6
-              with:
-                persist-credentials: false
+            - run: echo hi
 
 expected:
   exit_code: 0

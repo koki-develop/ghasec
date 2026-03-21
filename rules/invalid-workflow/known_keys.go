@@ -99,18 +99,6 @@ var knownReusableJobKeys = map[string]bool{
 	"strategy":    true,
 }
 
-// allJobKeys is the union of knownNormalJobKeys and knownReusableJobKeys.
-var allJobKeys = func() map[string]bool {
-	m := make(map[string]bool)
-	for k := range knownNormalJobKeys {
-		m[k] = true
-	}
-	for k := range knownReusableJobKeys {
-		m[k] = true
-	}
-	return m
-}()
-
 // knownStepKeys lists all documented keys for a step.
 var knownStepKeys = map[string]bool{
 	"id":                true,

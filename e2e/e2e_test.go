@@ -309,7 +309,7 @@ func TestE2E_AutoDiscoverWithActions(t *testing.T) {
 	tmpDir := t.TempDir()
 	workflowDir := filepath.Join(tmpDir, ".github", "workflows")
 	require.NoError(t, os.MkdirAll(workflowDir, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(workflowDir, "ci.yml"), []byte("on: push\npermissions: {}\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n        with:\n          persist-credentials: false\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(workflowDir, "ci.yml"), []byte("on: push\npermissions: {}\njobs:\n  build:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v6\n        with:\n          persist-credentials: false\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "action.yml"), []byte("runs:\n  using: composite\n  steps:\n    - uses: actions/checkout@v6\n      with:\n        persist-credentials: false\n"), 0o644))
 
 	cmd := exec.Command(binaryPath)

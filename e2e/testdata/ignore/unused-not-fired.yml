@@ -6,6 +6,7 @@ workflows:
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ghasec-ignore:unpinned-action
               with:
@@ -15,13 +16,13 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/workflow.yml:7:89
+    --> {{.Dir}}/workflow.yml:8:89
     ...
     3 | jobs:
     4 |   build:
     ...
-    6 |     steps:
-    7 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ghasec-ignore:unpinned-action
+    7 |     steps:
+    8 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ghasec-ignore:unpinned-action
       |                                                                                         ^^^^^^^^^^^^^^^ unused ignore directive for "unpinned-action" (unused-ignore)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md

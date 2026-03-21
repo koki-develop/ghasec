@@ -7,6 +7,7 @@ workflows:
       jobs:
         build: # job comment
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             # ghasec-ignore:unpinned-action
             - uses: actions/checkout@v6

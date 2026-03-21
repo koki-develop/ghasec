@@ -1,14 +1,13 @@
 workflows:
-  - name: workflow.yml
+  - name: ignore-inline.yml
     content: |
       on: push
       permissions: {}
       jobs:
-        build:
+        build: # ghasec-ignore:job-timeout-minutes
           runs-on: ubuntu-latest
-          timeout-minutes: 10
           steps:
-            - uses: actions/checkout@v6 # ghasec-ignore:unpinned-action ,  checkout-persist-credentials
+            - run: echo hi
 
 expected:
   exit_code: 0

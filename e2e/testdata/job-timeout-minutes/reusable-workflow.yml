@@ -1,0 +1,14 @@
+workflows:
+  - name: reusable.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: org/repo/.github/workflows/ci.yml@main
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

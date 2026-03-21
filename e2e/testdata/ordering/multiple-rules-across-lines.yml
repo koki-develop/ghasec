@@ -1,6 +1,6 @@
 # Errors from three different rules sorted strictly by line number.
-# default-permissions (line 2), unpinned-action (line 8), unpinned-action (line 9),
-# checkout-persist-credentials (line 11).
+# default-permissions (line 2), unpinned-action (line 9), unpinned-action (line 10),
+# checkout-persist-credentials (line 12).
 workflows:
   - name: multiple-rules-across-lines.yml
     content: |
@@ -10,6 +10,7 @@ workflows:
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - uses: actions/setup-go@v5
             - uses: actions/checkout@v6
@@ -28,39 +29,39 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
 
-    --> {{.Dir}}/multiple-rules-across-lines.yml:8:32
-    ...
-    4 | jobs:
-    5 |   build:
-    ...
-    7 |     steps:
-    8 |       - uses: actions/setup-go@v5
-      |                                ^^ "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
-    ...
-      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
-
     --> {{.Dir}}/multiple-rules-across-lines.yml:9:32
     ...
     4 | jobs:
     5 |   build:
     ...
-    7 |     steps:
-    ...
-    9 |       - uses: actions/checkout@v6
-      |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
+    8 |     steps:
+    9 |       - uses: actions/setup-go@v5
+      |                                ^^ "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
-    --> {{.Dir}}/multiple-rules-across-lines.yml:11:32
+    --> {{.Dir}}/multiple-rules-across-lines.yml:10:32
     ...
      4 | jobs:
      5 |   build:
     ...
-     7 |     steps:
+     8 |     steps:
     ...
-     9 |       - uses: actions/checkout@v6
-    10 |         with:
-    11 |           persist-credentials: true
+    10 |       - uses: actions/checkout@v6
+       |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/multiple-rules-across-lines.yml:12:32
+    ...
+     4 | jobs:
+     5 |   build:
+    ...
+     8 |     steps:
+    ...
+    10 |       - uses: actions/checkout@v6
+    11 |         with:
+    12 |           persist-credentials: true
        |                                ^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
 

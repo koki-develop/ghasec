@@ -10,6 +10,7 @@ workflows:
         # comment 7
         build: # comment 8
           runs-on: ubuntu-latest # comment 9
+          timeout-minutes: 10
           steps:
             - uses: actions/checkout@v6
               with:
@@ -19,14 +20,14 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/workflow.yml:11:32
+    --> {{.Dir}}/workflow.yml:12:32
     ...
      6 | jobs: # comment 6
     ...
      8 |   build: # comment 8
     ...
-    10 |     steps:
-    11 |       - uses: actions/checkout@v6
+    11 |     steps:
+    12 |       - uses: actions/checkout@v6
        |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md

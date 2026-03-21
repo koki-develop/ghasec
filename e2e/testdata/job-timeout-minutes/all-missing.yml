@@ -1,0 +1,37 @@
+workflows:
+  - name: all-missing.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+        deploy:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/all-missing.yml:4:3
+    ...
+    3 | jobs:
+    4 |   build:
+      |   ^^^^^ "timeout-minutes" must be set (job-timeout-minutes)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/job-timeout-minutes/README.md
+
+    --> {{.Dir}}/all-missing.yml:8:3
+    ...
+    3 | jobs:
+    ...
+    8 |   deploy:
+      |   ^^^^^^ "timeout-minutes" must be set (job-timeout-minutes)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/job-timeout-minutes/README.md
+
+    2 errors found in 1 file

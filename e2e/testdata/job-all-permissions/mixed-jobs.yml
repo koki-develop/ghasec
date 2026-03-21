@@ -6,12 +6,14 @@ workflows:
       jobs:
         safe:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           permissions:
             contents: read
           steps:
             - run: echo safe
         unsafe:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           permissions: write-all
           steps:
             - run: echo unsafe
@@ -20,13 +22,13 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/mixed-jobs.yml:12:18
+    --> {{.Dir}}/mixed-jobs.yml:14:18
     ...
      3 | jobs:
     ...
-    10 |   unsafe:
+    11 |   unsafe:
     ...
-    12 |     permissions: write-all
+    14 |     permissions: write-all
        |                  ^^^^^^^^^ "permissions" must not be "write-all"; grant individual scopes instead (job-all-permissions)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/job-all-permissions/README.md

@@ -6,6 +6,7 @@ workflows:
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           # ghasec-ignore:job-all-permissions
           permissions: write-all
           steps:
