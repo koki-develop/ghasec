@@ -63,8 +63,8 @@ func Parse(comment string) (ruleIDs []string, ok bool) {
 	if rest[0] != ':' {
 		return nil, false
 	}
-	parts := strings.Split(rest[1:], ",")
-	for _, p := range parts {
+	parts := strings.SplitSeq(rest[1:], ",")
+	for p := range parts {
 		id := strings.TrimSpace(p)
 		if id != "" {
 			ruleIDs = append(ruleIDs, id)

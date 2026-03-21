@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -578,11 +579,8 @@ func findPresenceDiscriminator(branches []*Node) string {
 				if i == j {
 					continue
 				}
-				for _, otherReq := range other.Required {
-					if req == otherReq {
-						unique = false
-						break
-					}
+				if slices.Contains(other.Required, req) {
+					unique = false
 				}
 				if !unique {
 					break
@@ -805,11 +803,8 @@ func (e *emitter) emitOneOfDiscrimPresent(valueExpr string, branches []*Node, er
 				if other == b {
 					continue
 				}
-				for _, otherReq := range other.Required {
-					if req == otherReq {
-						unique = false
-						break
-					}
+				if slices.Contains(other.Required, req) {
+					unique = false
 				}
 				if !unique {
 					break

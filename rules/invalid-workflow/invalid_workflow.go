@@ -116,8 +116,8 @@ func toDiagnostic(ve rules.ValidationError) *diagnostic.Error {
 	case rules.KindRequiredKey:
 		msg = fmt.Sprintf("%q is required", ve.Key)
 	case rules.KindTypeMismatch:
-		if strings.HasSuffix(ve.Key, "[]") {
-			base := strings.TrimSuffix(ve.Key, "[]")
+		if before, ok := strings.CutSuffix(ve.Key, "[]"); ok {
+			base := before
 			msg = fmt.Sprintf("%q elements must be %s, but got %s", base, joinPlural(ve.Allowed), ve.Got)
 		} else if strings.HasPrefix(ve.Path, "permissions.") && ve.Path != "permissions" {
 			// Permission scope type mismatch
