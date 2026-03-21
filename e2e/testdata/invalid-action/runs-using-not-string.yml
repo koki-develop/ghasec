@@ -1,6 +1,8 @@
 actions:
   - name: action.yml
     content: |
+      name: test
+      description: test
       runs:
         using: true
 
@@ -8,9 +10,10 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/action.yml:2:10
-    1 | runs:
-    2 |   using: true
+    --> {{.Dir}}/action.yml:4:10
+    ...
+    3 | runs:
+    4 |   using: true
       |          ^^^^ "using" must be a string, but got Bool (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 

@@ -14,7 +14,7 @@ expected:
   stderr: |
     --> {{.Dir}}/invalid-on-type.yml:1:5
     1 | on: 123
-      |     ^^^ "on" must be a string, sequence, or mapping, but got Integer (invalid-workflow)
+      |     ^^^ "on" must be a string, sequence, or mapping, but got integer (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

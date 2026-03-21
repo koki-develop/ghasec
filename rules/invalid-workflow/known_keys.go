@@ -6,18 +6,6 @@ import (
 	"github.com/goccy/go-yaml/ast"
 )
 
-// knownTopLevelKeys lists all documented top-level keys in a GitHub Actions workflow file.
-var knownTopLevelKeys = map[string]bool{
-	"name":        true,
-	"run-name":    true,
-	"on":          true,
-	"permissions": true,
-	"env":         true,
-	"defaults":    true,
-	"concurrency": true,
-	"jobs":        true,
-}
-
 // knownOnEvents lists all documented GitHub Actions trigger events.
 var knownOnEvents = map[string]bool{
 	"branch_protection_rule":      true,

@@ -5,13 +5,8 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/koki-develop/ghasec/diagnostic"
-	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
 )
-
-func checkTopLevelKeys(mapping workflow.Mapping) []*diagnostic.Error {
-	return rules.CheckUnknownKeys(mapping, knownTopLevelKeys)
-}
 
 func checkDefaults(kv *ast.MappingValueNode) []*diagnostic.Error {
 	defaultsMapping, ok := kv.Value.(*ast.MappingNode)

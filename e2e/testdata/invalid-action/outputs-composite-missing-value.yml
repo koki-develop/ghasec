@@ -1,6 +1,8 @@
 actions:
   - name: action.yml
     content: |
+      name: test
+      description: test
       outputs:
         my-output:
           description: A test output
@@ -14,9 +16,10 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/action.yml:2:3
-    1 | outputs:
-    2 |   my-output:
+    --> {{.Dir}}/action.yml:4:3
+    ...
+    3 | outputs:
+    4 |   my-output:
       |   ^^^^^^^^^ "value" is required (invalid-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md

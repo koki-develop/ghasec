@@ -4,6 +4,8 @@
 actions:
   - name: action.yml
     content: |
+      name: test
+      description: test
       runs:
         using: composite
         steps:
@@ -14,30 +16,33 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/action.yml:4:13
-    1 | runs:
+    --> {{.Dir}}/action.yml:6:13
     ...
-    3 |   steps:
-    4 |     - uses: actions/checkout@v6
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: actions/checkout@v6
       |             ^^^^^^^^^^^^^^^^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
 
-    --> {{.Dir}}/action.yml:4:30
-    1 | runs:
+    --> {{.Dir}}/action.yml:6:30
     ...
-    3 |   steps:
-    4 |     - uses: actions/checkout@v6
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: actions/checkout@v6
       |                              ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
-    --> {{.Dir}}/action.yml:5:30
-    1 | runs:
+    --> {{.Dir}}/action.yml:7:30
     ...
-    3 |   steps:
+    3 | runs:
     ...
-    5 |     - uses: actions/setup-go@v5
+    5 |   steps:
+    ...
+    7 |     - uses: actions/setup-go@v5
       |                              ^^ "actions/setup-go@v5" must be pinned to a full length commit SHA (unpinned-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 

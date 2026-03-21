@@ -18,7 +18,7 @@ expected:
     1 | on:
     ...
     3 |   - 123
-      |     ^^^ "on" elements must be strings, but got Integer (invalid-workflow)
+      |     ^^^ "on" elements must be strings, but got integer (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

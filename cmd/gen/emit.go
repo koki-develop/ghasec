@@ -1,0 +1,961 @@
+package main
+
+import (
+	"fmt"
+	"sort"
+	"strings"
+)
+
+// emitter generates Go validation code from a *Node IR.
+type emitter struct {
+	buf     strings.Builder
+	indent  int
+	regexps []regexpVar
+	counter int // unique counter for variable names
+}
+
+// nextID returns a unique integer for generating non-colliding variable names.
+func (e *emitter) nextID() int {
+	id := e.counter
+	e.counter++
+	return id
+}
+
+// line writes an indented line to the buffer.
+func (e *emitter) line(format string, args ...any) {
+	e.buf.WriteString(strings.Repeat("\t", e.indent))
+	fmt.Fprintf(&e.buf, format, args...)
+	e.buf.WriteByte('\n')
+}
+
+// blank writes a blank line.
+func (e *emitter) blank() {
+	e.buf.WriteByte('\n')
+}
+
+// push increases indentation.
+func (e *emitter) push() { e.indent++ }
+
+// pop decreases indentation.
+func (e *emitter) pop() { e.indent-- }
+
+// String returns the accumulated code.
+func (e *emitter) String() string { return e.buf.String() }
+
+// regexpVarName returns a stable variable name for a regexp pattern,
+// registering it in e.regexps if not already present.
+func (e *emitter) regexpVarName(pattern string) string {
+	for _, rv := range e.regexps {
+		if rv.Pattern == pattern {
+			return rv.VarName
+		}
+	}
+	name := fmt.Sprintf("_re%d", len(e.regexps))
+	e.regexps = append(e.regexps, regexpVar{VarName: name, Pattern: pattern})
+	return name
+}
+
+// EmitValidateFunc emits a complete top-level validation function for a
+// mapping node. funcName is the exported Go function name; paramType is the
+// Go type of the parameter (e.g. "workflow.WorkflowMapping"); node describes
+// the schema constraints.
+//
+// The generated function signature is:
+//
+//	func <funcName>(m <paramType>) []rules.ValidationError
+//
+// The function body accesses m.MappingNode for the underlying *ast.MappingNode.
+func (e *emitter) EmitValidateFunc(funcName string, paramType string, node *Node) {
+	e.line("func %s(m %s) []rules.ValidationError {", funcName, paramType)
+	e.push()
+	e.line("var errs []rules.ValidationError")
+
+	// Emit self checks (type/enum) on the mapping node itself.
+	if len(node.Types) > 0 || len(node.Enum) > 0 {
+		e.blank()
+		keyName := lastPathSegment(node.Path)
+		e.emitValueChecks("ast.Node(m.MappingNode)", node, "errs", keyName)
+	}
+
+	e.blank()
+	e.emitMappingBodyChecks("m.MappingNode", node, "errs")
+	e.blank()
+	e.line("return errs")
+	e.pop()
+	e.line("}")
+}
+
+// emitMappingBodyChecks emits unknown-key detection, required-key checks, and
+// per-property checks for a mapping expression. It does NOT emit type/enum
+// checks for the mapping node itself.
+func (e *emitter) emitMappingBodyChecks(mappingExpr string, node *Node, errsVar string) {
+	if node == nil {
+		return
+	}
+
+	// Unknown key detection: only when additionalProperties is explicitly false
+	// and there are known properties.
+	shouldCheckUnknown := node.AdditionalProperties != nil && !*node.AdditionalProperties && len(node.Properties) > 0
+
+	if shouldCheckUnknown {
+		knownKeys := make([]string, 0, len(node.Properties))
+		for k := range node.Properties {
+			knownKeys = append(knownKeys, k)
+		}
+		sort.Strings(knownKeys)
+
+		e.line("// Unknown key detection")
+		e.line("_knownKeys%s := map[string]bool{", sanitizeIdent(node.Path))
+		e.push()
+		for _, k := range knownKeys {
+			e.line("%q: true,", k)
+		}
+		e.pop()
+		e.line("}")
+		e.line("for _, _entry := range %s.Values {", mappingExpr)
+		e.push()
+		e.line("_key := _entry.Key.GetToken().Value")
+		e.line("if !_knownKeys%s[_key] {", sanitizeIdent(node.Path))
+		e.push()
+		e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+		e.push()
+		e.line("Kind:  rules.KindUnknownKey,")
+		if node.Path != "" {
+			e.line("Path:  %q,", node.Path)
+		}
+		if node.ParentName != "" {
+			e.line("Parent: %q,", node.ParentName)
+			e.line("Context: %q,", node.ContextTerm)
+		} else if node.Path != "" {
+			parts := strings.Split(node.Path, ".")
+			e.line("Parent: %q,", parts[len(parts)-1])
+		}
+		e.line("Key:   _key,")
+		e.line("Token: _entry.Key.GetToken(),")
+		e.pop()
+		e.line("})")
+		e.pop()
+		e.line("}")
+		e.pop()
+		e.line("}")
+		e.blank()
+	}
+
+	// Required key checks
+	if len(node.Required) > 0 {
+		wrapperVar := fmt.Sprintf("_mWrap%s", sanitizeIdent(node.Path))
+		e.line("// Required key checks")
+		e.line("%s := workflow.Mapping{MappingNode: %s}", wrapperVar, mappingExpr)
+		for _, req := range node.Required {
+			e.line("if %s.FindKey(%q) == nil {", wrapperVar, req)
+			e.push()
+			e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+			e.push()
+			e.line("Kind:  rules.KindRequiredKey,")
+			if node.Path != "" {
+				e.line("Path:  %q,", node.Path)
+			}
+			e.line("Key:   %q,", req)
+			e.line("Token: %s.GetToken(),", mappingExpr)
+			e.pop()
+			e.line("})")
+			e.pop()
+			e.line("}")
+		}
+		e.blank()
+	}
+
+	// Per-property value checks
+	sortedProps := make([]string, 0, len(node.Properties))
+	for k := range node.Properties {
+		sortedProps = append(sortedProps, k)
+	}
+	sort.Strings(sortedProps)
+
+	for _, key := range sortedProps {
+		child := node.Properties[key]
+		if child == nil {
+			continue
+		}
+		if !nodeHasAnyChecks(child) {
+			continue
+		}
+
+		varSuffix := sanitizeIdent(key)
+		e.line("// Property: %q", key)
+		e.line("if _kv%s := (workflow.Mapping{MappingNode: %s}).FindKey(%q); _kv%s != nil {", varSuffix, mappingExpr, key, varSuffix)
+		e.push()
+		e.emitValueChecks(fmt.Sprintf("_kv%s.Value", varSuffix), child, errsVar, key)
+		e.pop()
+		e.line("}")
+		e.blank()
+	}
+
+	// PatternProperties: for each pattern, iterate mapping entries and validate
+	// values whose keys match the pattern.
+	if len(node.PatternProps) > 0 {
+		sortedPatterns := make([]string, 0, len(node.PatternProps))
+		for p := range node.PatternProps {
+			sortedPatterns = append(sortedPatterns, p)
+		}
+		sort.Strings(sortedPatterns)
+
+		for i, pattern := range sortedPatterns {
+			child := node.PatternProps[pattern]
+			regVar := e.regexpVarName(pattern)
+			entryVar := fmt.Sprintf("_ppEntry%d", i)
+			e.line("// PatternProperty: %s", pattern)
+			e.line("for _, %s := range %s.Values {", entryVar, mappingExpr)
+			e.push()
+			e.line("if %s.MatchString(%s.Key.GetToken().Value) {", regVar, entryVar)
+			e.push()
+			e.emitValueChecks(fmt.Sprintf("%s.Value", entryVar), child, errsVar, "*")
+			e.pop()
+			e.line("}")
+			e.pop()
+			e.line("}")
+			e.blank()
+		}
+	}
+}
+
+// nodeHasAnyChecks returns true if the node has any validation checks to emit.
+func nodeHasAnyChecks(node *Node) bool {
+	if node == nil {
+		return false
+	}
+	return len(node.Types) > 0 || len(node.Enum) > 0 || node.Const != nil ||
+		len(node.Properties) > 0 ||
+		(node.AdditionalProperties != nil && !*node.AdditionalProperties) ||
+		len(node.Required) > 0 || node.Items != nil || len(node.PatternProps) > 0 ||
+		len(node.OneOf) > 0 || len(node.AllOf) > 0 || len(node.AnyOf) > 0 ||
+		node.If != nil
+}
+
+// emitValueChecks wraps all value checks in an expression bypass guard,
+// then delegates to type, enum, and nested mapping checks.
+func (e *emitter) emitValueChecks(valueExpr string, node *Node, errsVar string, keyName string) {
+	if node == nil {
+		return
+	}
+
+	// Bypass all checks for GitHub Actions expression syntax (${{ ... }})
+	e.line("if !rules.IsExpressionNode(%s) {", valueExpr)
+	e.push()
+	e.emitValueChecksOnExpr(valueExpr, node, errsVar, keyName)
+	e.pop()
+	e.line("}")
+}
+
+// emitValueChecksOnExpr emits type/enum/nested checks without the expression bypass wrapper.
+func (e *emitter) emitValueChecksOnExpr(valueExpr string, node *Node, errsVar string, keyName string) {
+	// When SkipChildren is set, only emit the type check and stop.
+	// The child validation is handled by dedicated logic elsewhere.
+	if node.SkipChildren {
+		e.emitTypeCheck(valueExpr, node, errsVar, keyName)
+		return
+	}
+
+	e.emitTypeCheck(valueExpr, node, errsVar, keyName)
+	e.emitEnumCheck(valueExpr, node, errsVar, keyName)
+
+	// If this node represents a mapping with child constraints, recurse.
+	if nodeHasChildMappingChecks(node) {
+		e.line("if _subM%s, _ok%s := %s.(*ast.MappingNode); _ok%s {", sanitizeIdent(keyName), sanitizeIdent(keyName), valueExpr, sanitizeIdent(keyName))
+		e.push()
+		e.emitMappingBodyChecks(fmt.Sprintf("_subM%s", sanitizeIdent(keyName)), node, errsVar)
+		e.pop()
+		e.line("}")
+	}
+
+	// Sequence item validation
+	if node.Items != nil {
+		seqIdent := sanitizeIdent(keyName) + "Seq"
+		e.line("if _%s, _%sOk := %s.(*ast.SequenceNode); _%sOk {", seqIdent, seqIdent, valueExpr, seqIdent)
+		e.push()
+		e.line("for _, _item := range _%s.Values {", seqIdent)
+		e.push()
+		e.emitValueChecks("_item", node.Items, errsVar, keyName+"[]")
+		e.pop()
+		e.line("}")
+		e.pop()
+		e.line("}")
+	}
+
+	// oneOf validation
+	if len(node.OneOf) > 0 {
+		e.emitOneOf(valueExpr, node.OneOf, errsVar, keyName)
+	}
+
+	// allOf validation: validate against all sub-schemas
+	if len(node.AllOf) > 0 {
+		for _, branch := range node.AllOf {
+			e.emitValueChecksOnExpr(valueExpr, branch, errsVar, keyName)
+		}
+	}
+
+	// anyOf validation: same as allOf for our purposes (merge all constraints)
+	if len(node.AnyOf) > 0 {
+		e.emitAnyOf(valueExpr, node.AnyOf, errsVar, keyName)
+	}
+
+	// if/then/else validation
+	if node.If != nil {
+		e.emitIfThenElse(valueExpr, node, errsVar, keyName)
+	}
+}
+
+// nodeHasChildMappingChecks returns true if the node has nested mapping constraints.
+func nodeHasChildMappingChecks(node *Node) bool {
+	if node == nil {
+		return false
+	}
+	return (node.AdditionalProperties != nil && !*node.AdditionalProperties && len(node.Properties) > 0) ||
+		len(node.Required) > 0 ||
+		len(node.Properties) > 0
+}
+
+// emitTypeCheck emits type assertion code for a value node.
+func (e *emitter) emitTypeCheck(valueExpr string, node *Node, errsVar string, keyName string) {
+	if len(node.Types) == 0 {
+		return
+	}
+
+	// Build the negated conditions: each is "!is<Type>(v)"
+	var conditions []string
+	for _, t := range node.Types {
+		switch t {
+		case "mapping":
+			conditions = append(conditions, fmt.Sprintf("!rules.IsMapping(%s)", valueExpr))
+		case "sequence":
+			conditions = append(conditions, fmt.Sprintf("!rules.IsSequence(%s)", valueExpr))
+		case "string":
+			conditions = append(conditions, fmt.Sprintf("!rules.IsString(%s)", valueExpr))
+		case "boolean":
+			conditions = append(conditions, fmt.Sprintf("!rules.IsBoolean(%s)", valueExpr))
+		case "integer":
+			conditions = append(conditions, fmt.Sprintf("!rules.IsNumber(%s)", valueExpr))
+		case "number":
+			conditions = append(conditions, fmt.Sprintf("!rules.IsNumber(%s)", valueExpr))
+		case "null":
+			conditions = append(conditions, fmt.Sprintf("!rules.IsNull(%s)", valueExpr))
+		}
+	}
+
+	if len(conditions) == 0 {
+		return
+	}
+
+	// Fire error when ALL negations are true — i.e., none of the allowed types match.
+	combined := strings.Join(conditions, " && ")
+	allowedStrs := make([]string, len(node.Types))
+	for i, t := range node.Types {
+		allowedStrs[i] = fmt.Sprintf("%q", t)
+	}
+
+	e.line("if %s {", combined)
+	e.push()
+	e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+	e.push()
+	e.line("Kind:    rules.KindTypeMismatch,")
+	if node.Path != "" {
+		e.line("Path:    %q,", node.Path)
+	}
+	e.line("Key:     %q,", keyName)
+	e.line("Got:     rules.NodeTypeName(%s),", valueExpr)
+	e.line("Allowed: []string{%s},", strings.Join(allowedStrs, ", "))
+	e.line("Token:   %s.GetToken(),", valueExpr)
+	e.pop()
+	e.line("})")
+	e.pop()
+	e.line("}")
+}
+
+// emitEnumCheck emits enum validation code for a string value node.
+func (e *emitter) emitEnumCheck(valueExpr string, node *Node, errsVar string, keyName string) {
+	if len(node.Enum) == 0 {
+		return
+	}
+
+	allowedStrs := make([]string, len(node.Enum))
+	for i, v := range node.Enum {
+		allowedStrs[i] = fmt.Sprintf("%q", v)
+	}
+
+	enumVarName := fmt.Sprintf("_validEnum%s", sanitizeIdent(keyName))
+	e.line("if _sv := rules.StringValue(%s); _sv != \"\" {", valueExpr)
+	e.push()
+	e.line("%s := map[string]bool{", enumVarName)
+	e.push()
+	for _, v := range node.Enum {
+		e.line("%q: true,", v)
+	}
+	e.pop()
+	e.line("}")
+	e.line("if !%s[_sv] {", enumVarName)
+	e.push()
+	e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+	e.push()
+	e.line("Kind:    rules.KindInvalidEnum,")
+	if node.Path != "" {
+		e.line("Path:    %q,", node.Path)
+	}
+	if node.ParentName != "" {
+		e.line("Parent:  %q,", node.ParentName)
+		e.line("Context: %q,", node.ContextTerm)
+	}
+	e.line("Key:     %q,", keyName)
+	e.line("Got:     _sv,")
+	e.line("Allowed: []string{%s},", strings.Join(allowedStrs, ", "))
+	e.line("Token:   %s.GetToken(),", valueExpr)
+	e.pop()
+	e.line("})")
+	e.pop()
+	e.line("}")
+	e.pop()
+	e.line("}")
+}
+
+// sanitizeIdent converts a key name into a valid Go identifier suffix.
+// Hyphens, dots, and other non-alphanumeric characters are replaced with underscores.
+func sanitizeIdent(key string) string {
+	var sb strings.Builder
+	for _, r := range key {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			sb.WriteRune(r)
+		} else {
+			sb.WriteRune('_')
+		}
+	}
+	return sb.String()
+}
+
+// lastPathSegment returns the last dot-separated segment of a path.
+// Returns the full string if there is no dot.
+func lastPathSegment(path string) string {
+	if path == "" {
+		return ""
+	}
+	if idx := strings.LastIndex(path, "."); idx >= 0 {
+		return path[idx+1:]
+	}
+	return path
+}
+
+// oneOfClassification describes how to handle a oneOf.
+type oneOfClassification int
+
+const (
+	oneOfTypeOnly       oneOfClassification = iota // all branches have only type constraints -> merge types
+	oneOfTypeBranching                             // branches have different types with sub-constraints
+	oneOfDiscrimEnum                               // discriminator key with different enum values per branch
+	oneOfDiscrimPresent                            // discriminator key unique to each branch (presence-based)
+	oneOfUnhandled                                 // too complex, skip
+)
+
+// classifyOneOf determines the oneOf pattern type.
+func classifyOneOf(branches []*Node) oneOfClassification {
+	if len(branches) == 0 {
+		return oneOfUnhandled
+	}
+
+	// Check if all branches are type-only (no properties, no required, no enum, no items, no sub-combiners).
+	allTypeOnly := true
+	for _, b := range branches {
+		if len(b.Properties) > 0 || len(b.Required) > 0 || len(b.Enum) > 0 ||
+			b.Items != nil || len(b.PatternProps) > 0 ||
+			len(b.OneOf) > 0 || len(b.AllOf) > 0 || len(b.AnyOf) > 0 ||
+			b.If != nil || b.Const != nil {
+			allTypeOnly = false
+			break
+		}
+	}
+	if allTypeOnly {
+		return oneOfTypeOnly
+	}
+
+	// Check for type-based branching: each branch has a distinct type.
+	typeSet := map[string]bool{}
+	allHaveType := true
+	for _, b := range branches {
+		if len(b.Types) == 0 {
+			allHaveType = false
+			break
+		}
+		for _, t := range b.Types {
+			typeSet[t] = true
+		}
+	}
+	if allHaveType && len(typeSet) >= len(branches) {
+		return oneOfTypeBranching
+	}
+
+	// Check for discriminator-based: all branches are mapping-like with a shared key
+	// that has different enum/const values per branch.
+	if key, _ := findEnumDiscriminator(branches); key != "" {
+		return oneOfDiscrimEnum
+	}
+
+	// Check for presence-based discriminator: branches have mutually exclusive required keys.
+	if key := findPresenceDiscriminator(branches); key != "" {
+		return oneOfDiscrimPresent
+	}
+
+	return oneOfUnhandled
+}
+
+// findEnumDiscriminator looks for a shared property key that has different
+// enum or const values across branches. Returns the key and a map of
+// enum values -> branch index.
+func findEnumDiscriminator(branches []*Node) (string, map[string]int) {
+	// Collect all property keys that appear in every branch.
+	if len(branches) == 0 {
+		return "", nil
+	}
+
+	// Find candidate keys: present in all branches with enum or const.
+	candidates := map[string]bool{}
+	for k := range branches[0].Properties {
+		candidates[k] = true
+	}
+	for _, b := range branches[1:] {
+		for k := range candidates {
+			if _, ok := b.Properties[k]; !ok {
+				delete(candidates, k)
+			}
+		}
+	}
+
+	for key := range candidates {
+		// Check if each branch has enum or const on this key with no overlap.
+		valueMap := map[string]int{}
+		valid := true
+		for i, b := range branches {
+			prop := b.Properties[key]
+			if prop == nil {
+				valid = false
+				break
+			}
+			vals := prop.Enum
+			if prop.Const != nil {
+				vals = []string{*prop.Const}
+			}
+			if len(vals) == 0 {
+				valid = false
+				break
+			}
+			for _, v := range vals {
+				if _, exists := valueMap[v]; exists {
+					valid = false
+					break
+				}
+				valueMap[v] = i
+			}
+			if !valid {
+				break
+			}
+		}
+		if valid && len(valueMap) > 0 {
+			return key, valueMap
+		}
+	}
+
+	return "", nil
+}
+
+// findPresenceDiscriminator looks for a required key that is unique to each branch.
+// Returns the key that can be used to discriminate, or "" if not found.
+func findPresenceDiscriminator(branches []*Node) string {
+	if len(branches) < 2 {
+		return ""
+	}
+
+	// For each branch, find required keys not required in any other branch.
+	for i, b := range branches {
+		for _, req := range b.Required {
+			unique := true
+			for j, other := range branches {
+				if i == j {
+					continue
+				}
+				for _, otherReq := range other.Required {
+					if req == otherReq {
+						unique = false
+						break
+					}
+				}
+				if !unique {
+					break
+				}
+			}
+			if unique {
+				return req
+			}
+		}
+	}
+	return ""
+}
+
+// emitOneOf emits validation code for a oneOf construct.
+func (e *emitter) emitOneOf(valueExpr string, branches []*Node, errsVar string, keyName string) {
+	classification := classifyOneOf(branches)
+
+	switch classification {
+	case oneOfTypeOnly:
+		e.emitOneOfTypeOnly(valueExpr, branches, errsVar, keyName)
+	case oneOfTypeBranching:
+		e.emitOneOfTypeBranching(valueExpr, branches, errsVar, keyName)
+	case oneOfDiscrimEnum:
+		e.emitOneOfDiscrimEnum(valueExpr, branches, errsVar, keyName)
+	case oneOfDiscrimPresent:
+		e.emitOneOfDiscrimPresent(valueExpr, branches, errsVar, keyName)
+	case oneOfUnhandled:
+		// Skip — too complex to generate. Hand-written code can handle it.
+		return
+	}
+}
+
+// emitOneOfTypeOnly merges types from all branches and emits a single type check.
+func (e *emitter) emitOneOfTypeOnly(valueExpr string, branches []*Node, errsVar string, keyName string) {
+	// Collect all unique types from all branches.
+	typeSet := map[string]bool{}
+	for _, b := range branches {
+		for _, t := range b.Types {
+			typeSet[t] = true
+		}
+	}
+
+	if len(typeSet) == 0 {
+		return
+	}
+
+	// Build a synthetic node with merged types.
+	merged := &Node{
+		Path: branches[0].Path,
+	}
+	for t := range typeSet {
+		merged.Types = append(merged.Types, t)
+	}
+	sort.Strings(merged.Types)
+
+	e.emitTypeCheck(valueExpr, merged, errsVar, keyName)
+}
+
+// emitOneOfTypeBranching emits type-switching code for branches with different types.
+func (e *emitter) emitOneOfTypeBranching(valueExpr string, branches []*Node, errsVar string, keyName string) {
+	id := e.nextID()
+
+	// Group branches by their primary type.
+	// For type-based branching, emit: if isType1 { validate branch1 } else if isType2 { ... }
+	first := true
+	for _, b := range branches {
+		if len(b.Types) == 0 {
+			continue
+		}
+
+		// Build the type condition.
+		var conditions []string
+		for _, t := range b.Types {
+			switch t {
+			case "mapping":
+				conditions = append(conditions, fmt.Sprintf("rules.IsMapping(%s)", valueExpr))
+			case "sequence":
+				conditions = append(conditions, fmt.Sprintf("rules.IsSequence(%s)", valueExpr))
+			case "string":
+				conditions = append(conditions, fmt.Sprintf("rules.IsString(%s)", valueExpr))
+			case "boolean":
+				conditions = append(conditions, fmt.Sprintf("rules.IsBoolean(%s)", valueExpr))
+			case "integer", "number":
+				conditions = append(conditions, fmt.Sprintf("rules.IsNumber(%s)", valueExpr))
+			case "null":
+				conditions = append(conditions, fmt.Sprintf("rules.IsNull(%s)", valueExpr))
+			}
+		}
+
+		if len(conditions) == 0 {
+			continue
+		}
+
+		cond := strings.Join(conditions, " || ")
+		if first {
+			e.line("// oneOf type branching (id=%d)", id)
+			e.line("if %s {", cond)
+			first = false
+		} else {
+			e.line("} else if %s {", cond)
+		}
+		e.push()
+
+		// Emit sub-checks for this branch (excluding the type check itself since we already matched).
+		e.emitEnumCheck(valueExpr, b, errsVar, keyName)
+		if nodeHasChildMappingChecks(b) {
+			subVar := fmt.Sprintf("_oneOfM%d", id)
+			e.line("if %s, _ok := %s.(*ast.MappingNode); _ok {", subVar, valueExpr)
+			e.push()
+			e.emitMappingBodyChecks(subVar, b, errsVar)
+			e.pop()
+			e.line("}")
+		}
+		if b.Items != nil {
+			seqVar := fmt.Sprintf("_oneOfSeq%d", id)
+			e.line("if %s, _ok := %s.(*ast.SequenceNode); _ok {", seqVar, valueExpr)
+			e.push()
+			e.line("for _, _item := range %s.Values {", seqVar)
+			e.push()
+			e.emitValueChecks("_item", b.Items, errsVar, keyName+"[]")
+			e.pop()
+			e.line("}")
+			e.pop()
+			e.line("}")
+		}
+
+		e.pop()
+	}
+
+	if !first {
+		e.line("}")
+	}
+}
+
+// emitOneOfDiscrimEnum emits discriminator-based branching using enum values on a shared key.
+func (e *emitter) emitOneOfDiscrimEnum(valueExpr string, branches []*Node, errsVar string, keyName string) {
+	discrimKey, valueMap := findEnumDiscriminator(branches)
+	if discrimKey == "" {
+		return
+	}
+
+	id := e.nextID()
+	mappingVar := fmt.Sprintf("_oneOfDM%d", id)
+
+	e.line("// oneOf discriminator on %q (id=%d)", discrimKey, id)
+	e.line("if %s, _ok := %s.(*ast.MappingNode); _ok {", mappingVar, valueExpr)
+	e.push()
+
+	discrimVar := fmt.Sprintf("_oneOfDV%d", id)
+	e.line("if _kv := (workflow.Mapping{MappingNode: %s}).FindKey(%q); _kv != nil {", mappingVar, discrimKey)
+	e.push()
+	e.line("%s := rules.StringValue(_kv.Value)", discrimVar)
+
+	// Group enum values by branch index.
+	branchValues := make(map[int][]string)
+	for val, idx := range valueMap {
+		branchValues[idx] = append(branchValues[idx], val)
+	}
+	// Sort branch indices for determinism.
+	branchIndices := make([]int, 0, len(branchValues))
+	for idx := range branchValues {
+		branchIndices = append(branchIndices, idx)
+	}
+	sort.Ints(branchIndices)
+
+	first := true
+	for _, idx := range branchIndices {
+		vals := branchValues[idx]
+		sort.Strings(vals)
+
+		var conds []string
+		for _, v := range vals {
+			conds = append(conds, fmt.Sprintf("%s == %q", discrimVar, v))
+		}
+		cond := strings.Join(conds, " || ")
+
+		if first {
+			e.line("if %s {", cond)
+			first = false
+		} else {
+			e.line("} else if %s {", cond)
+		}
+		e.push()
+
+		branch := branches[idx]
+		// Emit mapping body checks for this branch (required keys, properties, etc.)
+		e.emitMappingBodyChecks(mappingVar, branch, errsVar)
+
+		e.pop()
+	}
+	if !first {
+		e.line("}")
+	}
+
+	e.pop()
+	e.line("}")
+	e.pop()
+	e.line("}")
+}
+
+// emitOneOfDiscrimPresent emits presence-based discriminator branching.
+func (e *emitter) emitOneOfDiscrimPresent(valueExpr string, branches []*Node, errsVar string, keyName string) {
+	id := e.nextID()
+	mappingVar := fmt.Sprintf("_oneOfPM%d", id)
+
+	e.line("// oneOf presence-based branching (id=%d)", id)
+	e.line("if %s, _ok := %s.(*ast.MappingNode); _ok {", mappingVar, valueExpr)
+	e.push()
+
+	wrapVar := fmt.Sprintf("_oneOfPW%d", id)
+	e.line("%s := workflow.Mapping{MappingNode: %s}", wrapVar, mappingVar)
+
+	first := true
+	for _, b := range branches {
+		// Find the unique required key for this branch.
+		discrimKey := ""
+		for _, req := range b.Required {
+			unique := true
+			for _, other := range branches {
+				if other == b {
+					continue
+				}
+				for _, otherReq := range other.Required {
+					if req == otherReq {
+						unique = false
+						break
+					}
+				}
+				if !unique {
+					break
+				}
+			}
+			if unique {
+				discrimKey = req
+				break
+			}
+		}
+		if discrimKey == "" {
+			continue
+		}
+
+		if first {
+			e.line("if %s.FindKey(%q) != nil {", wrapVar, discrimKey)
+			first = false
+		} else {
+			e.line("} else if %s.FindKey(%q) != nil {", wrapVar, discrimKey)
+		}
+		e.push()
+
+		e.emitMappingBodyChecks(mappingVar, b, errsVar)
+
+		e.pop()
+	}
+	if !first {
+		e.line("}")
+	}
+
+	e.pop()
+	e.line("}")
+}
+
+// emitAnyOf handles anyOf by merging types from all branches into a single type check.
+// For GitHub Actions schemas, anyOf is typically used for "string or object" patterns.
+func (e *emitter) emitAnyOf(valueExpr string, branches []*Node, errsVar string, keyName string) {
+	// Collect all unique types from all branches.
+	typeSet := map[string]bool{}
+	for _, b := range branches {
+		for _, t := range b.Types {
+			typeSet[t] = true
+		}
+	}
+
+	if len(typeSet) == 0 {
+		return
+	}
+
+	merged := &Node{
+		Path: branches[0].Path,
+	}
+	for t := range typeSet {
+		merged.Types = append(merged.Types, t)
+	}
+	sort.Strings(merged.Types)
+
+	e.emitTypeCheck(valueExpr, merged, errsVar, keyName)
+
+	// For each branch that has sub-constraints, emit them guarded by type.
+	for _, b := range branches {
+		if nodeHasChildMappingChecks(b) {
+			id := e.nextID()
+			subVar := fmt.Sprintf("_anyOfM%d", id)
+			e.line("if %s, _ok := %s.(*ast.MappingNode); _ok {", subVar, valueExpr)
+			e.push()
+			e.emitMappingBodyChecks(subVar, b, errsVar)
+			e.pop()
+			e.line("}")
+		}
+	}
+}
+
+// emitIfThenElse emits conditional validation based on if/then/else schema.
+func (e *emitter) emitIfThenElse(valueExpr string, node *Node, errsVar string, keyName string) {
+	if node.If == nil {
+		return
+	}
+
+	// We only handle the case where "if" checks a const/enum on a property.
+	// This is the pattern used in GitHub Actions schemas (e.g., workflow_dispatch input type validation).
+	condKey, condValue := extractIfCondition(node.If)
+	if condKey == "" {
+		// Too complex — skip.
+		return
+	}
+
+	// Both then and else being nil means nothing to do.
+	if node.Then == nil && node.Else == nil {
+		return
+	}
+
+	id := e.nextID()
+	mappingVar := fmt.Sprintf("_ifM%d", id)
+
+	e.line("// if/then/else on %q == %q (id=%d)", condKey, condValue, id)
+	e.line("if %s, _ok := %s.(*ast.MappingNode); _ok {", mappingVar, valueExpr)
+	e.push()
+
+	condVar := fmt.Sprintf("_ifCV%d", id)
+	e.line("if _kv := (workflow.Mapping{MappingNode: %s}).FindKey(%q); _kv != nil {", mappingVar, condKey)
+	e.push()
+	e.line("%s := rules.StringValue(_kv.Value)", condVar)
+
+	if node.Then != nil {
+		e.line("if %s == %q {", condVar, condValue)
+		e.push()
+		e.emitMappingBodyChecks(mappingVar, node.Then, errsVar)
+		e.pop()
+		if node.Else != nil {
+			e.line("} else {")
+			e.push()
+			e.emitMappingBodyChecks(mappingVar, node.Else, errsVar)
+			e.pop()
+		}
+		e.line("}")
+	} else if node.Else != nil {
+		e.line("if %s != %q {", condVar, condValue)
+		e.push()
+		e.emitMappingBodyChecks(mappingVar, node.Else, errsVar)
+		e.pop()
+		e.line("}")
+	}
+
+	e.pop()
+	e.line("}")
+
+	e.pop()
+	e.line("}")
+}
+
+// extractIfCondition extracts a simple condition from an "if" schema node.
+// It handles the pattern: {"properties": {"key": {"const": "value"}}} or
+// {"properties": {"key": {"const": "value"}}, "required": ["key"]}.
+// Returns the key and expected const value.
+func extractIfCondition(ifNode *Node) (string, string) {
+	if ifNode == nil || len(ifNode.Properties) == 0 {
+		return "", ""
+	}
+
+	// Find a property with a const value.
+	for key, prop := range ifNode.Properties {
+		if prop != nil && prop.Const != nil {
+			return key, *prop.Const
+		}
+	}
+
+	return "", ""
+}

@@ -1,6 +1,8 @@
 actions:
   - name: action.yml
     content: |
+      name: test
+      description: test
       runs:
         using: node20
         main: index.js
@@ -10,10 +12,11 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/action.yml:4:3
-    1 | runs:
+    --> {{.Dir}}/action.yml:6:3
     ...
-    4 |   foo: bar
+    3 | runs:
+    ...
+    6 |   foo: bar
       |   ^^^ "runs" has unknown key "foo" (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 

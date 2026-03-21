@@ -1,6 +1,8 @@
 actions:
   - name: action.yml
     content: |
+      name: test
+      description: test
       runs:
         using: node20
         main: index.js
@@ -10,9 +12,9 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/action.yml:4:10
+    --> {{.Dir}}/action.yml:6:10
     ...
-    4 | outputs: notamap
+    6 | outputs: notamap
       |          ^^^^^^^ "outputs" must be a mapping, but got String (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 

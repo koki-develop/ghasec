@@ -1,6 +1,8 @@
 actions:
   - name: action.yml
     content: |
+      name: test
+      description: test
       runs:
         using: composite
         steps:
@@ -16,12 +18,12 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/action.yml:10:5
+    --> {{.Dir}}/action.yml:12:5
     ...
-     6 | outputs:
-     7 |   my-output:
+     8 | outputs:
+     9 |   my-output:
     ...
-    10 |     bogus: bad
+    12 |     bogus: bad
        |     ^^^^^ output "my-output" has unknown key "bogus" (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 

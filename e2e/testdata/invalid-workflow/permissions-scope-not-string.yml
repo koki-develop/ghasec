@@ -20,7 +20,7 @@ expected:
     2 | permissions:
     3 |   contents:
     4 |     - read
-      |     ^ "permissions" scope "contents" must be a string, but got Sequence (invalid-workflow)
+      |     ^ "permissions" scope "contents" must be a string, but got sequence (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

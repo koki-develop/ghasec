@@ -1,6 +1,8 @@
 actions:
   - name: action.yml
     content: |
+      name: test
+      description: test
       branding:
         color: blue
         icon: invalid-icon
@@ -14,10 +16,11 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/action.yml:3:9
-    1 | branding:
+    --> {{.Dir}}/action.yml:5:9
     ...
-    3 |   icon: invalid-icon
+    3 | branding:
+    ...
+    5 |   icon: invalid-icon
       |         ^^^^^^^^^^^^ "branding" has unknown icon "invalid-icon" (invalid-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md

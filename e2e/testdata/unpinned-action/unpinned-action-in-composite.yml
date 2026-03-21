@@ -1,6 +1,8 @@
 actions:
   - name: action.yml
     content: |
+      name: test
+      description: test
       runs:
         using: composite
         steps:
@@ -12,11 +14,12 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/action.yml:4:30
-    1 | runs:
+    --> {{.Dir}}/action.yml:6:30
     ...
-    3 |   steps:
-    4 |     - uses: actions/checkout@v6
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: actions/checkout@v6
       |                              ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md

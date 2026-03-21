@@ -18,7 +18,7 @@ expected:
     ...
     2 | defaults:
     3 |   run: not-a-mapping
-      |        ^^^^^^^^^^^^^ "run" must be a mapping, but got String (invalid-workflow)
+      |        ^^^^^^^^^^^^^ "run" must be a mapping, but got string (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

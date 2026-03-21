@@ -21,6 +21,9 @@ go test ./...                 # All tests (unit + E2E)
 go test ./rules/unpinned-action/...  # Single package
 go test -run TestName ./pkg/  # Single test
 go test ./e2e/...             # E2E tests only
+
+# Code generation (after updating SchemaStore submodule)
+go generate ./rules/invalid-workflow/ ./rules/invalid-action/
 ```
 
 ## Architecture
@@ -28,10 +31,11 @@ go test ./e2e/...             # E2E tests only
 The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output**.
 
 - `cmd/root.go` — CLI entry point (cobra). Orchestrates the full pipeline.
+- `cmd/gen/` — Code generator. Reads JSON Schema from SchemaStore submodule (`schemastore/`), converts to IR, emits Go validation code via `text/template`. Output: `rules/invalid-workflow/generated.go` and `rules/invalid-action/generated.go`.
 - `analyzer/` — Runs rules against a parsed AST file. Required rules run first; if any fail, non-required rules are skipped entirely.
 - `renderer/` — Diagnostic error rendering with source annotation, syntax highlighting, `NO_COLOR` support, and automatic ancestor breadcrumb computation from token positions.
 - `workflow/` — Typed wrappers around `goccy/go-yaml` AST nodes and `ActionRef` for action references. Rules use these wrappers for domain-specific navigation.
-- `rules/` — See `rules/CLAUDE.md` for details. `invalid-workflow` and `invalid-action` are required rules (structural validation).
+- `rules/` — See `rules/CLAUDE.md` for details. `invalid-workflow` and `invalid-action` are required rules (structural validation). These use a mix of schema-generated validation (unknown keys, required fields, type/enum checks) and hand-written checks (mutual exclusion, step validation, domain-specific messages).
 - `e2e/` — E2E tests. See `e2e/CLAUDE.md` for details.
 
 ## Key Design Decisions

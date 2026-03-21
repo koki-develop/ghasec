@@ -1,6 +1,8 @@
 actions:
   - name: action.yml
     content: |
+      name: test
+      description: test
       runs:
         using: composite
         steps:
@@ -10,11 +12,12 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/action.yml:4:11
-    1 | runs:
+    --> {{.Dir}}/action.yml:6:11
     ...
-    3 |   steps:
-    4 |     - name: do nothing
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - name: do nothing
       |           ^ "uses" or "run" is required (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 

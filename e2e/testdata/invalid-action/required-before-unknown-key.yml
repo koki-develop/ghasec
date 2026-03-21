@@ -9,6 +9,16 @@ expected:
   stderr: |
     --> {{.Dir}}/action.yml:1:1
     1 | foo: bar
+      | ^ "name" is required (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:1:1
+    1 | foo: bar
+      | ^ "description" is required (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:1:1
+    1 | foo: bar
       | ^ "runs" is required (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 
@@ -17,4 +27,4 @@ expected:
       | ^^^ unknown key "foo" (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 
-    2 errors found in 1 file
+    4 errors found in 1 file

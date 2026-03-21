@@ -9,33 +9,6 @@ import (
 	"github.com/koki-develop/ghasec/workflow"
 )
 
-func checkJobs(mapping workflow.Mapping, fileStart *token.Token) (*ast.MappingNode, []*diagnostic.Error) {
-	kv := mapping.FindKey("jobs")
-	if kv == nil {
-		return nil, []*diagnostic.Error{{
-			Token:   fileStart,
-			Message: "\"jobs\" is required",
-		}}
-	}
-
-	if _, ok := kv.Value.(*ast.NullNode); ok {
-		return nil, []*diagnostic.Error{{
-			Token:   kv.Key.GetToken(),
-			Message: "\"jobs\" must not be empty",
-		}}
-	}
-
-	jobsMapping, ok := kv.Value.(*ast.MappingNode)
-	if !ok {
-		return nil, []*diagnostic.Error{{
-			Token:   kv.Value.GetToken(),
-			Message: fmt.Sprintf("\"jobs\" must be a mapping, but got %s", kv.Value.Type()),
-		}}
-	}
-
-	return jobsMapping, nil
-}
-
 func checkJobEntries(jobs *ast.MappingNode) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	for _, jobEntry := range jobs.Values {
