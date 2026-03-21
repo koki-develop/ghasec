@@ -1,0 +1,35 @@
+workflows:
+  - name: required-before-unknown-key.yml
+    content: |
+      foo: bar
+      hoge: fuga
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/required-before-unknown-key.yml:1:1
+    1 | foo: bar
+      | ^ "on" is required (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/required-before-unknown-key.yml:1:1
+    1 | foo: bar
+      | ^ "jobs" is required (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/required-before-unknown-key.yml:1:1
+    1 | foo: bar
+      | ^^^ unknown key "foo" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/required-before-unknown-key.yml:2:1
+    ...
+    2 | hoge: fuga
+      | ^^^^ unknown key "hoge" (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    4 errors found in 1 file

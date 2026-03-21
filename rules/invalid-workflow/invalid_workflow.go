@@ -18,8 +18,12 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 
 	var errs []*diagnostic.Error
 
-	errs = append(errs, checkTopLevelKeys(mapping.Mapping)...)
 	errs = append(errs, checkOn(mapping.Mapping, fileStart)...)
+
+	jobsMapping, jobsErrs := checkJobs(mapping.Mapping, fileStart)
+	errs = append(errs, jobsErrs...)
+
+	errs = append(errs, checkTopLevelKeys(mapping.Mapping)...)
 
 	// Top-level permissions
 	if permKV := mapping.FindKey("permissions"); permKV != nil {
@@ -35,9 +39,6 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 	if defaultsKV := mapping.FindKey("defaults"); defaultsKV != nil {
 		errs = append(errs, checkDefaults(defaultsKV)...)
 	}
-
-	jobsMapping, jobsErrs := checkJobs(mapping.Mapping, fileStart)
-	errs = append(errs, jobsErrs...)
 
 	if jobsMapping != nil {
 		errs = append(errs, checkJobEntries(jobsMapping)...)

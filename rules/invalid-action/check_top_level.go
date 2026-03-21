@@ -7,7 +7,7 @@ import (
 )
 
 func checkTopLevelKeys(mapping workflow.Mapping) []*diagnostic.Error {
-	errs := rules.CheckUnknownKeys(mapping, knownTopLevelKeys)
+	var errs []*diagnostic.Error
 
 	if mapping.FindKey("runs") == nil {
 		errs = append(errs, &diagnostic.Error{
@@ -15,6 +15,8 @@ func checkTopLevelKeys(mapping workflow.Mapping) []*diagnostic.Error {
 			Message: "\"runs\" is required",
 		})
 	}
+
+	errs = append(errs, rules.CheckUnknownKeys(mapping, knownTopLevelKeys)...)
 
 	return errs
 }
