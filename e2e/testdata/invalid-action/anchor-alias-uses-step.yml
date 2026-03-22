@@ -1,0 +1,19 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: composite
+        steps:
+          - &checkout
+            uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+            with:
+              persist-credentials: false
+          - *checkout
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

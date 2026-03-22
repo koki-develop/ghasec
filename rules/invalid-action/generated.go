@@ -48,7 +48,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 			}
 			for _, _entry := range _subM.Values {
 				_key := _entry.Key.GetToken().Value
-				if !_knownKeys[_key] {
+				if !(_knownKeys[_key]) {
 					errs = append(errs, rules.ValidationError{
 						Kind:  rules.KindUnknownKey,
 						Key:   _key,
@@ -118,7 +118,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 						}
 						for _, _entry := range _subMbranding.Values {
 							_key := _entry.Key.GetToken().Value
-							if !_knownKeysbranding[_key] {
+							if !(_knownKeysbranding[_key]) {
 								errs = append(errs, rules.ValidationError{
 									Kind:    rules.KindUnknownKey,
 									Path:    "branding",
@@ -494,6 +494,20 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 						})
 					}
 					if _subMinputs, _okinputs := rules.UnwrapNode(_kvinputs.Value).(*ast.MappingNode); _okinputs {
+						// Unknown key detection
+						for _, _entry := range _subMinputs.Values {
+							_key := _entry.Key.GetToken().Value
+							if !(_re0.MatchString(_key)) {
+								errs = append(errs, rules.ValidationError{
+									Kind:   rules.KindUnknownKey,
+									Path:   "inputs",
+									Parent: "inputs",
+									Key:    _key,
+									Token:  _entry.Key.GetToken(),
+								})
+							}
+						}
+
 						// PatternProperty: ^[_a-zA-Z][a-zA-Z0-9_-]*$
 						for _, _ppEntry0 := range _subMinputs.Values {
 							if _re0.MatchString(_ppEntry0.Key.GetToken().Value) {
@@ -520,7 +534,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 										}
 										for _, _entry := range _subM_.Values {
 											_key := _entry.Key.GetToken().Value
-											if !_knownKeysinputs__[_key] {
+											if !(_knownKeysinputs__[_key]) {
 												errs = append(errs, rules.ValidationError{
 													Kind:  rules.KindUnknownKey,
 													Path:  "inputs.*",
@@ -659,7 +673,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 									}
 									for _, _entry := range _oneOfDM0.Values {
 										_key := _entry.Key.GetToken().Value
-										if !_knownKeysruns[_key] {
+										if !(_knownKeysruns[_key]) {
 											errs = append(errs, rules.ValidationError{
 												Kind:   rules.KindUnknownKey,
 												Path:   "runs",
@@ -801,7 +815,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 									}
 									for _, _entry := range _oneOfDM0.Values {
 										_key := _entry.Key.GetToken().Value
-										if !_knownKeysruns[_key] {
+										if !(_knownKeysruns[_key]) {
 											errs = append(errs, rules.ValidationError{
 												Kind:   rules.KindUnknownKey,
 												Path:   "runs",
@@ -873,7 +887,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 															}
 															for _, _entry := range _subMsteps__.Values {
 																_key := _entry.Key.GetToken().Value
-																if !_knownKeysruns_steps__[_key] {
+																if !(_knownKeysruns_steps__[_key]) {
 																	errs = append(errs, rules.ValidationError{
 																		Kind:  rules.KindUnknownKey,
 																		Path:  "runs.steps.*",
@@ -912,7 +926,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 
 																		}
 																	} else if rules.IsString(_kvenv.Value) {
-																	} else {
+																	} else if !rules.IsAliasNode(_kvenv.Value) {
 																		errs = append(errs, rules.ValidationError{
 																			Kind:    rules.KindTypeMismatch,
 																			Path:    "env",
@@ -1098,7 +1112,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 																	Token:   _oneOfPM3.GetToken(),
 																})
 															}
-														} else {
+														} else if !rules.IsAliasNode(_item) {
 															errs = append(errs, rules.ValidationError{
 																Kind:    rules.KindTypeMismatch,
 																Path:    "steps[]",
@@ -1135,7 +1149,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 									}
 									for _, _entry := range _oneOfDM0.Values {
 										_key := _entry.Key.GetToken().Value
-										if !_knownKeysruns[_key] {
+										if !(_knownKeysruns[_key]) {
 											errs = append(errs, rules.ValidationError{
 												Kind:   rules.KindUnknownKey,
 												Path:   "runs",
@@ -1226,7 +1240,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 
 												}
 											} else if rules.IsString(_kvenv.Value) {
-											} else {
+											} else if !rules.IsAliasNode(_kvenv.Value) {
 												errs = append(errs, rules.ValidationError{
 													Kind:    rules.KindTypeMismatch,
 													Path:    "env",
@@ -1344,7 +1358,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 								Token: _oneOfDM0.GetToken(),
 							})
 						}
-					} else {
+					} else if !rules.IsAliasNode(_kvruns.Value) {
 						errs = append(errs, rules.ValidationError{
 							Kind:    rules.KindTypeMismatch,
 							Path:    "runs",
@@ -1379,6 +1393,20 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 										})
 									}
 									if _subMoutputs, _okoutputs := rules.UnwrapNode(_kvoutputs.Value).(*ast.MappingNode); _okoutputs {
+										// Unknown key detection
+										for _, _entry := range _subMoutputs.Values {
+											_key := _entry.Key.GetToken().Value
+											if !(_re0.MatchString(_key)) {
+												errs = append(errs, rules.ValidationError{
+													Kind:   rules.KindUnknownKey,
+													Path:   "outputs",
+													Parent: "outputs",
+													Key:    _key,
+													Token:  _entry.Key.GetToken(),
+												})
+											}
+										}
+
 										// PatternProperty: ^[_a-zA-Z][a-zA-Z0-9_-]*$
 										for _, _ppEntry0 := range _subMoutputs.Values {
 											if _re0.MatchString(_ppEntry0.Key.GetToken().Value) {
@@ -1403,7 +1431,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 														}
 														for _, _entry := range _subM_.Values {
 															_key := _entry.Key.GetToken().Value
-															if !_knownKeysoutputs__[_key] {
+															if !(_knownKeysoutputs__[_key]) {
 																errs = append(errs, rules.ValidationError{
 																	Kind:  rules.KindUnknownKey,
 																	Path:  "outputs.*",
@@ -1488,6 +1516,20 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 										})
 									}
 									if _subMoutputs, _okoutputs := rules.UnwrapNode(_kvoutputs.Value).(*ast.MappingNode); _okoutputs {
+										// Unknown key detection
+										for _, _entry := range _subMoutputs.Values {
+											_key := _entry.Key.GetToken().Value
+											if !(_re0.MatchString(_key)) {
+												errs = append(errs, rules.ValidationError{
+													Kind:   rules.KindUnknownKey,
+													Path:   "outputs",
+													Parent: "outputs",
+													Key:    _key,
+													Token:  _entry.Key.GetToken(),
+												})
+											}
+										}
+
 										// PatternProperty: ^[_a-zA-Z][a-zA-Z0-9_-]*$
 										for _, _ppEntry0 := range _subMoutputs.Values {
 											if _re0.MatchString(_ppEntry0.Key.GetToken().Value) {
@@ -1511,7 +1553,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 														}
 														for _, _entry := range _subM_.Values {
 															_key := _entry.Key.GetToken().Value
-															if !_knownKeysoutputs__[_key] {
+															if !(_knownKeysoutputs__[_key]) {
 																errs = append(errs, rules.ValidationError{
 																	Kind:  rules.KindUnknownKey,
 																	Path:  "outputs.*",
@@ -1576,7 +1618,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 	}
 	for _, _entry := range m.MappingNode.Values {
 		_key := _entry.Key.GetToken().Value
-		if !_knownKeys[_key] {
+		if !(_knownKeys[_key]) {
 			errs = append(errs, rules.ValidationError{
 				Kind:  rules.KindUnknownKey,
 				Key:   _key,
@@ -1646,7 +1688,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 				}
 				for _, _entry := range _subMbranding.Values {
 					_key := _entry.Key.GetToken().Value
-					if !_knownKeysbranding[_key] {
+					if !(_knownKeysbranding[_key]) {
 						errs = append(errs, rules.ValidationError{
 							Kind:    rules.KindUnknownKey,
 							Path:    "branding",
@@ -2022,6 +2064,20 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 				})
 			}
 			if _subMinputs, _okinputs := rules.UnwrapNode(_kvinputs.Value).(*ast.MappingNode); _okinputs {
+				// Unknown key detection
+				for _, _entry := range _subMinputs.Values {
+					_key := _entry.Key.GetToken().Value
+					if !(_re0.MatchString(_key)) {
+						errs = append(errs, rules.ValidationError{
+							Kind:   rules.KindUnknownKey,
+							Path:   "inputs",
+							Parent: "inputs",
+							Key:    _key,
+							Token:  _entry.Key.GetToken(),
+						})
+					}
+				}
+
 				// PatternProperty: ^[_a-zA-Z][a-zA-Z0-9_-]*$
 				for _, _ppEntry0 := range _subMinputs.Values {
 					if _re0.MatchString(_ppEntry0.Key.GetToken().Value) {
@@ -2048,7 +2104,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 								}
 								for _, _entry := range _subM_.Values {
 									_key := _entry.Key.GetToken().Value
-									if !_knownKeysinputs__[_key] {
+									if !(_knownKeysinputs__[_key]) {
 										errs = append(errs, rules.ValidationError{
 											Kind:  rules.KindUnknownKey,
 											Path:  "inputs.*",
@@ -2187,7 +2243,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 							}
 							for _, _entry := range _oneOfDM7.Values {
 								_key := _entry.Key.GetToken().Value
-								if !_knownKeysruns[_key] {
+								if !(_knownKeysruns[_key]) {
 									errs = append(errs, rules.ValidationError{
 										Kind:   rules.KindUnknownKey,
 										Path:   "runs",
@@ -2329,7 +2385,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 							}
 							for _, _entry := range _oneOfDM7.Values {
 								_key := _entry.Key.GetToken().Value
-								if !_knownKeysruns[_key] {
+								if !(_knownKeysruns[_key]) {
 									errs = append(errs, rules.ValidationError{
 										Kind:   rules.KindUnknownKey,
 										Path:   "runs",
@@ -2401,7 +2457,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 													}
 													for _, _entry := range _subMsteps__.Values {
 														_key := _entry.Key.GetToken().Value
-														if !_knownKeysruns_steps__[_key] {
+														if !(_knownKeysruns_steps__[_key]) {
 															errs = append(errs, rules.ValidationError{
 																Kind:  rules.KindUnknownKey,
 																Path:  "runs.steps.*",
@@ -2440,7 +2496,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 
 																}
 															} else if rules.IsString(_kvenv.Value) {
-															} else {
+															} else if !rules.IsAliasNode(_kvenv.Value) {
 																errs = append(errs, rules.ValidationError{
 																	Kind:    rules.KindTypeMismatch,
 																	Path:    "env",
@@ -2626,7 +2682,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 															Token:   _oneOfPM9.GetToken(),
 														})
 													}
-												} else {
+												} else if !rules.IsAliasNode(_item) {
 													errs = append(errs, rules.ValidationError{
 														Kind:    rules.KindTypeMismatch,
 														Path:    "steps[]",
@@ -2663,7 +2719,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 							}
 							for _, _entry := range _oneOfDM7.Values {
 								_key := _entry.Key.GetToken().Value
-								if !_knownKeysruns[_key] {
+								if !(_knownKeysruns[_key]) {
 									errs = append(errs, rules.ValidationError{
 										Kind:   rules.KindUnknownKey,
 										Path:   "runs",
@@ -2754,7 +2810,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 
 										}
 									} else if rules.IsString(_kvenv.Value) {
-									} else {
+									} else if !rules.IsAliasNode(_kvenv.Value) {
 										errs = append(errs, rules.ValidationError{
 											Kind:    rules.KindTypeMismatch,
 											Path:    "env",
@@ -2872,7 +2928,7 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 						Token: _oneOfDM7.GetToken(),
 					})
 				}
-			} else {
+			} else if !rules.IsAliasNode(_kvruns.Value) {
 				errs = append(errs, rules.ValidationError{
 					Kind:    rules.KindTypeMismatch,
 					Path:    "runs",

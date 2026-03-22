@@ -1,5 +1,5 @@
 workflows:
-  - name: anchor-in-steps.yml
+  - name: anchor-alias-step-with-uses.yml
     content: |
       on: push
       permissions: {}
@@ -8,9 +8,11 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - &checkout_step
-              run: echo checkout
-            - *checkout_step
+            - &checkout
+              uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+              with:
+                persist-credentials: false
+            - *checkout
 
 expected:
   exit_code: 0

@@ -452,6 +452,112 @@ func TestClassifyOneOf(t *testing.T) {
 	})
 }
 
+// TestFlattenSingleAllOf verifies the flattenSingleAllOf normalization.
+func TestFlattenSingleAllOf(t *testing.T) {
+	t.Run("promotes single allOf child", func(t *testing.T) {
+		f := false
+		branches := []*Node{
+			{Types: []string{"null"}},
+			{AllOf: []*Node{
+				{
+					Types:                []string{"mapping"},
+					Properties:           map[string]*Node{"branches": {Types: []string{"sequence"}}},
+					AdditionalProperties: &f,
+				},
+			}},
+		}
+		flattenSingleAllOf(branches)
+
+		assert.Equal(t, []string{"mapping"}, branches[1].Types)
+		assert.Contains(t, branches[1].Properties, "branches")
+		assert.NotNil(t, branches[1].AdditionalProperties)
+		assert.False(t, *branches[1].AdditionalProperties)
+		assert.Nil(t, branches[1].AllOf)
+	})
+
+	t.Run("ignores branches with direct types", func(t *testing.T) {
+		branches := []*Node{
+			{Types: []string{"string"}, AllOf: []*Node{{Types: []string{"mapping"}}}},
+		}
+		flattenSingleAllOf(branches)
+
+		// Should not merge because branch already has direct types
+		assert.Equal(t, []string{"string"}, branches[0].Types)
+		assert.Len(t, branches[0].AllOf, 1) // AllOf preserved
+	})
+
+	t.Run("ignores branches with multiple allOf children", func(t *testing.T) {
+		branches := []*Node{
+			{AllOf: []*Node{
+				{Types: []string{"mapping"}},
+				{Types: []string{"sequence"}},
+			}},
+		}
+		flattenSingleAllOf(branches)
+
+		assert.Empty(t, branches[0].Types)
+		assert.Len(t, branches[0].AllOf, 2) // AllOf preserved
+	})
+
+	t.Run("handles nil allOf child", func(t *testing.T) {
+		branches := []*Node{
+			{AllOf: []*Node{nil}},
+		}
+		flattenSingleAllOf(branches)
+
+		assert.Nil(t, branches[0].AllOf)
+		assert.Empty(t, branches[0].Types)
+	})
+
+	t.Run("panics on conflicting properties", func(t *testing.T) {
+		branches := []*Node{
+			{
+				Properties: map[string]*Node{"existing": {Types: []string{"string"}}},
+				AllOf:      []*Node{{Properties: map[string]*Node{"child": {Types: []string{"string"}}}}},
+			},
+		}
+		assert.Panics(t, func() { flattenSingleAllOf(branches) })
+	})
+
+	t.Run("promotes minItems", func(t *testing.T) {
+		branches := []*Node{
+			{AllOf: []*Node{{Types: []string{"sequence"}, MinItems: 1}}},
+		}
+		flattenSingleAllOf(branches)
+
+		assert.Equal(t, 1, branches[0].MinItems)
+	})
+}
+
+// TestEmitValidateFunc_PatternPropsUnknownKey verifies unknown key detection
+// when only patternProperties are present (no fixed properties).
+func TestEmitValidateFunc_PatternPropsUnknownKey(t *testing.T) {
+	f := false
+	node := &Node{
+		Path:                 "jobs",
+		Types:                []string{"mapping"},
+		AdditionalProperties: &f,
+		PatternProps: map[string]*Node{
+			`^[_a-zA-Z][a-zA-Z0-9_-]*$`: {Path: "jobs.*", Types: []string{"mapping"}},
+		},
+	}
+
+	e := &emitter{}
+	e.EmitValidateFunc("ValidateJobs", "workflow.WorkflowMapping", node)
+	code := e.String()
+
+	// Should emit unknown key detection with regex check
+	assert.Contains(t, code, "Unknown key detection")
+	assert.Contains(t, code, "MatchString(_key)")
+	assert.Contains(t, code, "rules.KindUnknownKey")
+
+	// Should NOT emit a _knownKeys map (no fixed properties)
+	assert.NotContains(t, code, "_knownKeysjobs")
+
+	// Balanced braces
+	assert.Equal(t, strings.Count(code, "{"), strings.Count(code, "}"), "unbalanced braces:\n%s", code)
+}
+
 // TestEmitValidateFunc_GeneratesCompilableCode verifies the emitter output is
 // syntactically coherent (balanced braces).
 func TestEmitValidateFunc_GeneratesCompilableCode(t *testing.T) {

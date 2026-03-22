@@ -1,8 +1,8 @@
 workflows:
-  - name: push-unknown-key.yml
+  - name: pull-request-target-unknown-key.yml
     content: |
       on:
-        push:
+        pull_request_target:
           bogus: foo
       permissions: {}
       jobs:
@@ -16,11 +16,11 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/push-unknown-key.yml:3:5
+    --> {{.Dir}}/pull-request-target-unknown-key.yml:3:5
     1 | on:
-    2 |   push:
+    2 |   pull_request_target:
     3 |     bogus: foo
-      |     ^^^^^ "push" has unknown key "bogus" (invalid-workflow)
+      |     ^^^^^ "pull_request_target" has unknown key "bogus" (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

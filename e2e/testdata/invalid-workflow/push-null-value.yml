@@ -1,16 +1,15 @@
 workflows:
-  - name: anchor-in-steps.yml
+  - name: push-null-value.yml
     content: |
-      on: push
+      on:
+        push:
       permissions: {}
       jobs:
         build:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - &checkout_step
-              run: echo checkout
-            - *checkout_step
+            - run: echo hi
 
 expected:
   exit_code: 0

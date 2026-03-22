@@ -1,12 +1,10 @@
 workflows:
-  - name: push-unknown-key.yml
+  - name: invalid-job-id-numeric.yml
     content: |
-      on:
-        push:
-          bogus: foo
+      on: push
       permissions: {}
       jobs:
-        build:
+        123:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
@@ -16,11 +14,11 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/push-unknown-key.yml:3:5
-    1 | on:
-    2 |   push:
-    3 |     bogus: foo
-      |     ^^^^^ "push" has unknown key "bogus" (invalid-workflow)
+    --> {{.Dir}}/invalid-job-id-numeric.yml:4:3
+    ...
+    3 | jobs:
+    4 |   123:
+      |   ^^^ "jobs" has unknown key "123" (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

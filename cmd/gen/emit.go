@@ -140,9 +140,10 @@ func (e *emitter) emitMappingBodyChecks(mappingExpr string, node *Node, errsVar 
 		return
 	}
 
-	// Unknown key detection: only when additionalProperties is explicitly false
-	// and there are known properties.
-	shouldCheckUnknown := node.AdditionalProperties != nil && !*node.AdditionalProperties && len(node.Properties) > 0
+	// Unknown key detection: when additionalProperties is explicitly false
+	// and there are known properties or patternProperties.
+	shouldCheckUnknown := node.AdditionalProperties != nil && !*node.AdditionalProperties &&
+		(len(node.Properties) > 0 || len(node.PatternProps) > 0)
 
 	if shouldCheckUnknown {
 		knownKeys := make([]string, 0, len(node.Properties))
@@ -152,17 +153,33 @@ func (e *emitter) emitMappingBodyChecks(mappingExpr string, node *Node, errsVar 
 		sort.Strings(knownKeys)
 
 		e.line("// Unknown key detection")
-		e.line("_knownKeys%s := map[string]bool{", sanitizeIdent(node.Path))
-		e.push()
-		for _, k := range knownKeys {
-			e.line("%q: true,", k)
+		if len(knownKeys) > 0 {
+			e.line("_knownKeys%s := map[string]bool{", sanitizeIdent(node.Path))
+			e.push()
+			for _, k := range knownKeys {
+				e.line("%q: true,", k)
+			}
+			e.pop()
+			e.line("}")
 		}
-		e.pop()
-		e.line("}")
 		e.line("for _, _entry := range %s.Values {", mappingExpr)
 		e.push()
 		e.line("_key := _entry.Key.GetToken().Value")
-		e.line("if !_knownKeys%s[_key] {", sanitizeIdent(node.Path))
+
+		// Build the "known" condition: check against known properties and patternProperties.
+		var knownConds []string
+		if len(knownKeys) > 0 {
+			knownConds = append(knownConds, fmt.Sprintf("_knownKeys%s[_key]", sanitizeIdent(node.Path)))
+		}
+		patternKeys := make([]string, 0, len(node.PatternProps))
+		for p := range node.PatternProps {
+			patternKeys = append(patternKeys, p)
+		}
+		sort.Strings(patternKeys)
+		for _, pattern := range patternKeys {
+			knownConds = append(knownConds, fmt.Sprintf("%s.MatchString(_key)", e.regexpVarName(pattern)))
+		}
+		e.line("if !(%s) {", strings.Join(knownConds, " || "))
 		e.push()
 		e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
 		e.push()
@@ -752,8 +769,66 @@ func findPresenceDiscriminator(branches []*Node) string {
 	return ""
 }
 
+// flattenSingleAllOf normalizes oneOf branches: if a branch has no direct Types
+// but has a single allOf child, merge the child's constraints into the branch.
+// This handles patterns like push/pull_request where the schema uses
+// oneOf: [null, { allOf: [object-with-properties, not{...}] }] and after G3
+// filtering the allOf reduces to a single child whose types need promoting.
+func flattenSingleAllOf(branches []*Node) {
+	for _, b := range branches {
+		if len(b.Types) == 0 && len(b.AllOf) == 1 {
+			child := b.AllOf[0]
+			if child == nil {
+				b.AllOf = nil
+				continue
+			}
+			// Precondition: since b.Types is empty, this branch is a pure allOf
+			// wrapper with no direct constraints of its own. If a branch somehow
+			// has both own constraints and an allOf child with constraints, that's
+			// an unexpected schema shape — panic at generation time to avoid
+			// silently dropping validation.
+			b.Types = child.Types
+			if len(b.Properties) == 0 {
+				b.Properties = child.Properties
+			} else if len(child.Properties) > 0 {
+				panic(fmt.Sprintf("flattenSingleAllOf: branch %q has both direct and allOf Properties", b.Path))
+			}
+			if len(b.Required) == 0 {
+				b.Required = child.Required
+			} else if len(child.Required) > 0 {
+				panic(fmt.Sprintf("flattenSingleAllOf: branch %q has both direct and allOf Required", b.Path))
+			}
+			if b.AdditionalProperties == nil {
+				b.AdditionalProperties = child.AdditionalProperties
+			}
+			if b.AdditionalPropsSchema == nil {
+				b.AdditionalPropsSchema = child.AdditionalPropsSchema
+			}
+			if len(b.PatternProps) == 0 {
+				b.PatternProps = child.PatternProps
+			} else if len(child.PatternProps) > 0 {
+				panic(fmt.Sprintf("flattenSingleAllOf: branch %q has both direct and allOf PatternProps", b.Path))
+			}
+			if b.Items == nil {
+				b.Items = child.Items
+			}
+			if b.MinItems == 0 {
+				b.MinItems = child.MinItems
+			}
+			if b.MinProperties == 0 {
+				b.MinProperties = child.MinProperties
+			}
+			if b.Pattern == "" {
+				b.Pattern = child.Pattern
+			}
+			b.AllOf = nil
+		}
+	}
+}
+
 // emitOneOf emits validation code for a oneOf construct.
 func (e *emitter) emitOneOf(valueExpr string, branches []*Node, errsVar string, keyName string, dynamicKeyExpr ...string) {
+	flattenSingleAllOf(branches)
 	classification := classifyOneOf(branches)
 
 	switch classification {
@@ -860,6 +935,25 @@ func (e *emitter) emitOneOfTypeBranching(valueExpr string, branches []*Node, err
 			seqVar := fmt.Sprintf("_oneOfSeq%d", id)
 			e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.SequenceNode); _ok {", seqVar, valueExpr)
 			e.push()
+			// MinItems check (same as emitValueChecksOnExpr)
+			if b.MinItems > 0 {
+				e.line("if len(%s.Values) < %d {", seqVar, b.MinItems)
+				e.push()
+				e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+				e.push()
+				e.line("Kind:    rules.KindMinItems,")
+				if b.Path != "" {
+					e.line("Path:    %q,", b.Path)
+				}
+				e.line("Key:     %q,", keyName)
+				e.line("Got:     fmt.Sprintf(\"%%d\", len(%s.Values)),", seqVar)
+				e.line("Allowed: []string{fmt.Sprintf(\"at least %%d\", %d)},", b.MinItems)
+				e.line("Token:   %s.GetToken(),", valueExpr)
+				e.pop()
+				e.line("})")
+				e.pop()
+				e.line("}")
+			}
 			e.line("for _, _item := range %s.Values {", seqVar)
 			e.push()
 			e.emitValueChecks("_item", b.Items, errsVar, keyName+"[]")
@@ -887,7 +981,8 @@ func (e *emitter) emitOneOfTypeBranching(valueExpr string, branches []*Node, err
 		}
 		if len(allTypes) > 0 {
 			allTypes = naturalSortTypes(allTypes)
-			e.line("} else {")
+			// Type mismatch (skip aliases — the anchor is validated)
+			e.line("} else if !rules.IsAliasNode(%s) {", valueExpr)
 			e.push()
 			allowedSlice := fmt.Sprintf("[]string{%s}", joinQuoted(allTypes))
 			e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
@@ -1034,8 +1129,8 @@ func (e *emitter) emitOneOfDiscrimEnum(valueExpr string, branches []*Node, errsV
 	e.pop()
 	e.line("}")
 	e.pop()
-	// A4/A6: mapping cast failed → type mismatch
-	e.line("} else {")
+	// A4/A6: mapping cast failed → type mismatch (skip aliases — the anchor is validated)
+	e.line("} else if !rules.IsAliasNode(%s) {", valueExpr)
 	e.push()
 	e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
 	e.push()
@@ -1156,7 +1251,8 @@ func (e *emitter) emitOneOfDiscrimPresent(valueExpr string, branches []*Node, er
 	}
 
 	e.pop()
-	e.line("} else {")
+	// Mapping cast failed → type mismatch (skip aliases — the anchor is validated)
+	e.line("} else if !rules.IsAliasNode(%s) {", valueExpr)
 	e.push()
 	e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
 	e.push()

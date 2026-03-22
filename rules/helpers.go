@@ -80,6 +80,16 @@ func IsNull(n ast.Node) bool {
 	return ok
 }
 
+// IsAliasNode returns true if the node (after unwrapping anchors) is an alias.
+// Generated validation code uses this to skip type-mismatch diagnostics for
+// alias nodes, because the corresponding anchor definition is validated in place.
+// This prevents false positives like `"steps" elements must be mappings, but got alias`.
+func IsAliasNode(n ast.Node) bool {
+	n = UnwrapNode(n)
+	_, ok := n.(*ast.AliasNode)
+	return ok
+}
+
 func IsExpressionNode(n ast.Node) bool {
 	v := StringValue(n)
 	return v != "" && strings.Contains(v, "${{")

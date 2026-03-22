@@ -1,16 +1,14 @@
 workflows:
-  - name: anchor-in-steps.yml
+  - name: valid-job-id-hyphen-middle.yml
     content: |
       on: push
       permissions: {}
       jobs:
-        build:
+        build-and-deploy:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - &checkout_step
-              run: echo checkout
-            - *checkout_step
+            - run: echo hi
 
 expected:
   exit_code: 0

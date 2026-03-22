@@ -13,7 +13,15 @@ workflows:
             - run: echo hi
 
 expected:
-  exit_code: 0
+  exit_code: 1
   stdout: ""
   stderr: |
-    no errors found
+    --> {{.Dir}}/pull-request-unknown-key.yml:3:5
+    1 | on:
+    2 |   pull_request:
+    3 |     bogus: foo
+      |     ^^^^^ "pull_request" has unknown key "bogus" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

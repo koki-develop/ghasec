@@ -1,9 +1,8 @@
 workflows:
-  - name: push-unknown-key.yml
+  - name: push-type-mismatch.yml
     content: |
       on:
-        push:
-          bogus: foo
+        push: 42
       permissions: {}
       jobs:
         build:
@@ -16,11 +15,10 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/push-unknown-key.yml:3:5
+    --> {{.Dir}}/push-type-mismatch.yml:2:9
     1 | on:
-    2 |   push:
-    3 |     bogus: foo
-      |     ^^^^^ "push" has unknown key "bogus" (invalid-workflow)
+    2 |   push: 42
+      |         ^^ "push" must be a null or mapping, but got integer (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

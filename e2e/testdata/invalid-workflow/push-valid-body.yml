@@ -1,16 +1,19 @@
 workflows:
-  - name: anchor-in-steps.yml
+  - name: push-valid-body.yml
     content: |
-      on: push
+      on:
+        push:
+          branches:
+            - main
+          tags:
+            - v*
       permissions: {}
       jobs:
         build:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - &checkout_step
-              run: echo checkout
-            - *checkout_step
+            - run: echo hi
 
 expected:
   exit_code: 0

@@ -89,3 +89,26 @@ func TestIsNull_Alias(t *testing.T) {
 	// Alias is NOT null
 	assert.False(t, rules.IsNull(alias))
 }
+
+func TestIsAliasNode_Alias(t *testing.T) {
+	name := &ast.StringNode{BaseNode: &ast.BaseNode{}, Token: dummyToken()}
+	alias := &ast.AliasNode{BaseNode: &ast.BaseNode{}, Start: dummyToken(), Value: name}
+	assert.True(t, rules.IsAliasNode(alias))
+}
+
+func TestIsAliasNode_AnchorWrappingAlias(t *testing.T) {
+	name := &ast.StringNode{BaseNode: &ast.BaseNode{}, Token: dummyToken()}
+	alias := &ast.AliasNode{BaseNode: &ast.BaseNode{}, Start: dummyToken(), Value: name}
+	anchor := &ast.AnchorNode{BaseNode: &ast.BaseNode{}, Start: dummyToken(), Value: alias}
+	assert.True(t, rules.IsAliasNode(anchor))
+}
+
+func TestIsAliasNode_NonAlias(t *testing.T) {
+	str := &ast.StringNode{BaseNode: &ast.BaseNode{}, Token: dummyToken()}
+	assert.False(t, rules.IsAliasNode(str))
+
+	mapping := &ast.MappingNode{BaseNode: &ast.BaseNode{}, Start: dummyToken()}
+	assert.False(t, rules.IsAliasNode(mapping))
+
+	assert.False(t, rules.IsAliasNode(nil))
+}
