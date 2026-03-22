@@ -22,4 +22,13 @@ expected:
       |     ^^^^
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
-    1 error found in 1 file
+    --> {{.Dir}}/job-has-both-runs-on-and-uses.yml:5:5
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     uses: octo-org/this-repo/.github/workflows/workflow.yml@main
+      |     ^^^^ unknown key "uses" (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    2 errors found in 1 file

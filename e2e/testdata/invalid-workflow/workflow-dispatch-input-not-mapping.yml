@@ -20,7 +20,7 @@ expected:
     2 |   workflow_dispatch:
     3 |     inputs:
     4 |       myinput: not-a-mapping
-      |                ^^^^^^^^^^^^^ input "myinput" must be a mapping, but got String (invalid-workflow)
+      |                ^^^^^^^^^^^^^ "myinput" must be a mapping, but got string (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
@@ -20,8 +22,6 @@ func (r *Rule) Online() bool   { return false }
 func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 
-	// Generated schema validation (covers: top-level unknown/required keys,
-	// author type check, branding unknown keys + color/icon type/enum checks).
 	fileStart := mapping.FirstToken()
 	genErrs := rules.Dedup(validateAction(mapping))
 	// Fix error tokens BEFORE sorting
@@ -32,34 +32,68 @@ func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 		}
 	}
 	for _, ve := range rules.SortRequiredFirst(genErrs) {
-		if isHandWrittenPath(ve.Path) {
-			continue
-		}
 		errs = append(errs, toDiagnostic(ve))
 	}
 
-	// Hand-written checks NOT covered by generated validator:
-
-	using := ""
+	// Hand-written extensions (run AFTER generated validation, never replace it).
+	// C1: Remote action ref in composite steps
+	// B3: Step mutual exclusion in composite steps
 	if runsKV := mapping.FindKey("runs"); runsKV != nil {
-		var runsErrs []*diagnostic.Error
-		using, runsErrs = checkRuns(runsKV)
-		errs = append(errs, runsErrs...)
+		if runsMapping, ok := rules.UnwrapNode(runsKV.Value).(*ast.MappingNode); ok {
+			m := workflow.Mapping{MappingNode: runsMapping}
+			if stepsKV := m.FindKey("steps"); stepsKV != nil {
+				if seq, ok := rules.UnwrapNode(stepsKV.Value).(*ast.SequenceNode); ok {
+					errs = append(errs, checkCompositeStepExtensions(seq)...)
+				}
+			}
+		}
 	}
+	return errs
+}
 
-	if inputsKV := mapping.FindKey("inputs"); inputsKV != nil {
-		errs = append(errs, checkInputs(inputsKV)...)
+// checkCompositeStepExtensions runs hand-written checks on composite action steps.
+func checkCompositeStepExtensions(seq *ast.SequenceNode) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	for _, item := range seq.Values {
+		stepMapping, ok := rules.UnwrapNode(item).(*ast.MappingNode)
+		if !ok {
+			continue
+		}
+		step := workflow.Mapping{MappingNode: stepMapping}
+
+		// B3: Step mutual exclusion
+		usesKV := step.FindKey("uses")
+		runKV := step.FindKey("run")
+		if usesKV != nil && runKV != nil {
+			firstToken := usesKV.Key.GetToken()
+			secondToken := runKV.Key.GetToken()
+			if secondToken.Position.Offset < firstToken.Position.Offset {
+				firstToken, secondToken = secondToken, firstToken
+			}
+			errs = append(errs, &diagnostic.Error{
+				Token:   firstToken,
+				Message: "\"uses\" and \"run\" are mutually exclusive",
+				Markers: []*token.Token{secondToken},
+			})
+		}
+
+		// C1: Remote action ref format
+		if usesKV != nil {
+			stepW := workflow.StepMapping{Mapping: step}
+			ref, ok := stepW.Uses()
+			if ok && !ref.IsLocal() && !ref.IsDocker() && ref.Ref() == "" {
+				errs = append(errs, &diagnostic.Error{
+					Token:   ref.Token(),
+					Message: fmt.Sprintf("%q must have a ref (e.g. %s@<ref>)", ref.String(), ref.String()),
+				})
+			}
+		}
 	}
-
-	if outputsKV := mapping.FindKey("outputs"); outputsKV != nil {
-		errs = append(errs, checkOutputs(outputsKV, using)...)
-	}
-
 	return errs
 }
 
 // toDiagnostic converts a generated ValidationError to a diagnostic.Error,
-// producing messages that match the hand-written format.
+// producing messages that match the desired format.
 func toDiagnostic(ve rules.ValidationError) *diagnostic.Error {
 	var msg string
 	switch ve.Kind {
@@ -72,35 +106,37 @@ func toDiagnostic(ve rules.ValidationError) *diagnostic.Error {
 			msg = fmt.Sprintf("unknown key %q", ve.Key)
 		}
 	case rules.KindRequiredKey:
-		msg = fmt.Sprintf("%q is required", ve.Key)
+		if len(ve.Allowed) > 1 {
+			quoted := make([]string, len(ve.Allowed))
+			for i, a := range ve.Allowed {
+				quoted[i] = fmt.Sprintf("%q", a)
+			}
+			msg = fmt.Sprintf("%s is required", strings.Join(quoted, " or "))
+		} else {
+			msg = fmt.Sprintf("%q is required", ve.Key)
+		}
 	case rules.KindTypeMismatch:
-		msg = fmt.Sprintf("%q must be a %s, but got %s", ve.Key, strings.Join(ve.Allowed, " or "), ve.Got)
+		if ve.Got == "null" {
+			if before, ok := strings.CutSuffix(ve.Key, "[]"); ok {
+				msg = fmt.Sprintf("%q element must not be empty", before)
+			} else {
+				msg = fmt.Sprintf("%q must not be empty", ve.Key)
+			}
+		} else if before, ok := strings.CutSuffix(ve.Key, "[]"); ok {
+			msg = fmt.Sprintf("%q elements must be %s, but got %s", before, rules.JoinPlural(ve.Allowed), ve.Got)
+		} else {
+			msg = fmt.Sprintf("%q must be a %s, but got %s", ve.Key, rules.JoinOr(ve.Allowed), ve.Got)
+		}
 	case rules.KindInvalidEnum:
 		if ve.Parent != "" && ve.Context != "" {
 			msg = fmt.Sprintf("%q has unknown %s %q", ve.Parent, ve.Context, ve.Got)
 		} else {
 			msg = fmt.Sprintf("%q has unknown value %q", ve.Key, ve.Got)
 		}
+	case rules.KindMinItems:
+		msg = fmt.Sprintf("%q must not be empty", ve.Key)
 	default:
 		msg = fmt.Sprintf("validation error on %q: %s", ve.Key, ve.Got)
 	}
 	return &diagnostic.Error{Token: ve.Token, Message: msg}
-}
-
-// isHandWrittenPath returns true if errors at this path are handled by
-// hand-written checks (runs, inputs, outputs).
-func isHandWrittenPath(path string) bool {
-	// runs: deep validation with better messages, uses .Type() for casing
-	if path == "runs" || strings.HasPrefix(path, "runs.") {
-		return true
-	}
-	// inputs: domain-specific messages like `input "name" has unknown key`
-	if path == "inputs" || strings.HasPrefix(path, "inputs.") {
-		return true
-	}
-	// outputs: depends on using value (composite outputs require "value" key)
-	if path == "outputs" || strings.HasPrefix(path, "outputs.") {
-		return true
-	}
-	return false
 }

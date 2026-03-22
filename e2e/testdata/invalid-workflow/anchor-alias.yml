@@ -1,0 +1,20 @@
+workflows:
+  - name: anchor-alias.yml
+    content: |
+      on: push
+      permissions: {}
+      env: &shared_env
+        FOO: bar
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          env: *shared_env
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

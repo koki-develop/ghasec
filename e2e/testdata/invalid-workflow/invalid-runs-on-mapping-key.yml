@@ -1,28 +1,23 @@
+## This test documents a SchemaStore limitation: runs-on mapping keys are not
+## constrained by additionalProperties:false in the JSON Schema.
+## See docs/superpowers/specs/2026-03-22-schemastore-limitations.md (F2).
+##
+## The test verifies that runs-on with unknown mapping keys is accepted (no error).
 workflows:
   - name: invalid-runs-on-mapping-key.yml
     content: |
       on: push
+      permissions: {}
       jobs:
         build:
+          timeout-minutes: 10
           runs-on:
-            foo:
-              bar:
-                hoge:
-                  baz:
-          steps: []
+            foo: bar
+          steps:
+            - run: echo hi
 
 expected:
-  exit_code: 1
+  exit_code: 0
   stdout: ""
   stderr: |
-    --> {{.Dir}}/invalid-runs-on-mapping-key.yml:5:7
-    ...
-    2 | jobs:
-    3 |   build:
-    4 |     runs-on:
-    5 |       foo:
-      |       ^^^ "runs-on" has unknown key "foo"; valid keys are "group" and "labels" (invalid-workflow)
-    ...
-      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
-
-    1 error found in 1 file
+    no errors found

@@ -42,10 +42,7 @@ var annotations = map[string]struct{ parent, context string }{
 
 // skipPaths lists schema paths whose children should not be recursively validated
 // by the generated code because they are handled by dedicated validation logic.
-var skipPaths = map[string]bool{
-	"jobs.*.steps": true, // workflow steps — handled by step.CheckEntries()
-	"runs.steps":   true, // action composite steps — handled by step.CheckEntries()
-}
+var skipPaths = map[string]bool{}
 
 // resolveRef follows $ref chains to the actual schema definition.
 // If s has a Ref and no direct constraints, return the Ref target.
@@ -64,6 +61,13 @@ func resolveRef(s *jsonschema.Schema) *jsonschema.Schema {
 	return s
 }
 
+// apSchemaCache caches converted additionalProperties schemas to avoid OOM
+// when the same schema is referenced from multiple locations.
+var apSchemaCache = map[*jsonschema.Schema]*Node{}
+
+// convertVisiting tracks schemas currently being converted to detect circular refs.
+var convertVisiting = map[*jsonschema.Schema]bool{}
+
 // convert transforms a compiled *jsonschema.Schema into our *Node IR.
 // path is the dot-separated location for diagnostic purposes (e.g. "jobs.*.steps.*").
 func convert(s *jsonschema.Schema, path string) *Node {
@@ -73,6 +77,13 @@ func convert(s *jsonschema.Schema, path string) *Node {
 
 	// Resolve $ref to the target schema.
 	s = resolveRef(s)
+
+	// Detect circular references.
+	if convertVisiting[s] {
+		return nil
+	}
+	convertVisiting[s] = true
+	defer delete(convertVisiting, s)
 
 	node := &Node{Path: path}
 
@@ -116,9 +127,10 @@ func convert(s *jsonschema.Schema, path string) *Node {
 		node.PatternProps = make(map[string]*Node, len(s.PatternProperties))
 		for re, v := range s.PatternProperties {
 			pattern := re.String()
-			childPath := pattern
+			// Use "*" as the path segment for pattern properties (not the raw regex)
+			childPath := "*"
 			if path != "" {
-				childPath = path + "." + pattern
+				childPath = path + ".*"
 			}
 			node.PatternProps[pattern] = convert(v, childPath)
 		}
@@ -129,9 +141,20 @@ func convert(s *jsonschema.Schema, path string) *Node {
 	case bool:
 		node.AdditionalProperties = &ap
 	case *jsonschema.Schema:
-		// If it's a schema, treat as allowed (true) — the sub-schema constrains values.
 		t := true
 		node.AdditionalProperties = &t
+		// G1: Convert additionalProperties schema for value validation.
+		// Cache AP schemas to avoid OOM from repeated conversion of shared definitions.
+		apResolved := resolveRef(ap)
+		if cached, ok := apSchemaCache[apResolved]; ok {
+			node.AdditionalPropsSchema = cached
+		} else {
+			apNode := convert(ap, path+".*")
+			if apNode != nil && nodeHasAnyIRChecks(apNode) {
+				node.AdditionalPropsSchema = apNode
+				apSchemaCache[apResolved] = apNode
+			}
+		}
 	}
 
 	// Items — can be nil, *Schema, or []*Schema
@@ -148,12 +171,30 @@ func convert(s *jsonschema.Schema, path string) *Node {
 		}
 	}
 
+	// G4: MinItems / MinProperties
+	if s.MinItems != nil {
+		node.MinItems = *s.MinItems
+	}
+	if s.MinProperties != nil {
+		node.MinProperties = *s.MinProperties
+	}
+
+	// G5: String pattern
+	if s.Pattern != nil {
+		node.Pattern = s.Pattern.String()
+	}
+
 	// Combiners
 	for _, sub := range s.OneOf {
 		node.OneOf = append(node.OneOf, convert(sub, path))
 	}
+	// G3: For allOf, filter out `not` sub-schemas. We can't validate them,
+	// but we can still validate the remaining constraints. This enables
+	// push/pull_request/pull_request_target events to get type/key validation.
 	for _, sub := range s.AllOf {
-		node.AllOf = append(node.AllOf, convert(sub, path))
+		if sub.Not == nil {
+			node.AllOf = append(node.AllOf, convert(sub, path))
+		}
 	}
 	for _, sub := range s.AnyOf {
 		node.AnyOf = append(node.AnyOf, convert(sub, path))
@@ -176,4 +217,16 @@ func convert(s *jsonschema.Schema, path string) *Node {
 	}
 
 	return node
+}
+
+// nodeHasAnyIRChecks returns true if a node has any validation constraints.
+func nodeHasAnyIRChecks(n *Node) bool {
+	if n == nil {
+		return false
+	}
+	return len(n.Types) > 0 || len(n.Enum) > 0 || n.Const != nil ||
+		len(n.Properties) > 0 || len(n.Required) > 0 ||
+		n.Items != nil || len(n.PatternProps) > 0 ||
+		len(n.OneOf) > 0 || len(n.AllOf) > 0 || len(n.AnyOf) > 0 ||
+		n.If != nil || n.Pattern != ""
 }

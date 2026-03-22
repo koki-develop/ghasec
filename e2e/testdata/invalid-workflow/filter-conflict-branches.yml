@@ -15,12 +15,11 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/filter-conflict-branches.yml:2:3
+    --> {{.Dir}}/filter-conflict-branches.yml:3:5
     1 | on:
     2 |   push:
-      |   ^^^^ "branches" and "branches-ignore" are mutually exclusive (invalid-workflow)
     3 |     branches: [main]
-      |     ^^^^^^^^
+      |     ^^^^^^^^ "branches" and "branches-ignore" are mutually exclusive (invalid-workflow)
     4 |     branches-ignore: [dev]
       |     ^^^^^^^^^^^^^^^
     ...

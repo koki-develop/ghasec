@@ -1,0 +1,42 @@
+workflows:
+  - name: job-unknown-key-multiple.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          foo: bar
+          steps:
+            - run: echo hi
+        deploy:
+          runs-on: ubuntu-latest
+          baz: qux
+          steps:
+            - run: echo deploy
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/job-unknown-key-multiple.yml:5:5
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     foo: bar
+      |     ^^^ unknown key "foo" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/job-unknown-key-multiple.yml:10:5
+    ...
+     2 | jobs:
+    ...
+     8 |   deploy:
+    ...
+    10 |     baz: qux
+       |     ^^^ unknown key "baz" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    2 errors found in 1 file

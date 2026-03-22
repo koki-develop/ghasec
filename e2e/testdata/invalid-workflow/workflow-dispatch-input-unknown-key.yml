@@ -24,7 +24,7 @@ expected:
     4 |       myinput:
     ...
     6 |         unknown_prop: value
-      |         ^^^^^^^^^^^^ input "myinput" has unknown key "unknown_prop" (invalid-workflow)
+      |         ^^^^^^^^^^^^ unknown key "unknown_prop" (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

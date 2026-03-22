@@ -139,6 +139,31 @@ func tokenSpan(src []byte, tk *token.Token) annotate.Span {
 	if span.End <= span.Start {
 		span.End = span.Start + 1
 	}
+	// Clamp span to source length to prevent renderer errors on empty/null nodes.
+	if span.End > len(src) {
+		span.End = len(src)
+	}
+	if span.Start >= len(src) && len(src) > 0 {
+		span.Start = len(src) - 1
+		span.End = len(src)
+	}
+	// If span points at a newline or is at end of line, back up to find
+	// the last non-whitespace character on the line. This ensures null/empty
+	// tokens get a visible marker (^) on the relevant key.
+	if span.Start < len(src) && (src[span.Start] == '\n' || src[span.Start] == '\r') {
+		for span.Start > 0 && (src[span.Start-1] == ' ' || src[span.Start-1] == '\t' || src[span.Start-1] == '\n' || src[span.Start-1] == '\r') {
+			span.Start--
+		}
+		span.End = span.Start + 1
+		if span.Start > 0 {
+			// Extend backward to cover the key name (find start of word).
+			wordStart := span.Start
+			for wordStart > 0 && src[wordStart-1] != ' ' && src[wordStart-1] != '\t' && src[wordStart-1] != '\n' {
+				wordStart--
+			}
+			span.Start = wordStart
+		}
+	}
 	return span
 }
 

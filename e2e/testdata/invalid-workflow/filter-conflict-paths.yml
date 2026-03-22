@@ -15,12 +15,11 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/filter-conflict-paths.yml:2:3
+    --> {{.Dir}}/filter-conflict-paths.yml:3:5
     1 | on:
     2 |   pull_request:
-      |   ^^^^^^^^^^^^ "paths" and "paths-ignore" are mutually exclusive (invalid-workflow)
     3 |     paths: ["src/"]
-      |     ^^^^^
+      |     ^^^^^ "paths" and "paths-ignore" are mutually exclusive (invalid-workflow)
     4 |     paths-ignore: ["docs/"]
       |     ^^^^^^^^^^^^
     ...

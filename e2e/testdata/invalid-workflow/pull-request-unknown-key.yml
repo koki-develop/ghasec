@@ -1,0 +1,19 @@
+workflows:
+  - name: pull-request-unknown-key.yml
+    content: |
+      on:
+        pull_request:
+          bogus: foo
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

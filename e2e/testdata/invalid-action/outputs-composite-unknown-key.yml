@@ -24,7 +24,7 @@ expected:
      9 |   my-output:
     ...
     12 |     bogus: bad
-       |     ^^^^^ output "my-output" has unknown key "bogus" (invalid-action)
+       |     ^^^^^ unknown key "bogus" (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 
     1 error found in 1 file

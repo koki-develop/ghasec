@@ -1,0 +1,28 @@
+workflows:
+  - name: filter-conflict-branches-pull-request.yml
+    content: |
+      on:
+        pull_request:
+          branches: [main]
+          branches-ignore: [dev]
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/filter-conflict-branches-pull-request.yml:3:5
+    1 | on:
+    2 |   pull_request:
+    3 |     branches: [main]
+      |     ^^^^^^^^ "branches" and "branches-ignore" are mutually exclusive (invalid-workflow)
+    4 |     branches-ignore: [dev]
+      |     ^^^^^^^^^^^^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

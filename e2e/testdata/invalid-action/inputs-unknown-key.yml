@@ -23,7 +23,7 @@ expected:
     4 |   my-input:
     ...
     6 |     foo: bar
-      |     ^^^ input "my-input" has unknown key "foo" (invalid-action)
+      |     ^^^ unknown key "foo" (invalid-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 

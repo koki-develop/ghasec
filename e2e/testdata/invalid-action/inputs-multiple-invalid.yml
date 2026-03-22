@@ -1,0 +1,33 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: node20
+        main: index.js
+      inputs:
+        first: 42
+        second: true
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:7:10
+    ...
+    6 | inputs:
+    7 |   first: 42
+      |          ^^ "first" must be a mapping, but got integer (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:8:11
+    ...
+    6 | inputs:
+    ...
+    8 |   second: true
+      |           ^^^^ "second" must be a mapping, but got boolean (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    2 errors found in 1 file

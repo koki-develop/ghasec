@@ -1,0 +1,23 @@
+workflows:
+  - name: concurrency-integer.yml
+    content: |
+      on: push
+      concurrency: 42
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/concurrency-integer.yml:2:14
+    ...
+    2 | concurrency: 42
+      |              ^^ "concurrency" must be a string or mapping, but got integer (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

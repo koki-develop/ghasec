@@ -1,0 +1,38 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      outputs:
+        out1:
+          description: first output
+        out2:
+          description: second output
+      runs:
+        using: composite
+        steps:
+          - run: echo hi
+            shell: bash
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:4:3
+    ...
+    3 | outputs:
+    4 |   out1:
+      |   ^^^^ "value" is required (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:6:3
+    ...
+    3 | outputs:
+    ...
+    6 |   out2:
+      |   ^^^^ "value" is required (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    2 errors found in 1 file

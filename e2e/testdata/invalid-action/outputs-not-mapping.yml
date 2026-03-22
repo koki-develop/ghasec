@@ -15,7 +15,7 @@ expected:
     --> {{.Dir}}/action.yml:6:10
     ...
     6 | outputs: notamap
-      |          ^^^^^^^ "outputs" must be a mapping, but got String (invalid-action)
+      |          ^^^^^^^ "outputs" must be a mapping, but got string (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 
     1 error found in 1 file

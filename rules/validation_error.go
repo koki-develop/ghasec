@@ -13,6 +13,7 @@ const (
 	KindRequiredKey
 	KindTypeMismatch
 	KindInvalidEnum
+	KindMinItems // sequence/mapping has too few items
 )
 
 type ValidationError struct {

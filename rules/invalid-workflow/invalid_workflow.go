@@ -21,8 +21,6 @@ func (r *Rule) Online() bool   { return false }
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 
-	// Generated schema validation (covers: top-level unknown/required keys,
-	// on validation, permissions, concurrency, defaults type/key checks).
 	fileStart := mapping.FirstToken()
 	genErrs := rules.Dedup(validateWorkflow(mapping))
 	// Fix error tokens BEFORE sorting
@@ -31,69 +29,24 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 		if genErrs[i].Kind == rules.KindRequiredKey && genErrs[i].Path == "" {
 			genErrs[i].Token = fileStart
 		}
-		// Nested required errors should point to the parent key, not the mapping content.
-		// e.g. concurrency.group required → point to "concurrency:" key
-		if genErrs[i].Kind == rules.KindRequiredKey && genErrs[i].Path != "" {
-			parentKey := strings.Split(genErrs[i].Path, ".")[0]
-			if kv := mapping.FindKey(parentKey); kv != nil {
-				genErrs[i].Token = kv.Key.GetToken()
-			}
-		}
+		// D1: Nested required errors now get correct tokens from the emitter
+		// (parentKeyTokenExpr). No need to override here.
 	}
 	for _, ve := range rules.SortRequiredFirst(genErrs) {
-		if isHandWrittenPath(ve.Path) {
-			continue
-		}
 		errs = append(errs, toDiagnostic(ve))
 	}
 
-	// Hand-written checks NOT covered by generated validator:
+	// Hand-written extensions (run AFTER generated validation, never replace it).
 
-	// on: type mismatch fallback (generated has no else clause for oneOf)
-	errs = append(errs, checkOnTypeFallback(mapping.Mapping)...)
-
-	// on: filter conflicts (branches/branches-ignore etc.) — uses Markers
+	// B1: Filter conflicts (branches/branches-ignore, tags/tags-ignore, paths/paths-ignore)
 	errs = append(errs, checkOnFilterConflicts(mapping.Mapping)...)
 
-	// on: schedule and workflow_dispatch deep validation (generated code doesn't descend far enough)
-	if onKV := mapping.FindKey("on"); onKV != nil {
-		if onMapping, ok := onKV.Value.(*ast.MappingNode); ok {
-			for _, eventEntry := range onMapping.Values {
-				eventName := eventEntry.Key.GetToken().Value
-				switch eventName {
-				case "schedule":
-					errs = append(errs, checkOnSchedule(eventEntry)...)
-				case "workflow_dispatch":
-					errs = append(errs, checkOnWorkflowDispatch(eventEntry)...)
-				}
-			}
-		}
-	}
-
-	// concurrency: type fallback for types not handled by generated oneOf (e.g. integer)
-	if kv := mapping.FindKey("concurrency"); kv != nil {
-		errs = append(errs, checkConcurrencyTypeFallback(kv)...)
-	}
-
-	// permissions: type mismatch fallback + null handling
-	if kv := mapping.FindKey("permissions"); kv != nil {
-		errs = append(errs, checkPermissionsTypeFallback(kv)...)
-	}
-
-	// jobs: null/empty check + entry validation (required check handled by generated code)
+	// B2: Job-level mutual exclusion (runs-on/uses, uses/steps)
+	// B3: Step-level mutual exclusion (uses/run)
+	// C1: Remote action ref format
 	if kv := mapping.FindKey("jobs"); kv != nil {
-		if _, ok := kv.Value.(*ast.NullNode); ok {
-			errs = append(errs, &diagnostic.Error{
-				Token:   kv.Key.GetToken(),
-				Message: "\"jobs\" must not be empty",
-			})
-		} else if jobsMapping, ok := kv.Value.(*ast.MappingNode); ok {
-			errs = append(errs, checkJobEntries(jobsMapping)...)
-		} else if !isExpression(kv.Value) {
-			errs = append(errs, &diagnostic.Error{
-				Token:   kv.Value.GetToken(),
-				Message: fmt.Sprintf("\"jobs\" must be a mapping, but got %s", rules.NodeTypeName(kv.Value)),
-			})
+		if jobsMapping, ok := rules.UnwrapNode(kv.Value).(*ast.MappingNode); ok {
+			errs = append(errs, checkJobExtensions(jobsMapping)...)
 		}
 	}
 
@@ -101,7 +54,7 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 }
 
 // toDiagnostic converts a generated ValidationError to a diagnostic.Error,
-// producing messages that match the hand-written format.
+// producing messages that match the desired format.
 func toDiagnostic(ve rules.ValidationError) *diagnostic.Error {
 	var msg string
 	switch ve.Kind {
@@ -114,34 +67,46 @@ func toDiagnostic(ve rules.ValidationError) *diagnostic.Error {
 			msg = fmt.Sprintf("unknown key %q", ve.Key)
 		}
 	case rules.KindRequiredKey:
-		msg = fmt.Sprintf("%q is required", ve.Key)
-	case rules.KindTypeMismatch:
-		if before, ok := strings.CutSuffix(ve.Key, "[]"); ok {
-			base := before
-			msg = fmt.Sprintf("%q elements must be %s, but got %s", base, joinPlural(ve.Allowed), ve.Got)
-		} else if strings.HasPrefix(ve.Path, "permissions.") && ve.Path != "permissions" {
-			// Permission scope type mismatch
-			msg = fmt.Sprintf("\"permissions\" scope %q must be a %s, but got %s", ve.Key, strings.Join(ve.Allowed, " or "), ve.Got)
+		if len(ve.Allowed) > 1 {
+			// Multiple alternatives (e.g. "runs-on" or "uses")
+			quoted := make([]string, len(ve.Allowed))
+			for i, a := range ve.Allowed {
+				quoted[i] = fmt.Sprintf("%q", a)
+			}
+			msg = fmt.Sprintf("%s is required", strings.Join(quoted, " or "))
 		} else {
-			msg = fmt.Sprintf("%q must be a %s, but got %s", ve.Key, strings.Join(ve.Allowed, " or "), ve.Got)
+			msg = fmt.Sprintf("%q is required", ve.Key)
+		}
+	case rules.KindTypeMismatch:
+		if ve.Got == "null" {
+			if before, ok := strings.CutSuffix(ve.Key, "[]"); ok {
+				msg = fmt.Sprintf("%q element must not be empty", before)
+			} else {
+				msg = fmt.Sprintf("%q must not be empty", ve.Key)
+			}
+		} else if before, ok := strings.CutSuffix(ve.Key, "[]"); ok {
+			msg = fmt.Sprintf("%q elements must be %s, but got %s", before, rules.JoinPlural(ve.Allowed), ve.Got)
+		} else if isPermissionsScopePath(ve.Path) {
+			msg = fmt.Sprintf("\"permissions\" scope %q must be a %s, but got %s", ve.Key, rules.JoinOr(ve.Allowed), ve.Got)
+		} else {
+			msg = fmt.Sprintf("%q must be a %s, but got %s", ve.Key, rules.JoinOr(ve.Allowed), ve.Got)
 		}
 	case rules.KindInvalidEnum:
 		if ve.Parent == "on" && ve.Context == "event" {
 			msg = fmt.Sprintf("\"on\" has unknown event %q", ve.Got)
-		} else if strings.HasPrefix(ve.Path, "on.") || strings.HasPrefix(ve.Path, "on*") {
-			// Enum error within on sequence items
+		} else if isOnEventPath(ve.Path) {
 			msg = fmt.Sprintf("\"on\" has unknown event %q", ve.Got)
-		} else if strings.HasPrefix(ve.Path, "permissions.") {
-			// Permission scope level: "permissions" scope "<key>" must be "read", "write", or "none", but got "<value>"
+		} else if isPermissionsScopePath(ve.Path) {
 			msg = fmt.Sprintf("\"permissions\" scope %q must be %s, but got %q", ve.Key, joinQuoted(ve.Allowed), ve.Got)
 		} else if ve.Path == "permissions" && ve.Key == "permissions" {
-			// Top-level permissions string: "permissions" must be "read-all" or "write-all", but got "<value>"
 			msg = fmt.Sprintf("\"permissions\" must be %s, but got %q", joinQuoted(ve.Allowed), ve.Got)
 		} else if ve.Parent != "" && ve.Context != "" {
 			msg = fmt.Sprintf("%q has unknown %s %q", ve.Parent, ve.Context, ve.Got)
 		} else {
 			msg = fmt.Sprintf("%q has unknown value %q", ve.Key, ve.Got)
 		}
+	case rules.KindMinItems:
+		msg = fmt.Sprintf("%q must not be empty", ve.Key)
 	default:
 		msg = fmt.Sprintf("validation error on %q: %s", ve.Key, ve.Got)
 	}
@@ -163,114 +128,25 @@ func joinQuoted(allowed []string) string {
 	return strings.Join(quoted[:len(quoted)-1], ", ") + ", or " + quoted[len(quoted)-1]
 }
 
-// joinPlural formats allowed types in plural form: "strings", "mappings", etc.
-func joinPlural(allowed []string) string {
-	if len(allowed) == 0 {
-		return "(none)"
-	}
-	plural := make([]string, len(allowed))
-	for i, a := range allowed {
-		plural[i] = a + "s"
-	}
-	if len(plural) <= 2 {
-		return strings.Join(plural, " or ")
-	}
-	return strings.Join(plural[:len(plural)-1], ", ") + ", or " + plural[len(plural)-1]
-}
-
-// isHandWrittenPath returns true if errors at this path are handled by
-// hand-written checks (schedule, workflow_dispatch deep validation, jobs).
-func isHandWrittenPath(path string) bool {
-	// schedule and workflow_dispatch have complex validation that hand-written code
-	// handles better (cron required, input key validation, etc.)
-	if strings.HasPrefix(path, "on.schedule") {
-		return true
-	}
-	if strings.HasPrefix(path, "on.workflow_dispatch") {
-		return true
-	}
-	// Job-level validation is still hand-written
-	if path == "jobs" || strings.HasPrefix(path, "jobs.") {
-		return true
+// isPermissionsScopePath checks if a path refers to a specific permission scope
+// (e.g. "permissions.contents" or "jobs.*.permissions.contents").
+func isPermissionsScopePath(path string) bool {
+	parts := strings.Split(path, ".")
+	for i, p := range parts {
+		if p == "permissions" && i+1 < len(parts) {
+			return true
+		}
 	}
 	return false
 }
 
-// checkOnTypeFallback catches the case where "on" has a type not handled by
-// the generated oneOf branches (e.g. on: 123).
-func checkOnTypeFallback(mapping workflow.Mapping) []*diagnostic.Error {
-	kv := mapping.FindKey("on")
-	if kv == nil {
-		return nil // required check handled by generated code
+// isOnEventPath checks if a path refers to a direct child of "on"
+// (e.g. "on.push", "on.*") but NOT deeper descendants like "on.workflow_call.inputs.*.type".
+func isOnEventPath(path string) bool {
+	if !strings.HasPrefix(path, "on.") && !strings.HasPrefix(path, "on*") {
+		return false
 	}
-	if isExpression(kv.Value) {
-		return nil
-	}
-	switch kv.Value.(type) {
-	case *ast.StringNode, *ast.LiteralNode, *ast.SequenceNode, *ast.MappingNode:
-		return nil // handled by generated code
-	default:
-		return []*diagnostic.Error{{
-			Token:   kv.Value.GetToken(),
-			Message: fmt.Sprintf("\"on\" must be a string, sequence, or mapping, but got %s", rules.NodeTypeName(kv.Value)),
-		}}
-	}
-}
-
-// checkOnFilterConflicts checks for mutually exclusive filter keys in on events.
-func checkOnFilterConflicts(mapping workflow.Mapping) []*diagnostic.Error {
-	kv := mapping.FindKey("on")
-	if kv == nil {
-		return nil
-	}
-	onMapping, ok := kv.Value.(*ast.MappingNode)
-	if !ok {
-		return nil
-	}
-	var errs []*diagnostic.Error
-	for _, entry := range onMapping.Values {
-		eventName := entry.Key.GetToken().Value
-		if !knownOnEvents[eventName] {
-			continue
-		}
-		if eventName == "schedule" || eventName == "workflow_dispatch" {
-			continue
-		}
-		errs = append(errs, checkOnEventFilters(entry)...)
-	}
-	return errs
-}
-
-// checkConcurrencyTypeFallback catches concurrency values that are not
-// string or mapping (not handled by generated oneOf).
-func checkConcurrencyTypeFallback(kv *ast.MappingValueNode) []*diagnostic.Error {
-	if isExpression(kv.Value) {
-		return nil
-	}
-	switch kv.Value.(type) {
-	case *ast.StringNode, *ast.LiteralNode, *ast.MappingNode:
-		return nil // handled by generated code
-	default:
-		return []*diagnostic.Error{{
-			Token:   kv.Value.GetToken(),
-			Message: fmt.Sprintf("\"concurrency\" must be a string or mapping, but got %s", rules.NodeTypeName(kv.Value)),
-		}}
-	}
-}
-
-// checkPermissionsTypeFallback catches permissions values that are not
-// string, mapping, or null (not handled by generated oneOf).
-func checkPermissionsTypeFallback(kv *ast.MappingValueNode) []*diagnostic.Error {
-	if isExpression(kv.Value) {
-		return nil
-	}
-	switch kv.Value.(type) {
-	case *ast.StringNode, *ast.LiteralNode, *ast.MappingNode, *ast.NullNode:
-		return nil // handled by generated code or intentionally allowed
-	default:
-		return []*diagnostic.Error{{
-			Token:   kv.Value.GetToken(),
-			Message: fmt.Sprintf("\"permissions\" must be a string or mapping, but got %s", rules.NodeTypeName(kv.Value)),
-		}}
-	}
+	// Count dots after "on." — if more than one, it's a deep descendant
+	rest := strings.TrimPrefix(path, "on.")
+	return !strings.Contains(rest, ".")
 }

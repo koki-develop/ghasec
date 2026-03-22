@@ -1,0 +1,46 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: composite
+        steps:
+          - run: echo one
+            shell: bash
+            uses: actions/checkout@v6
+          - run: echo two
+            shell: bash
+            uses: actions/setup-node@v4
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:6:7
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - run: echo one
+      |       ^^^ "uses" and "run" are mutually exclusive (invalid-action)
+    ...
+    8 |       uses: actions/checkout@v6
+      |       ^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:9:7
+    ...
+     3 | runs:
+    ...
+     5 |   steps:
+    ...
+     9 |     - run: echo two
+       |       ^^^ "uses" and "run" are mutually exclusive (invalid-action)
+    ...
+    11 |       uses: actions/setup-node@v4
+       |       ^^^^
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    2 errors found in 1 file

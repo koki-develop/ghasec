@@ -1,0 +1,65 @@
+workflows:
+  - name: job-both-uses-and-steps-with-markers.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          uses: octo-org/repo/.github/workflows/ci.yml@main
+          steps:
+            - run: echo hi
+        deploy:
+          uses: octo-org/repo/.github/workflows/deploy.yml@main
+          steps:
+            - run: echo deploy
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/job-both-uses-and-steps-with-markers.yml:3:3
+    ...
+    2 | jobs:
+    3 |   build:
+      |   ^^^^^ "uses" and "steps" are mutually exclusive (invalid-workflow)
+    4 |     uses: octo-org/repo/.github/workflows/ci.yml@main
+      |     ^^^^
+    5 |     steps:
+      |     ^^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/job-both-uses-and-steps-with-markers.yml:5:5
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     steps:
+      |     ^^^^^ unknown key "steps" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/job-both-uses-and-steps-with-markers.yml:7:3
+    ...
+    2 | jobs:
+    ...
+    7 |   deploy:
+      |   ^^^^^^ "uses" and "steps" are mutually exclusive (invalid-workflow)
+    8 |     uses: octo-org/repo/.github/workflows/deploy.yml@main
+      |     ^^^^
+    9 |     steps:
+      |     ^^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/job-both-uses-and-steps-with-markers.yml:9:5
+    ...
+    2 | jobs:
+    ...
+    7 |   deploy:
+    ...
+    9 |     steps:
+      |     ^^^^^ unknown key "steps" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    4 errors found in 1 file

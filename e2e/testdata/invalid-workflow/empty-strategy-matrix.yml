@@ -1,0 +1,28 @@
+workflows:
+  - name: empty-strategy-matrix.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          strategy:
+            matrix: {}
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/empty-strategy-matrix.yml:6:15
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     strategy:
+    6 |       matrix: {}
+      |               ^ "matrix" must not be empty (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

@@ -18,7 +18,7 @@ expected:
     1 | on:
     2 |   schedule:
     3 |     - "0 0 * * *"
-      |        ^^^^^^^^^ "schedule" elements must be mappings, but got String (invalid-workflow)
+      |        ^^^^^^^^^ "schedule" elements must be mappings, but got string (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

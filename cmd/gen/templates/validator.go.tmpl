@@ -3,8 +3,9 @@
 package {{ .PackageName }}
 
 import (
-	"strings"
+	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/koki-develop/ghasec/rules"
@@ -12,6 +13,7 @@ import (
 )
 
 var (
+	_ = fmt.Sprintf
 	_ = strings.Contains
 	_ = regexp.Compile
 	_ ast.Node

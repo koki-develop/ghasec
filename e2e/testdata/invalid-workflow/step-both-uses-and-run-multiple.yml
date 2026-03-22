@@ -1,0 +1,44 @@
+workflows:
+  - name: step-both-uses-and-run-multiple.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+              run: echo first
+            - uses: actions/setup-node@v4
+              run: echo second
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/step-both-uses-and-run-multiple.yml:6:9
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     steps:
+    6 |       - uses: actions/checkout@v4
+      |         ^^^^ "uses" and "run" are mutually exclusive (invalid-workflow)
+    7 |         run: echo first
+      |         ^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/step-both-uses-and-run-multiple.yml:8:9
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     steps:
+    ...
+    8 |       - uses: actions/setup-node@v4
+      |         ^^^^ "uses" and "run" are mutually exclusive (invalid-workflow)
+    9 |         run: echo second
+      |         ^^^
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    2 errors found in 1 file

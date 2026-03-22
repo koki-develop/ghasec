@@ -11,11 +11,12 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/job-missing-runs-on-and-uses.yml:3:3
+    --> {{.Dir}}/job-missing-runs-on-and-uses.yml:4:10
     ...
     2 | jobs:
     3 |   build:
-      |   ^^^^^ "runs-on" or "uses" is required (invalid-workflow)
+    4 |     steps:
+      |          ^ "runs-on" or "uses" is required (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

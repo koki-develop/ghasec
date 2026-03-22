@@ -1,0 +1,27 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: node20
+        main: index.js
+      inputs:
+        my-input:
+          - 1
+          - 2
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:8:5
+    ...
+    6 | inputs:
+    7 |   my-input:
+    8 |     - 1
+      |     ^ "my-input" must be a mapping, but got sequence (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    1 error found in 1 file

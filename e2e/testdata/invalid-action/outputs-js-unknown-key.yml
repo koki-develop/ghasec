@@ -21,7 +21,7 @@ expected:
     4 |   my-output:
     ...
     6 |     value: something
-      |     ^^^^^ output "my-output" has unknown key "value" (invalid-action)
+      |     ^^^^^ unknown key "value" (invalid-action)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 

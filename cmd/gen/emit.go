@@ -9,10 +9,12 @@ import (
 
 // emitter generates Go validation code from a *Node IR.
 type emitter struct {
-	buf     strings.Builder
-	indent  int
-	regexps []regexpVar
-	counter int // unique counter for variable names
+	buf        strings.Builder
+	indent     int
+	regexps    []regexpVar
+	counter    int               // unique counter for variable names
+	extraFuncs strings.Builder   // additional helper functions (e.g. additionalProperties validators)
+	emittedAP  map[string]string // path -> function name for already-emitted AP validators
 }
 
 // nextID returns a unique integer for generating non-colliding variable names.
@@ -41,7 +43,7 @@ func (e *emitter) push() { e.indent++ }
 func (e *emitter) pop() { e.indent-- }
 
 // String returns the accumulated code.
-func (e *emitter) String() string { return e.buf.String() }
+func (e *emitter) String() string { return e.buf.String() + e.extraFuncs.String() }
 
 // regexpVarName returns a stable variable name for a regexp pattern,
 // registering it in e.regexps if not already present.
@@ -71,8 +73,8 @@ func (e *emitter) EmitValidateFunc(funcName string, paramType string, node *Node
 	e.push()
 	e.line("var errs []rules.ValidationError")
 
-	// Emit self checks (type/enum) on the mapping node itself.
-	if len(node.Types) > 0 || len(node.Enum) > 0 {
+	// Emit self checks (type/enum/if-then-else) on the mapping node itself.
+	if len(node.Types) > 0 || len(node.Enum) > 0 || node.If != nil {
 		e.blank()
 		keyName := lastPathSegment(node.Path)
 		e.emitValueChecks("ast.Node(m.MappingNode)", node, "errs", keyName)
@@ -86,10 +88,54 @@ func (e *emitter) EmitValidateFunc(funcName string, paramType string, node *Node
 	e.line("}")
 }
 
+// emitAPHelperFunc generates a helper function for validating additionalProperties
+// values and returns the function name. The function signature is:
+//
+//	func <name>(value ast.Node, keyName string) []rules.ValidationError
+//
+// If a function for this path was already emitted, returns the existing name.
+func (e *emitter) emitAPHelperFunc(node *Node) string {
+	if e.emittedAP == nil {
+		e.emittedAP = make(map[string]string)
+	}
+	if name, ok := e.emittedAP[node.Path]; ok {
+		return name
+	}
+
+	id := e.nextID()
+	funcName := fmt.Sprintf("_validateAP%d", id)
+	e.emittedAP[node.Path] = funcName
+
+	// Save current state and emit to extraFuncs buffer.
+	origBuf := e.buf
+	origIndent := e.indent
+	e.buf = strings.Builder{}
+	e.indent = 0
+
+	e.blank()
+	e.line("// %s validates additionalProperties values at path %q.", funcName, node.Path)
+	e.line("func %s(value ast.Node, keyName string) []rules.ValidationError {", funcName)
+	e.push()
+	e.line("var errs []rules.ValidationError")
+	e.emitValueChecks("value", node, "errs", "*", "keyName")
+	e.line("return errs")
+	e.pop()
+	e.line("}")
+
+	// Append to extraFuncs and restore state.
+	e.extraFuncs.WriteString(e.buf.String())
+	e.buf = origBuf
+	e.indent = origIndent
+
+	return funcName
+}
+
 // emitMappingBodyChecks emits unknown-key detection, required-key checks, and
 // per-property checks for a mapping expression. It does NOT emit type/enum
 // checks for the mapping node itself.
-func (e *emitter) emitMappingBodyChecks(mappingExpr string, node *Node, errsVar string) {
+// parentKeyTokenExpr is an optional Go expression for the parent key's token,
+// used to point required-key errors at the parent key instead of the mapping content.
+func (e *emitter) emitMappingBodyChecks(mappingExpr string, node *Node, errsVar string, parentKeyTokenExpr ...string) {
 	if node == nil {
 		return
 	}
@@ -129,7 +175,12 @@ func (e *emitter) emitMappingBodyChecks(mappingExpr string, node *Node, errsVar 
 			e.line("Context: %q,", node.ContextTerm)
 		} else if node.Path != "" {
 			parts := strings.Split(node.Path, ".")
-			e.line("Parent: %q,", parts[len(parts)-1])
+			lastPart := parts[len(parts)-1]
+			// Skip wildcard segments from patternProperties — they produce
+			// garbled messages like `"*" has unknown key "foo"`.
+			if lastPart != "*" {
+				e.line("Parent: %q,", lastPart)
+			}
 		}
 		e.line("Key:   _key,")
 		e.line("Token: _entry.Key.GetToken(),")
@@ -147,6 +198,11 @@ func (e *emitter) emitMappingBodyChecks(mappingExpr string, node *Node, errsVar 
 		wrapperVar := fmt.Sprintf("_mWrap%s", sanitizeIdent(node.Path))
 		e.line("// Required key checks")
 		e.line("%s := workflow.Mapping{MappingNode: %s}", wrapperVar, mappingExpr)
+		// D1-D2: Use parent key token if available for better error positioning.
+		tokenExpr := mappingExpr + ".GetToken()"
+		if len(parentKeyTokenExpr) > 0 && parentKeyTokenExpr[0] != "" {
+			tokenExpr = parentKeyTokenExpr[0]
+		}
 		for _, req := range node.Required {
 			e.line("if %s.FindKey(%q) == nil {", wrapperVar, req)
 			e.push()
@@ -157,7 +213,7 @@ func (e *emitter) emitMappingBodyChecks(mappingExpr string, node *Node, errsVar 
 				e.line("Path:  %q,", node.Path)
 			}
 			e.line("Key:   %q,", req)
-			e.line("Token: %s.GetToken(),", mappingExpr)
+			e.line("Token: %s,", tokenExpr)
 			e.pop()
 			e.line("})")
 			e.pop()
@@ -205,18 +261,58 @@ func (e *emitter) emitMappingBodyChecks(mappingExpr string, node *Node, errsVar 
 			child := node.PatternProps[pattern]
 			regVar := e.regexpVarName(pattern)
 			entryVar := fmt.Sprintf("_ppEntry%d", i)
+			keyVar := fmt.Sprintf("_ppKey%d", i)
 			e.line("// PatternProperty: %s", pattern)
 			e.line("for _, %s := range %s.Values {", entryVar, mappingExpr)
 			e.push()
 			e.line("if %s.MatchString(%s.Key.GetToken().Value) {", regVar, entryVar)
 			e.push()
-			e.emitValueChecks(fmt.Sprintf("%s.Value", entryVar), child, errsVar, "*")
+			// Capture the actual YAML key name for use in error messages.
+			e.line("%s := %s.Key.GetToken().Value", keyVar, entryVar)
+			e.line("_ = %s // may be unused if no type checks in children", keyVar)
+			e.emitValueChecks(fmt.Sprintf("%s.Value", entryVar), child, errsVar, "*", keyVar)
 			e.pop()
 			e.line("}")
 			e.pop()
 			e.line("}")
 			e.blank()
 		}
+	}
+
+	// G1: AdditionalProperties with schema — validate each mapping value.
+	if node.AdditionalPropsSchema != nil {
+		apNode := node.AdditionalPropsSchema
+		funcName := e.emitAPHelperFunc(apNode)
+		apEntryVar := "_apEntry"
+		e.line("// AdditionalProperties schema validation (delegated to helper)")
+		e.line("for _, %s := range %s.Values {", apEntryVar, mappingExpr)
+		e.push()
+		e.line("%s = append(%s, %s(%s.Value, %s.Key.GetToken().Value)...)", errsVar, errsVar, funcName, apEntryVar, apEntryVar)
+		e.pop()
+		e.line("}")
+		e.blank()
+	}
+
+	// G4: MinProperties check
+	if node.MinProperties > 0 {
+		e.line("// minProperties check")
+		e.line("if len(%s.Values) < %d {", mappingExpr, node.MinProperties)
+		e.push()
+		e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+		e.push()
+		e.line("Kind:    rules.KindMinItems,")
+		if node.Path != "" {
+			e.line("Path:    %q,", node.Path)
+		}
+		e.line("Key:     %q,", lastPathSegment(node.Path))
+		e.line("Got:     fmt.Sprintf(\"%%d\", len(%s.Values)),", mappingExpr)
+		e.line("Allowed: []string{fmt.Sprintf(\"at least %%d\", %d)},", node.MinProperties)
+		e.line("Token:   %s.GetToken(),", mappingExpr)
+		e.pop()
+		e.line("})")
+		e.pop()
+		e.line("}")
+		e.blank()
 	}
 }
 
@@ -228,14 +324,18 @@ func nodeHasAnyChecks(node *Node) bool {
 	return len(node.Types) > 0 || len(node.Enum) > 0 || node.Const != nil ||
 		len(node.Properties) > 0 ||
 		(node.AdditionalProperties != nil && !*node.AdditionalProperties) ||
+		node.AdditionalPropsSchema != nil ||
 		len(node.Required) > 0 || node.Items != nil || len(node.PatternProps) > 0 ||
 		len(node.OneOf) > 0 || len(node.AllOf) > 0 || len(node.AnyOf) > 0 ||
-		node.If != nil
+		node.If != nil || node.Pattern != "" ||
+		node.MinItems > 0 || node.MinProperties > 0
 }
 
 // emitValueChecks wraps all value checks in an expression bypass guard,
 // then delegates to type, enum, and nested mapping checks.
-func (e *emitter) emitValueChecks(valueExpr string, node *Node, errsVar string, keyName string) {
+// dynamicKeyExpr is an optional Go expression that provides the YAML key name at runtime
+// (used for patternProperties where the key is dynamic, not static).
+func (e *emitter) emitValueChecks(valueExpr string, node *Node, errsVar string, keyName string, dynamicKeyExpr ...string) {
 	if node == nil {
 		return
 	}
@@ -243,28 +343,56 @@ func (e *emitter) emitValueChecks(valueExpr string, node *Node, errsVar string, 
 	// Bypass all checks for GitHub Actions expression syntax (${{ ... }})
 	e.line("if !rules.IsExpressionNode(%s) {", valueExpr)
 	e.push()
-	e.emitValueChecksOnExpr(valueExpr, node, errsVar, keyName)
+	e.emitValueChecksOnExpr(valueExpr, node, errsVar, keyName, dynamicKeyExpr...)
 	e.pop()
 	e.line("}")
 }
 
 // emitValueChecksOnExpr emits type/enum/nested checks without the expression bypass wrapper.
-func (e *emitter) emitValueChecksOnExpr(valueExpr string, node *Node, errsVar string, keyName string) {
+func (e *emitter) emitValueChecksOnExpr(valueExpr string, node *Node, errsVar string, keyName string, dynamicKeyExpr ...string) {
 	// When SkipChildren is set, only emit the type check and stop.
 	// The child validation is handled by dedicated logic elsewhere.
 	if node.SkipChildren {
-		e.emitTypeCheck(valueExpr, node, errsVar, keyName)
+		e.emitTypeCheck(valueExpr, node, errsVar, keyName, dynamicKeyExpr...)
 		return
 	}
 
-	e.emitTypeCheck(valueExpr, node, errsVar, keyName)
+	e.emitTypeCheck(valueExpr, node, errsVar, keyName, dynamicKeyExpr...)
 	e.emitEnumCheck(valueExpr, node, errsVar, keyName)
+
+	// G5: String pattern check
+	if node.Pattern != "" {
+		regVar := e.regexpVarName(node.Pattern)
+		e.line("if _sv := rules.StringValue(%s); _sv != \"\" && !%s.MatchString(_sv) {", valueExpr, regVar)
+		e.push()
+		e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+		e.push()
+		e.line("Kind:    rules.KindInvalidEnum,")
+		if node.Path != "" {
+			e.line("Path:    %q,", node.Path)
+		}
+		e.line("Key:     %q,", keyName)
+		e.line("Got:     _sv,")
+		e.line("Allowed: []string{%q},", node.Pattern)
+		e.line("Token:   %s.GetToken(),", valueExpr)
+		e.pop()
+		e.line("})")
+		e.pop()
+		e.line("}")
+	}
 
 	// If this node represents a mapping with child constraints, recurse.
 	if nodeHasChildMappingChecks(node) {
-		e.line("if _subM%s, _ok%s := %s.(*ast.MappingNode); _ok%s {", sanitizeIdent(keyName), sanitizeIdent(keyName), valueExpr, sanitizeIdent(keyName))
+		e.line("if _subM%s, _ok%s := rules.UnwrapNode(%s).(*ast.MappingNode); _ok%s {", sanitizeIdent(keyName), sanitizeIdent(keyName), valueExpr, sanitizeIdent(keyName))
 		e.push()
-		e.emitMappingBodyChecks(fmt.Sprintf("_subM%s", sanitizeIdent(keyName)), node, errsVar)
+		// D1-D2: Pass parent key token for better required-error positioning.
+		// If valueExpr looks like "_kvFoo.Value", derive "_kvFoo.Key.GetToken()".
+		parentTokenExpr := ""
+		if strings.HasSuffix(valueExpr, ".Value") {
+			kvVar := strings.TrimSuffix(valueExpr, ".Value")
+			parentTokenExpr = kvVar + ".Key.GetToken()"
+		}
+		e.emitMappingBodyChecks(fmt.Sprintf("_subM%s", sanitizeIdent(keyName)), node, errsVar, parentTokenExpr)
 		e.pop()
 		e.line("}")
 	}
@@ -272,8 +400,27 @@ func (e *emitter) emitValueChecksOnExpr(valueExpr string, node *Node, errsVar st
 	// Sequence item validation
 	if node.Items != nil {
 		seqIdent := sanitizeIdent(keyName) + "Seq"
-		e.line("if _%s, _%sOk := %s.(*ast.SequenceNode); _%sOk {", seqIdent, seqIdent, valueExpr, seqIdent)
+		e.line("if _%s, _%sOk := rules.UnwrapNode(%s).(*ast.SequenceNode); _%sOk {", seqIdent, seqIdent, valueExpr, seqIdent)
 		e.push()
+		// G4: MinItems check
+		if node.MinItems > 0 {
+			e.line("if len(_%s.Values) < %d {", seqIdent, node.MinItems)
+			e.push()
+			e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+			e.push()
+			e.line("Kind:    rules.KindMinItems,")
+			if node.Path != "" {
+				e.line("Path:    %q,", node.Path)
+			}
+			e.line("Key:     %q,", keyName)
+			e.line("Got:     fmt.Sprintf(\"%%d\", len(_%s.Values)),", seqIdent)
+			e.line("Allowed: []string{fmt.Sprintf(\"at least %%d\", %d)},", node.MinItems)
+			e.line("Token:   %s.GetToken(),", valueExpr)
+			e.pop()
+			e.line("})")
+			e.pop()
+			e.line("}")
+		}
 		e.line("for _, _item := range _%s.Values {", seqIdent)
 		e.push()
 		e.emitValueChecks("_item", node.Items, errsVar, keyName+"[]")
@@ -285,7 +432,7 @@ func (e *emitter) emitValueChecksOnExpr(valueExpr string, node *Node, errsVar st
 
 	// oneOf validation
 	if len(node.OneOf) > 0 {
-		e.emitOneOf(valueExpr, node.OneOf, errsVar, keyName)
+		e.emitOneOf(valueExpr, node.OneOf, errsVar, keyName, dynamicKeyExpr...)
 	}
 
 	// allOf validation: validate against all sub-schemas
@@ -313,11 +460,15 @@ func nodeHasChildMappingChecks(node *Node) bool {
 	}
 	return (node.AdditionalProperties != nil && !*node.AdditionalProperties && len(node.Properties) > 0) ||
 		len(node.Required) > 0 ||
-		len(node.Properties) > 0
+		len(node.Properties) > 0 ||
+		len(node.PatternProps) > 0 ||
+		node.AdditionalPropsSchema != nil ||
+		node.MinProperties > 0
 }
 
 // emitTypeCheck emits type assertion code for a value node.
-func (e *emitter) emitTypeCheck(valueExpr string, node *Node, errsVar string, keyName string) {
+// dynamicKeyExpr is an optional Go expression for the key name (used for patternProperties).
+func (e *emitter) emitTypeCheck(valueExpr string, node *Node, errsVar string, keyName string, dynamicKeyExpr ...string) {
 	if len(node.Types) == 0 {
 		return
 	}
@@ -349,8 +500,10 @@ func (e *emitter) emitTypeCheck(valueExpr string, node *Node, errsVar string, ke
 
 	// Fire error when ALL negations are true — i.e., none of the allowed types match.
 	combined := strings.Join(conditions, " && ")
-	allowedStrs := make([]string, len(node.Types))
-	for i, t := range node.Types {
+	// E3: Sort types in natural order (string > sequence > mapping > others)
+	sortedTypes := naturalSortTypes(node.Types)
+	allowedStrs := make([]string, len(sortedTypes))
+	for i, t := range sortedTypes {
 		allowedStrs[i] = fmt.Sprintf("%q", t)
 	}
 
@@ -362,7 +515,12 @@ func (e *emitter) emitTypeCheck(valueExpr string, node *Node, errsVar string, ke
 	if node.Path != "" {
 		e.line("Path:    %q,", node.Path)
 	}
-	e.line("Key:     %q,", keyName)
+	// Use dynamic key expression if provided (for patternProperties).
+	if len(dynamicKeyExpr) > 0 && dynamicKeyExpr[0] != "" {
+		e.line("Key:     %s,", dynamicKeyExpr[0])
+	} else {
+		e.line("Key:     %q,", keyName)
+	}
 	e.line("Got:     rules.NodeTypeName(%s),", valueExpr)
 	e.line("Allowed: []string{%s},", strings.Join(allowedStrs, ", "))
 	e.line("Token:   %s.GetToken(),", valueExpr)
@@ -466,7 +624,7 @@ func classifyOneOf(branches []*Node) oneOfClassification {
 		if len(b.Properties) > 0 || len(b.Required) > 0 || len(b.Enum) > 0 ||
 			b.Items != nil || len(b.PatternProps) > 0 ||
 			len(b.OneOf) > 0 || len(b.AllOf) > 0 || len(b.AnyOf) > 0 ||
-			b.If != nil || b.Const != nil {
+			b.If != nil || b.Const != nil || b.AdditionalPropsSchema != nil {
 			allTypeOnly = false
 			break
 		}
@@ -595,18 +753,18 @@ func findPresenceDiscriminator(branches []*Node) string {
 }
 
 // emitOneOf emits validation code for a oneOf construct.
-func (e *emitter) emitOneOf(valueExpr string, branches []*Node, errsVar string, keyName string) {
+func (e *emitter) emitOneOf(valueExpr string, branches []*Node, errsVar string, keyName string, dynamicKeyExpr ...string) {
 	classification := classifyOneOf(branches)
 
 	switch classification {
 	case oneOfTypeOnly:
-		e.emitOneOfTypeOnly(valueExpr, branches, errsVar, keyName)
+		e.emitOneOfTypeOnly(valueExpr, branches, errsVar, keyName, dynamicKeyExpr...)
 	case oneOfTypeBranching:
-		e.emitOneOfTypeBranching(valueExpr, branches, errsVar, keyName)
+		e.emitOneOfTypeBranching(valueExpr, branches, errsVar, keyName, dynamicKeyExpr...)
 	case oneOfDiscrimEnum:
 		e.emitOneOfDiscrimEnum(valueExpr, branches, errsVar, keyName)
 	case oneOfDiscrimPresent:
-		e.emitOneOfDiscrimPresent(valueExpr, branches, errsVar, keyName)
+		e.emitOneOfDiscrimPresent(valueExpr, branches, errsVar, keyName, dynamicKeyExpr...)
 	case oneOfUnhandled:
 		// Skip — too complex to generate. Hand-written code can handle it.
 		return
@@ -614,7 +772,7 @@ func (e *emitter) emitOneOf(valueExpr string, branches []*Node, errsVar string, 
 }
 
 // emitOneOfTypeOnly merges types from all branches and emits a single type check.
-func (e *emitter) emitOneOfTypeOnly(valueExpr string, branches []*Node, errsVar string, keyName string) {
+func (e *emitter) emitOneOfTypeOnly(valueExpr string, branches []*Node, errsVar string, keyName string, dynamicKeyExpr ...string) {
 	// Collect all unique types from all branches.
 	typeSet := map[string]bool{}
 	for _, b := range branches {
@@ -634,13 +792,13 @@ func (e *emitter) emitOneOfTypeOnly(valueExpr string, branches []*Node, errsVar 
 	for t := range typeSet {
 		merged.Types = append(merged.Types, t)
 	}
-	sort.Strings(merged.Types)
+	merged.Types = naturalSortTypes(merged.Types)
 
-	e.emitTypeCheck(valueExpr, merged, errsVar, keyName)
+	e.emitTypeCheck(valueExpr, merged, errsVar, keyName, dynamicKeyExpr...)
 }
 
 // emitOneOfTypeBranching emits type-switching code for branches with different types.
-func (e *emitter) emitOneOfTypeBranching(valueExpr string, branches []*Node, errsVar string, keyName string) {
+func (e *emitter) emitOneOfTypeBranching(valueExpr string, branches []*Node, errsVar string, keyName string, dynamicKeyExpr ...string) {
 	id := e.nextID()
 
 	// Group branches by their primary type.
@@ -688,15 +846,19 @@ func (e *emitter) emitOneOfTypeBranching(valueExpr string, branches []*Node, err
 		e.emitEnumCheck(valueExpr, b, errsVar, keyName)
 		if nodeHasChildMappingChecks(b) {
 			subVar := fmt.Sprintf("_oneOfM%d", id)
-			e.line("if %s, _ok := %s.(*ast.MappingNode); _ok {", subVar, valueExpr)
+			e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.MappingNode); _ok {", subVar, valueExpr)
 			e.push()
-			e.emitMappingBodyChecks(subVar, b, errsVar)
+			ptExpr := ""
+			if strings.HasSuffix(valueExpr, ".Value") {
+				ptExpr = strings.TrimSuffix(valueExpr, ".Value") + ".Key.GetToken()"
+			}
+			e.emitMappingBodyChecks(subVar, b, errsVar, ptExpr)
 			e.pop()
 			e.line("}")
 		}
 		if b.Items != nil {
 			seqVar := fmt.Sprintf("_oneOfSeq%d", id)
-			e.line("if %s, _ok := %s.(*ast.SequenceNode); _ok {", seqVar, valueExpr)
+			e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.SequenceNode); _ok {", seqVar, valueExpr)
 			e.push()
 			e.line("for _, _item := range %s.Values {", seqVar)
 			e.push()
@@ -711,6 +873,39 @@ func (e *emitter) emitOneOfTypeBranching(valueExpr string, branches []*Node, err
 	}
 
 	if !first {
+		// Else branch: value doesn't match any oneOf type — emit type mismatch error.
+		// Collect all expected types from the branches.
+		allTypes := make([]string, 0)
+		seen := make(map[string]bool)
+		for _, b := range branches {
+			for _, t := range b.Types {
+				if !seen[t] {
+					seen[t] = true
+					allTypes = append(allTypes, t)
+				}
+			}
+		}
+		if len(allTypes) > 0 {
+			allTypes = naturalSortTypes(allTypes)
+			e.line("} else {")
+			e.push()
+			allowedSlice := fmt.Sprintf("[]string{%s}", joinQuoted(allTypes))
+			e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+			e.push()
+			e.line("Kind:    rules.KindTypeMismatch,")
+			if keyName != "" && keyName != "*" {
+				e.line("Path:    %q,", keyName)
+				e.line("Key:     %q,", keyName)
+			} else if len(dynamicKeyExpr) > 0 && dynamicKeyExpr[0] != "" {
+				e.line("Key:     %s,", dynamicKeyExpr[0])
+			}
+			e.line("Got:     rules.NodeTypeName(%s),", valueExpr)
+			e.line("Allowed: %s,", allowedSlice)
+			e.line("Token:   %s.GetToken(),", valueExpr)
+			e.pop()
+			e.line("})")
+			e.pop()
+		}
 		e.line("}")
 	}
 }
@@ -726,13 +921,31 @@ func (e *emitter) emitOneOfDiscrimEnum(valueExpr string, branches []*Node, errsV
 	mappingVar := fmt.Sprintf("_oneOfDM%d", id)
 
 	e.line("// oneOf discriminator on %q (id=%d)", discrimKey, id)
-	e.line("if %s, _ok := %s.(*ast.MappingNode); _ok {", mappingVar, valueExpr)
+	e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.MappingNode); _ok {", mappingVar, valueExpr)
 	e.push()
 
 	discrimVar := fmt.Sprintf("_oneOfDV%d", id)
 	e.line("if _kv := (workflow.Mapping{MappingNode: %s}).FindKey(%q); _kv != nil {", mappingVar, discrimKey)
 	e.push()
 	e.line("%s := rules.StringValue(_kv.Value)", discrimVar)
+	// A4: If the discriminator value is not a string, emit a type mismatch error.
+	e.line("if %s == \"\" && !rules.IsString(_kv.Value) {", discrimVar)
+	e.push()
+	e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+	e.push()
+	e.line("Kind:    rules.KindTypeMismatch,")
+	if keyName != "" && keyName != "*" {
+		e.line("Path:    %q,", keyName)
+	}
+	e.line("Key:     %q,", discrimKey)
+	e.line("Got:     rules.NodeTypeName(_kv.Value),")
+	e.line("Allowed: []string{\"string\"},")
+	e.line("Token:   _kv.Value.GetToken(),")
+	e.pop()
+	e.line("})")
+	e.pop()
+	e.line("} else {")
+	e.push()
 
 	// Group enum values by branch index.
 	branchValues := make(map[int][]string)
@@ -767,27 +980,86 @@ func (e *emitter) emitOneOfDiscrimEnum(valueExpr string, branches []*Node, errsV
 
 		branch := branches[idx]
 		// Emit mapping body checks for this branch (required keys, properties, etc.)
-		e.emitMappingBodyChecks(mappingVar, branch, errsVar)
+		// D1-D2: Pass parent key token for better required-error positioning.
+		parentTokenExpr := ""
+		if strings.HasSuffix(valueExpr, ".Value") {
+			kvVar := strings.TrimSuffix(valueExpr, ".Value")
+			parentTokenExpr = kvVar + ".Key.GetToken()"
+		}
+		e.emitMappingBodyChecks(mappingVar, branch, errsVar, parentTokenExpr)
 
 		e.pop()
 	}
 	if !first {
+		// A3: else branch for unrecognized enum value
+		allValues := make([]string, 0, len(valueMap))
+		for val := range valueMap {
+			allValues = append(allValues, val)
+		}
+		sort.Strings(allValues)
+		e.line("} else {")
+		e.push()
+		e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+		e.push()
+		e.line("Kind:    rules.KindInvalidEnum,")
+		if keyName != "" && keyName != "*" {
+			e.line("Path:    %q,", keyName)
+		}
+		e.line("Key:     %q,", discrimKey)
+		e.line("Got:     %s,", discrimVar)
+		e.line("Allowed: %s,", fmt.Sprintf("[]string{%s}", joinQuoted(allValues)))
+		e.line("Token:   _kv.Value.GetToken(),")
+		e.pop()
+		e.line("})")
+		e.pop()
 		e.line("}")
 	}
 
 	e.pop()
+	e.line("}") // close A4 string type check else
+	e.pop()
+	// A3: discriminator key absent → required error
+	e.line("} else {")
+	e.push()
+	e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+	e.push()
+	e.line("Kind:  rules.KindRequiredKey,")
+	if keyName != "" && keyName != "*" {
+		e.line("Path:  %q,", keyName)
+	}
+	e.line("Key:   %q,", discrimKey)
+	e.line("Token: %s.GetToken(),", mappingVar)
+	e.pop()
+	e.line("})")
+	e.pop()
 	e.line("}")
+	e.pop()
+	// A4/A6: mapping cast failed → type mismatch
+	e.line("} else {")
+	e.push()
+	e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+	e.push()
+	e.line("Kind:    rules.KindTypeMismatch,")
+	if keyName != "" && keyName != "*" {
+		e.line("Path:    %q,", keyName)
+		e.line("Key:     %q,", keyName)
+	}
+	e.line("Got:     rules.NodeTypeName(%s),", valueExpr)
+	e.line("Allowed: []string{\"mapping\"},")
+	e.line("Token:   %s.GetToken(),", valueExpr)
+	e.pop()
+	e.line("})")
 	e.pop()
 	e.line("}")
 }
 
 // emitOneOfDiscrimPresent emits presence-based discriminator branching.
-func (e *emitter) emitOneOfDiscrimPresent(valueExpr string, branches []*Node, errsVar string, keyName string) {
+func (e *emitter) emitOneOfDiscrimPresent(valueExpr string, branches []*Node, errsVar string, keyName string, dynamicKeyExpr ...string) {
 	id := e.nextID()
 	mappingVar := fmt.Sprintf("_oneOfPM%d", id)
 
 	e.line("// oneOf presence-based branching (id=%d)", id)
-	e.line("if %s, _ok := %s.(*ast.MappingNode); _ok {", mappingVar, valueExpr)
+	e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.MappingNode); _ok {", mappingVar, valueExpr)
 	e.push()
 
 	wrapVar := fmt.Sprintf("_oneOfPW%d", id)
@@ -827,14 +1099,79 @@ func (e *emitter) emitOneOfDiscrimPresent(valueExpr string, branches []*Node, er
 		}
 		e.push()
 
-		e.emitMappingBodyChecks(mappingVar, b, errsVar)
+		// D1-D2: Pass parent key token for better required-error positioning.
+		parentTokenExpr := ""
+		if strings.HasSuffix(valueExpr, ".Value") {
+			kvVar := strings.TrimSuffix(valueExpr, ".Value")
+			parentTokenExpr = kvVar + ".Key.GetToken()"
+		}
+		e.emitMappingBodyChecks(mappingVar, b, errsVar, parentTokenExpr)
 
 		e.pop()
 	}
 	if !first {
+		// Else branch: none of the discriminator keys are present.
+		// Collect all discriminator keys to report which ones are required.
+		var discrimKeys []string
+		for _, b := range branches {
+			for _, req := range b.Required {
+				unique := true
+				for _, other := range branches {
+					if other == b {
+						continue
+					}
+					if slices.Contains(other.Required, req) {
+						unique = false
+						break
+					}
+				}
+				if unique {
+					discrimKeys = append(discrimKeys, req)
+					break
+				}
+			}
+		}
+		if len(discrimKeys) > 0 {
+			sort.Strings(discrimKeys)
+			// Report all discriminator keys as alternatives using Allowed field.
+			e.line("} else {")
+			e.push()
+			e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+			e.push()
+			e.line("Kind:  rules.KindRequiredKey,")
+			// Always set Path from the first branch to enable proper token fixing.
+			if len(branches) > 0 && branches[0].Path != "" {
+				e.line("Path:  %q,", branches[0].Path)
+			} else if keyName != "" && keyName != "*" {
+				e.line("Path:  %q,", keyName)
+			}
+			e.line("Key:     %q,", discrimKeys[0])
+			e.line("Allowed: []string{%s},", joinQuoted(discrimKeys))
+			e.line("Token: %s.GetToken(),", mappingVar)
+			e.pop()
+			e.line("})")
+			e.pop()
+		}
 		e.line("}")
 	}
 
+	e.pop()
+	e.line("} else {")
+	e.push()
+	e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+	e.push()
+	e.line("Kind:    rules.KindTypeMismatch,")
+	if keyName != "" && keyName != "*" {
+		e.line("Path:    %q,", keyName)
+		e.line("Key:     %q,", keyName)
+	} else if len(dynamicKeyExpr) > 0 && dynamicKeyExpr[0] != "" {
+		e.line("Key:     %s,", dynamicKeyExpr[0])
+	}
+	e.line("Got:     rules.NodeTypeName(%s),", valueExpr)
+	e.line("Allowed: []string{\"mapping\"},")
+	e.line("Token:   %s.GetToken(),", valueExpr)
+	e.pop()
+	e.line("})")
 	e.pop()
 	e.line("}")
 }
@@ -860,7 +1197,7 @@ func (e *emitter) emitAnyOf(valueExpr string, branches []*Node, errsVar string, 
 	for t := range typeSet {
 		merged.Types = append(merged.Types, t)
 	}
-	sort.Strings(merged.Types)
+	merged.Types = naturalSortTypes(merged.Types)
 
 	e.emitTypeCheck(valueExpr, merged, errsVar, keyName)
 
@@ -869,9 +1206,27 @@ func (e *emitter) emitAnyOf(valueExpr string, branches []*Node, errsVar string, 
 		if nodeHasChildMappingChecks(b) {
 			id := e.nextID()
 			subVar := fmt.Sprintf("_anyOfM%d", id)
-			e.line("if %s, _ok := %s.(*ast.MappingNode); _ok {", subVar, valueExpr)
+			e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.MappingNode); _ok {", subVar, valueExpr)
 			e.push()
-			e.emitMappingBodyChecks(subVar, b, errsVar)
+			ptExpr := ""
+			if strings.HasSuffix(valueExpr, ".Value") {
+				ptExpr = strings.TrimSuffix(valueExpr, ".Value") + ".Key.GetToken()"
+			}
+			e.emitMappingBodyChecks(subVar, b, errsVar, ptExpr)
+			e.pop()
+			e.line("}")
+		}
+		// G6: Also emit sequence items checks from anyOf branches.
+		if b.Items != nil {
+			id := e.nextID()
+			seqVar := fmt.Sprintf("_anyOfSeq%d", id)
+			e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.SequenceNode); _ok {", seqVar, valueExpr)
+			e.push()
+			e.line("for _, _item := range %s.Values {", seqVar)
+			e.push()
+			e.emitValueChecks("_item", b.Items, errsVar, keyName+"[]")
+			e.pop()
+			e.line("}")
 			e.pop()
 			e.line("}")
 		}
@@ -901,56 +1256,130 @@ func (e *emitter) emitIfThenElse(valueExpr string, node *Node, errsVar string, k
 	mappingVar := fmt.Sprintf("_ifM%d", id)
 
 	e.line("// if/then/else on %q == %q (id=%d)", condKey, condValue, id)
-	e.line("if %s, _ok := %s.(*ast.MappingNode); _ok {", mappingVar, valueExpr)
+	e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.MappingNode); _ok {", mappingVar, valueExpr)
 	e.push()
 
 	condVar := fmt.Sprintf("_ifCV%d", id)
-	e.line("if _kv := (workflow.Mapping{MappingNode: %s}).FindKey(%q); _kv != nil {", mappingVar, condKey)
-	e.push()
-	e.line("%s := rules.StringValue(_kv.Value)", condVar)
+	// Handle nested key paths (e.g. "runs.using") by chaining FindKey calls.
+	condKeyParts := strings.Split(condKey, ".")
+	if len(condKeyParts) == 1 {
+		e.line("if _kv := (workflow.Mapping{MappingNode: %s}).FindKey(%q); _kv != nil {", mappingVar, condKey)
+		e.push()
+		e.line("%s := rules.StringValue(_kv.Value)", condVar)
+	} else {
+		// Navigate to the nested key.
+		currentMapping := mappingVar
+		for i, part := range condKeyParts[:len(condKeyParts)-1] {
+			nextVar := fmt.Sprintf("_ifNM%d_%d", id, i)
+			e.line("if _kv := (workflow.Mapping{MappingNode: %s}).FindKey(%q); _kv != nil {", currentMapping, part)
+			e.push()
+			e.line("if %s, _ok := rules.UnwrapNode(_kv.Value).(*ast.MappingNode); _ok {", nextVar)
+			e.push()
+			currentMapping = nextVar
+		}
+		lastKey := condKeyParts[len(condKeyParts)-1]
+		e.line("if _kv := (workflow.Mapping{MappingNode: %s}).FindKey(%q); _kv != nil {", currentMapping, lastKey)
+		e.push()
+		e.line("%s := rules.StringValue(_kv.Value)", condVar)
+	}
 
+	ptExpr := ""
+	if strings.HasSuffix(valueExpr, ".Value") {
+		ptExpr = strings.TrimSuffix(valueExpr, ".Value") + ".Key.GetToken()"
+	}
 	if node.Then != nil {
 		e.line("if %s == %q {", condVar, condValue)
 		e.push()
-		e.emitMappingBodyChecks(mappingVar, node.Then, errsVar)
+		e.emitMappingBodyChecks(mappingVar, node.Then, errsVar, ptExpr)
 		e.pop()
 		if node.Else != nil {
 			e.line("} else {")
 			e.push()
-			e.emitMappingBodyChecks(mappingVar, node.Else, errsVar)
+			e.emitMappingBodyChecks(mappingVar, node.Else, errsVar, ptExpr)
 			e.pop()
 		}
 		e.line("}")
 	} else if node.Else != nil {
 		e.line("if %s != %q {", condVar, condValue)
 		e.push()
-		e.emitMappingBodyChecks(mappingVar, node.Else, errsVar)
+		e.emitMappingBodyChecks(mappingVar, node.Else, errsVar, ptExpr)
 		e.pop()
 		e.line("}")
 	}
 
 	e.pop()
 	e.line("}")
+	// Close extra nesting for nested key paths.
+	if len(condKeyParts) > 1 {
+		for range (len(condKeyParts) - 1) * 2 {
+			e.pop()
+			e.line("}")
+		}
+	}
 
 	e.pop()
 	e.line("}")
 }
 
-// extractIfCondition extracts a simple condition from an "if" schema node.
-// It handles the pattern: {"properties": {"key": {"const": "value"}}} or
-// {"properties": {"key": {"const": "value"}}, "required": ["key"]}.
-// Returns the key and expected const value.
+// extractIfCondition extracts a condition from an "if" schema node.
+// It handles shallow patterns: {"properties": {"key": {"const": "value"}}}
+// and nested patterns: {"properties": {"a": {"properties": {"b": {"const": "value"}}}}}
+// Returns the dot-separated key path and expected const value.
 func extractIfCondition(ifNode *Node) (string, string) {
 	if ifNode == nil || len(ifNode.Properties) == 0 {
 		return "", ""
 	}
 
-	// Find a property with a const value.
+	// Find a property with a const value (possibly nested).
 	for key, prop := range ifNode.Properties {
-		if prop != nil && prop.Const != nil {
+		if prop == nil {
+			continue
+		}
+		if prop.Const != nil {
 			return key, *prop.Const
+		}
+		// Recurse into nested properties.
+		if subKey, val := extractIfCondition(prop); subKey != "" {
+			return key + "." + subKey, val
 		}
 	}
 
 	return "", ""
+}
+
+// joinQuoted formats a string slice as Go code: `"a", "b", "c"`.
+func joinQuoted(ss []string) string {
+	parts := make([]string, len(ss))
+	for i, s := range ss {
+		parts[i] = fmt.Sprintf("%q", s)
+	}
+	return strings.Join(parts, ", ")
+}
+
+// naturalSortTypes sorts type names in a natural order for error messages:
+// string, boolean, integer, number, null, sequence, mapping (scalar first, then compound).
+func naturalSortTypes(types []string) []string {
+	order := map[string]int{
+		"string":   0,
+		"boolean":  1,
+		"integer":  2,
+		"number":   3,
+		"null":     4,
+		"sequence": 5,
+		"mapping":  6,
+	}
+	result := make([]string, len(types))
+	copy(result, types)
+	sort.Slice(result, func(i, j int) bool {
+		oi, ok1 := order[result[i]]
+		oj, ok2 := order[result[j]]
+		if !ok1 {
+			oi = 99
+		}
+		if !ok2 {
+			oj = 99
+		}
+		return oi < oj
+	})
+	return result
 }
