@@ -15948,14 +15948,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 	return errs
 }
 
-// _validateAP2 validates additionalProperties values at path "jobs.*.env.*".
+// _validateAP2 validates additionalProperties values at path "env.*".
 func _validateAP2(value ast.Node, keyName string) []rules.ValidationError {
 	var errs []rules.ValidationError
 	if !rules.IsExpressionNode(value) {
 		if !rules.IsString(value) && !rules.IsBoolean(value) && !rules.IsNumber(value) {
 			errs = append(errs, rules.ValidationError{
 				Kind:    rules.KindTypeMismatch,
-				Path:    "jobs.*.env.*",
+				Path:    "env.*",
 				Key:     keyName,
 				Got:     rules.NodeTypeName(value),
 				Allowed: []string{"string", "boolean", "number"},

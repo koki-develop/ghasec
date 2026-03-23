@@ -59,20 +59,6 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 
 			// Required key checks
 			_mWrap := workflow.Mapping{MappingNode: _subM}
-			if _mWrap.FindKey("name") == nil {
-				errs = append(errs, rules.ValidationError{
-					Kind:  rules.KindRequiredKey,
-					Key:   "name",
-					Token: _subM.GetToken(),
-				})
-			}
-			if _mWrap.FindKey("description") == nil {
-				errs = append(errs, rules.ValidationError{
-					Kind:  rules.KindRequiredKey,
-					Key:   "description",
-					Token: _subM.GetToken(),
-				})
-			}
 			if _mWrap.FindKey("runs") == nil {
 				errs = append(errs, rules.ValidationError{
 					Kind:  rules.KindRequiredKey,
@@ -542,17 +528,6 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 													Token: _entry.Key.GetToken(),
 												})
 											}
-										}
-
-										// Required key checks
-										_mWrapinputs__ := workflow.Mapping{MappingNode: _subM_}
-										if _mWrapinputs__.FindKey("description") == nil {
-											errs = append(errs, rules.ValidationError{
-												Kind:  rules.KindRequiredKey,
-												Path:  "inputs.*",
-												Key:   "description",
-												Token: _ppEntry0.Key.GetToken(),
-											})
 										}
 
 										// Property: "default"
@@ -1443,14 +1418,6 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 
 														// Required key checks
 														_mWrapoutputs__ := workflow.Mapping{MappingNode: _subM_}
-														if _mWrapoutputs__.FindKey("description") == nil {
-															errs = append(errs, rules.ValidationError{
-																Kind:  rules.KindRequiredKey,
-																Path:  "outputs.*",
-																Key:   "description",
-																Token: _ppEntry0.Key.GetToken(),
-															})
-														}
 														if _mWrapoutputs__.FindKey("value") == nil {
 															errs = append(errs, rules.ValidationError{
 																Kind:  rules.KindRequiredKey,
@@ -1563,17 +1530,6 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 															}
 														}
 
-														// Required key checks
-														_mWrapoutputs__ := workflow.Mapping{MappingNode: _subM_}
-														if _mWrapoutputs__.FindKey("description") == nil {
-															errs = append(errs, rules.ValidationError{
-																Kind:  rules.KindRequiredKey,
-																Path:  "outputs.*",
-																Key:   "description",
-																Token: _ppEntry0.Key.GetToken(),
-															})
-														}
-
 														// Property: "description"
 														if _kvdescription := (workflow.Mapping{MappingNode: _subM_}).FindKey("description"); _kvdescription != nil {
 															if !rules.IsExpressionNode(_kvdescription.Value) {
@@ -1629,20 +1585,6 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 
 	// Required key checks
 	_mWrap := workflow.Mapping{MappingNode: m.MappingNode}
-	if _mWrap.FindKey("name") == nil {
-		errs = append(errs, rules.ValidationError{
-			Kind:  rules.KindRequiredKey,
-			Key:   "name",
-			Token: m.MappingNode.GetToken(),
-		})
-	}
-	if _mWrap.FindKey("description") == nil {
-		errs = append(errs, rules.ValidationError{
-			Kind:  rules.KindRequiredKey,
-			Key:   "description",
-			Token: m.MappingNode.GetToken(),
-		})
-	}
 	if _mWrap.FindKey("runs") == nil {
 		errs = append(errs, rules.ValidationError{
 			Kind:  rules.KindRequiredKey,
@@ -2112,17 +2054,6 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 											Token: _entry.Key.GetToken(),
 										})
 									}
-								}
-
-								// Required key checks
-								_mWrapinputs__ := workflow.Mapping{MappingNode: _subM_}
-								if _mWrapinputs__.FindKey("description") == nil {
-									errs = append(errs, rules.ValidationError{
-										Kind:  rules.KindRequiredKey,
-										Path:  "inputs.*",
-										Key:   "description",
-										Token: _ppEntry0.Key.GetToken(),
-									})
 								}
 
 								// Property: "default"

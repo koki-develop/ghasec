@@ -1,11 +1,17 @@
 actions:
   - name: action.yml
     content: |
-      name: test
+      inputs:
+        my-input:
+          default: hello
+      outputs:
+        my-output:
+          value: ${{ steps.step1.outputs.result }}
       runs:
         using: composite
         steps:
-          - run: echo hi
+          - id: step1
+            run: echo hi
             shell: bash
 
 expected:

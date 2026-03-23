@@ -42,8 +42,10 @@ func TestConvert_ActionTopLevel(t *testing.T) {
 		assert.Contains(t, node.Properties, prop, "expected property %q", prop)
 	}
 
-	// required contains "runs"
+	// required contains "runs" but not doc-only fields (filtered by skipRequired)
 	assert.Contains(t, node.Required, "runs")
+	assert.NotContains(t, node.Required, "name")
+	assert.NotContains(t, node.Required, "description")
 }
 
 func TestConvert_EnumExtraction(t *testing.T) {

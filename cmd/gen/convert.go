@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
 )
@@ -44,6 +45,15 @@ var annotations = map[string]struct{ parent, context string }{
 // skipPaths lists schema paths whose children should not be recursively validated
 // by the generated code because they are handled by dedicated validation logic.
 var skipPaths = map[string]bool{}
+
+// skipRequired lists path + key combinations whose "required" constraint
+// should be ignored. These fields are marked required in JSON Schema but
+// are not actually required by GitHub Actions at runtime.
+var skipRequired = map[string][]string{
+	"":          {"name", "description"},
+	"inputs.*":  {"description"},
+	"outputs.*": {"description"},
+}
 
 // resolveRef follows $ref chains to the actual schema definition.
 // If s has a Ref and no direct constraints, return the Ref target.
@@ -95,8 +105,13 @@ func convert(s *jsonschema.Schema, path string) *Node {
 		}
 	}
 
-	// Required
-	node.Required = append(node.Required, s.Required...)
+	// Required (filter out skipRequired entries)
+	for _, r := range s.Required {
+		if slices.Contains(skipRequired[path], r) {
+			continue
+		}
+		node.Required = append(node.Required, r)
+	}
 
 	// Enum
 	if s.Enum != nil {
