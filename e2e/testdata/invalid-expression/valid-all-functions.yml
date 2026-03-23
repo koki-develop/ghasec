@@ -1,0 +1,29 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo ${{ contains('hello', 'ell') }}
+            - run: echo ${{ startsWith('hello', 'he') }}
+            - run: echo ${{ endsWith('hello', 'lo') }}
+            - run: echo ${{ format('a{0}b', 'x') }}
+            - run: echo ${{ join(github.event.*.name, ', ') }}
+            - run: echo ${{ toJSON(github.event) }}
+            - run: echo ${{ fromJSON('{}') }}
+            - run: echo ${{ hashFiles('**/*.lock') }}
+            - run: echo ${{ success() }}
+            - run: echo ${{ failure() }}
+            - run: echo ${{ always() }}
+            - run: echo ${{ cancelled() }}
+            - run: echo ${{ format('{0}', 'a') }}
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

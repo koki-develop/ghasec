@@ -1,0 +1,28 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo ${{ 1 == 1 }}
+            - run: echo ${{ 1 != 2 }}
+            - run: echo ${{ 1 < 2 }}
+            - run: echo ${{ 1 <= 2 }}
+            - run: echo ${{ 2 > 1 }}
+            - run: echo ${{ 2 >= 1 }}
+            - run: echo ${{ true && true }}
+            - run: echo ${{ true || false }}
+            - run: echo ${{ !false }}
+            - run: echo ${{ github.event_name }}
+            - run: echo ${{ github.event['action'] }}
+            - run: echo ${{ (true) }}
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

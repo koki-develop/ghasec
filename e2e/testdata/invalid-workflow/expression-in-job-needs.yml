@@ -1,5 +1,5 @@
 workflows:
-  - name: needs-expression.yml
+  - name: expression-in-job-needs.yml
     content: |
       on: push
       permissions: {}
@@ -8,25 +8,26 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - run: echo build
+            - run: echo hi
         deploy:
-          needs: ${{ fromJson(needs.build.outputs.matrix) }}
           runs-on: ubuntu-latest
           timeout-minutes: 10
+          needs: ${{ github.actor }}
           steps:
-            - run: echo deploy
+            - run: echo hi
 
 expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/needs-expression.yml:10:12
+    --> {{.Dir}}/expression-in-job-needs.yml:12:12
     ...
      3 | jobs:
     ...
      9 |   deploy:
-    10 |     needs: {{"${{ fromJson(needs.build.outputs.matrix) }}"}}
-       |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "needs" must not contain expressions (invalid-workflow)
+    ...
+    12 |     needs: {{"${{ github.actor }}"}}
+       |            ^^^^^^^^^^^^^^^^^^^ "needs" must not contain expressions (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

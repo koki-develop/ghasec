@@ -1,0 +1,29 @@
+actions:
+  - name: action.yml
+    content: |
+      name: ${{ github.actor }}
+      description: ${{ github.actor }}
+      runs:
+        using: composite
+        steps:
+          - run: echo hi
+            shell: bash
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:1:7
+    1 | name: {{"${{ github.actor }}"}}
+      |       ^^^^^^^^^^^^^^^^^^^ "name" must not contain expressions (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:2:14
+    ...
+    2 | description: {{"${{ github.actor }}"}}
+      |              ^^^^^^^^^^^^^^^^^^^ "description" must not contain expressions (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    2 errors found in 1 file

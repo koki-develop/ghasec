@@ -1,0 +1,38 @@
+actions:
+  - name: action.yml
+    content: |
+      name: Test
+      description: Test
+      runs:
+        using: ${{ github.actor }}
+        main: ${{ github.actor }}
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:4:10
+    ...
+    3 | runs:
+    4 |   using: ${{"{{" }} github.actor {{"}}"}}
+      |          ^^^^^^^^^^^^^^^^^^^ "using" has unknown value "${{"{{" }} github.actor {{"}}"}}" (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:4:10
+    ...
+    3 | runs:
+    4 |   using: ${{"{{" }} github.actor {{"}}"}}
+      |          ^^^^^^^^^^^^^^^^^^^ "using" must not contain expressions (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:5:9
+    ...
+    3 | runs:
+    ...
+    5 |   main: ${{"{{" }} github.actor {{"}}"}}
+      |         ^^^^^^^^^^^^^^^^^^^ "main" must not contain expressions (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    3 errors found in 1 file

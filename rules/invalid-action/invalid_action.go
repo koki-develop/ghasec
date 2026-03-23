@@ -51,6 +51,139 @@ func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 			}
 		}
 	}
+	// V2: Expression position validation
+	errs = append(errs, checkExpressionPositions(mapping)...)
+
+	return errs
+}
+
+// V2: Expression position validation — checks that expressions are not used in positions
+// where GitHub Actions does not support them in action definitions.
+func checkExpressionPositions(mapping workflow.ActionMapping) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+
+	// 1. Action metadata: name, author, description
+	for _, key := range []string{"name", "author", "description"} {
+		if kv := mapping.FindKey(key); kv != nil {
+			for _, st := range rules.ExpressionSpanTokens(kv.Value) {
+				errs = append(errs, &diagnostic.Error{
+					Token:   st,
+					Message: fmt.Sprintf("%q must not contain expressions", key),
+				})
+			}
+		}
+	}
+
+	// 2. inputs.<id>.description, inputs.<id>.default
+	if inputsKV := mapping.FindKey("inputs"); inputsKV != nil {
+		if inputsMapping, ok := rules.UnwrapNode(inputsKV.Value).(*ast.MappingNode); ok {
+			for _, inputEntry := range inputsMapping.Values {
+				inputDefMapping, ok := rules.UnwrapNode(inputEntry.Value).(*ast.MappingNode)
+				if !ok {
+					continue
+				}
+				im := workflow.Mapping{MappingNode: inputDefMapping}
+				for _, key := range []string{"description", "default"} {
+					if kv := im.FindKey(key); kv != nil {
+						for _, st := range rules.ExpressionSpanTokens(kv.Value) {
+							errs = append(errs, &diagnostic.Error{
+								Token:   st,
+								Message: fmt.Sprintf("%q must not contain expressions", key),
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 3. outputs.<id>.description (NOT outputs.<id>.value — that's valid)
+	if outputsKV := mapping.FindKey("outputs"); outputsKV != nil {
+		if outputsMapping, ok := rules.UnwrapNode(outputsKV.Value).(*ast.MappingNode); ok {
+			for _, outputEntry := range outputsMapping.Values {
+				outputDefMapping, ok := rules.UnwrapNode(outputEntry.Value).(*ast.MappingNode)
+				if !ok {
+					continue
+				}
+				om := workflow.Mapping{MappingNode: outputDefMapping}
+				if descKV := om.FindKey("description"); descKV != nil {
+					for _, st := range rules.ExpressionSpanTokens(descKV.Value) {
+						errs = append(errs, &diagnostic.Error{
+							Token:   st,
+							Message: "\"description\" must not contain expressions",
+						})
+					}
+				}
+			}
+		}
+	}
+
+	// 4. runs.using, runs.main, runs.pre, runs.post, runs.image
+	if runsKV := mapping.FindKey("runs"); runsKV != nil {
+		if runsMapping, ok := rules.UnwrapNode(runsKV.Value).(*ast.MappingNode); ok {
+			rm := workflow.Mapping{MappingNode: runsMapping}
+			for _, key := range []string{"using", "main", "pre", "post", "image"} {
+				if kv := rm.FindKey(key); kv != nil {
+					for _, st := range rules.ExpressionSpanTokens(kv.Value) {
+						errs = append(errs, &diagnostic.Error{
+							Token:   st,
+							Message: fmt.Sprintf("%q must not contain expressions", key),
+						})
+					}
+				}
+			}
+		}
+	}
+
+	// 5. branding.* — all branding fields
+	if brandingKV := mapping.FindKey("branding"); brandingKV != nil {
+		if brandingMapping, ok := rules.UnwrapNode(brandingKV.Value).(*ast.MappingNode); ok {
+			for _, entry := range brandingMapping.Values {
+				key := entry.Key.GetToken().Value
+				for _, st := range rules.ExpressionSpanTokens(entry.Value) {
+					errs = append(errs, &diagnostic.Error{
+						Token:   st,
+						Message: fmt.Sprintf("%q must not contain expressions", key),
+					})
+				}
+			}
+		}
+	}
+
+	// 6. runs.steps[].id and runs.steps[].uses
+	if runsKV := mapping.FindKey("runs"); runsKV != nil {
+		if runsMapping, ok := rules.UnwrapNode(runsKV.Value).(*ast.MappingNode); ok {
+			rm := workflow.Mapping{MappingNode: runsMapping}
+			if stepsKV := rm.FindKey("steps"); stepsKV != nil {
+				if seq, ok := rules.UnwrapNode(stepsKV.Value).(*ast.SequenceNode); ok {
+					for _, item := range seq.Values {
+						stepMapping, ok := rules.UnwrapNode(item).(*ast.MappingNode)
+						if !ok {
+							continue
+						}
+						sm := workflow.Mapping{MappingNode: stepMapping}
+						if idKV := sm.FindKey("id"); idKV != nil {
+							for _, st := range rules.ExpressionSpanTokens(idKV.Value) {
+								errs = append(errs, &diagnostic.Error{
+									Token:   st,
+									Message: "\"id\" must not contain expressions",
+								})
+							}
+						}
+						if usesKV := sm.FindKey("uses"); usesKV != nil {
+							for _, st := range rules.ExpressionSpanTokens(usesKV.Value) {
+								errs = append(errs, &diagnostic.Error{
+									Token:   st,
+									Message: "\"uses\" must not contain expressions",
+								})
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return errs
 }
 

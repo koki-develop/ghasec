@@ -1,0 +1,37 @@
+workflows:
+  - name: expression-in-step-uses.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: ${{ github.actor }}
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/expression-in-step-uses.yml:8:15
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - uses: {{"${{ github.actor }}"}}
+      |               ^^^^^^^^^^^^^^^^^^^ {{"\"${{ github.actor }}\""}} must have a ref (e.g. {{"${{ github.actor }}"}}@<ref>) (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/expression-in-step-uses.yml:8:15
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - uses: {{"${{ github.actor }}"}}
+      |               ^^^^^^^^^^^^^^^^^^^ "uses" must not contain expressions (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    2 errors found in 1 file

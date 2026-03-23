@@ -1,0 +1,28 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on:
+        workflow_call:
+          inputs:
+            my-input:
+              type: string
+              default: ${{ github.event_name }}
+          outputs:
+            my-output:
+              value: ${{ jobs.build.outputs.result }}
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          outputs:
+            result: ${{ steps.test.outputs.result }}
+          steps:
+            - id: test
+              run: echo "result=ok" >> "$GITHUB_OUTPUT"
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

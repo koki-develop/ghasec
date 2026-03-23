@@ -1,0 +1,18 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - if: github.event_name == 'push'
+              run: echo hello
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

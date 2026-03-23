@@ -1,11 +1,9 @@
 workflows:
-  - name: filter-negation-expression.yml
+  - name: expression-in-on-config.yml
     content: |
       on:
-        push:
-          branches:
-            - ${{ vars.BRANCH }}
-            - '!main'
+        schedule:
+          - cron: ${{ vars.CRON }}
       permissions: {}
       jobs:
         build:
@@ -18,12 +16,11 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/filter-negation-expression.yml:4:9
+    --> {{.Dir}}/expression-in-on-config.yml:3:13
     1 | on:
-    2 |   push:
-    3 |     branches:
-    4 |       - {{"${{ vars.BRANCH }}"}}
-      |         ^^^^^^^^^^^^^^^^^^ "branches" must not contain expressions (invalid-workflow)
+    2 |   schedule:
+    3 |     - cron: {{"${{ vars.CRON }}"}}
+      |             ^^^^^^^^^^^^^^^^ "cron" must not contain expressions (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

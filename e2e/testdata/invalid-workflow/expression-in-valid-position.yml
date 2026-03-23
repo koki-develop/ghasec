@@ -1,0 +1,23 @@
+workflows:
+  - name: expression-in-valid-position.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          name: ${{ github.event_name }}
+          env:
+            FOO: ${{ github.actor }}
+          steps:
+            - if: ${{ github.event_name == 'push' }}
+              run: echo ${{ github.actor }}
+              env:
+                BAR: ${{ github.ref }}
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

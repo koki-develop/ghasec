@@ -13,7 +13,15 @@ workflows:
             - run: echo hi
 
 expected:
-  exit_code: 0
+  exit_code: 1
   stdout: ""
   stderr: |
-    no errors found
+    --> {{.Dir}}/cron-expression-value.yml:3:13
+    1 | on:
+    2 |   schedule:
+    3 |     - cron: {{"${{ vars.CRON_SCHEDULE }}"}}
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^^ "cron" must not contain expressions (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

@@ -1,0 +1,33 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: composite
+        steps:
+          - uses: ${{ github.actor }}
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:6:13
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: {{"${{ github.actor }}"}}
+      |             ^^^^^^^^^^^^^^^^^^^ {{"\"${{ github.actor }}\""}} must have a ref (e.g. {{"${{ github.actor }}"}}@<ref>) (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:6:13
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: {{"${{ github.actor }}"}}
+      |             ^^^^^^^^^^^^^^^^^^^ "uses" must not contain expressions (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    2 errors found in 1 file

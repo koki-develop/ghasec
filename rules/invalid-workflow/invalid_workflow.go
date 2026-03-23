@@ -62,6 +62,9 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 		}
 	}
 
+	// V9: Expression position validation
+	errs = append(errs, checkExpressionPositions(mapping.Mapping)...)
+
 	return errs
 }
 

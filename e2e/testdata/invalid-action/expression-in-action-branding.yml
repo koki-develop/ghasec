@@ -1,0 +1,36 @@
+actions:
+  - name: action.yml
+    content: |
+      name: Test
+      description: Test
+      branding:
+        icon: ${{ github.actor }}
+        color: ${{ github.actor }}
+      runs:
+        using: composite
+        steps:
+          - run: echo hi
+            shell: bash
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:4:9
+    ...
+    3 | branding:
+    4 |   icon: ${{"{{" }} github.actor {{"}}"}}
+      |         ^^^^^^^^^^^^^^^^^^^ "icon" must not contain expressions (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:5:10
+    ...
+    3 | branding:
+    ...
+    5 |   color: ${{"{{" }} github.actor {{"}}"}}
+      |          ^^^^^^^^^^^^^^^^^^^ "color" must not contain expressions (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    2 errors found in 1 file

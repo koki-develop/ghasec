@@ -1,0 +1,22 @@
+actions:
+  - name: action.yml
+    content: |
+      name: Test Action
+      description: A test
+      outputs:
+        result:
+          description: Result
+          value: ${{ steps.test.outputs.result }}
+      runs:
+        using: composite
+        steps:
+          - id: test
+            if: ${{ github.actor == 'bot' }}
+            run: echo ${{ github.actor }}
+            shell: bash
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

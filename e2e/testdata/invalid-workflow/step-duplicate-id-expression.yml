@@ -14,7 +14,30 @@ workflows:
               run: echo b
 
 expected:
-  exit_code: 0
+  exit_code: 1
   stdout: ""
   stderr: |
-    no errors found
+    --> {{.Dir}}/step-duplicate-id-expression.yml:8:13
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - id: {{"${{ steps.foo.outputs.id }}"}}
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ "id" must not contain expressions (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/step-duplicate-id-expression.yml:10:13
+    ...
+     3 | jobs:
+     4 |   build:
+    ...
+     7 |     steps:
+    ...
+    10 |       - id: {{"${{ steps.foo.outputs.id }}"}}
+       |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ "id" must not contain expressions (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    2 errors found in 1 file

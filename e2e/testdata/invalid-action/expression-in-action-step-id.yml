@@ -1,0 +1,27 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: composite
+        steps:
+          - id: ${{ github.actor }}
+            run: echo hi
+            shell: bash
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:6:11
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - id: {{"${{ github.actor }}"}}
+      |           ^^^^^^^^^^^^^^^^^^^ "id" must not contain expressions (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    1 error found in 1 file

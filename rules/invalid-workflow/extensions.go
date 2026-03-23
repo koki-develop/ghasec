@@ -500,6 +500,236 @@ func joinQuotedOptions(options []string) string {
 	return rules.JoinOr(quoted)
 }
 
+// V9: Expression position validation — checks that expressions are not used in positions
+// where GitHub Actions does not support them.
+func checkExpressionPositions(mapping workflow.Mapping) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+
+	// 1. Top-level defaults.run (job-level defaults.run IS valid)
+	if defaultsKV := mapping.FindKey("defaults"); defaultsKV != nil {
+		if defaultsMapping, ok := rules.UnwrapNode(defaultsKV.Value).(*ast.MappingNode); ok {
+			dm := workflow.Mapping{MappingNode: defaultsMapping}
+			if runKV := dm.FindKey("run"); runKV != nil {
+				errs = append(errs, checkNodeNoExpressions(runKV, "\"run\"")...)
+			}
+		}
+	}
+
+	// 2. Permissions (top-level)
+	if permKV := mapping.FindKey("permissions"); permKV != nil {
+		errs = append(errs, checkNodeNoExpressions(permKV, "\"permissions\"")...)
+	}
+
+	// 3. on.* (all trigger config, with workflow_call exceptions)
+	errs = append(errs, checkOnExpressionPositions(mapping)...)
+
+	// Job-level checks
+	if jobsKV := mapping.FindKey("jobs"); jobsKV != nil {
+		if jobsMapping, ok := rules.UnwrapNode(jobsKV.Value).(*ast.MappingNode); ok {
+			for _, jobEntry := range jobsMapping.Values {
+				jobMapping, ok := rules.UnwrapNode(jobEntry.Value).(*ast.MappingNode)
+				if !ok {
+					continue
+				}
+				jm := workflow.Mapping{MappingNode: jobMapping}
+
+				// 2. Permissions (job-level)
+				if permKV := jm.FindKey("permissions"); permKV != nil {
+					errs = append(errs, checkNodeNoExpressions(permKV, "\"permissions\"")...)
+				}
+
+				// 4. jobs.*.needs
+				if needsKV := jm.FindKey("needs"); needsKV != nil {
+					errs = append(errs, checkNodeNoExpressions(needsKV, "\"needs\"")...)
+				}
+
+				// 5. jobs.*.uses (reusable workflow call)
+				if usesKV := jm.FindKey("uses"); usesKV != nil {
+					errs = append(errs, checkValueNoExpressions(usesKV.Value, "\"uses\"")...)
+				}
+
+				// Step-level checks
+				if stepsKV := jm.FindKey("steps"); stepsKV != nil {
+					if seq, ok := rules.UnwrapNode(stepsKV.Value).(*ast.SequenceNode); ok {
+						for _, item := range seq.Values {
+							stepMapping, ok := rules.UnwrapNode(item).(*ast.MappingNode)
+							if !ok {
+								continue
+							}
+							sm := workflow.Mapping{MappingNode: stepMapping}
+
+							// 6. steps[].id
+							if idKV := sm.FindKey("id"); idKV != nil {
+								errs = append(errs, checkValueNoExpressions(idKV.Value, "\"id\"")...)
+							}
+
+							// 7. steps[].uses
+							if usesKV := sm.FindKey("uses"); usesKV != nil {
+								errs = append(errs, checkValueNoExpressions(usesKV.Value, "\"uses\"")...)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return errs
+}
+
+// checkNodeNoExpressions checks a single key-value pair for expressions.
+// It recurses into the value side (sequences, mappings).
+func checkNodeNoExpressions(kv *ast.MappingValueNode, keyPath string) []*diagnostic.Error {
+	return checkValueNoExpressions(kv.Value, keyPath)
+}
+
+// checkValueNoExpressions checks a value node for expressions, recursing into
+// sequences and mappings.
+func checkValueNoExpressions(node ast.Node, keyPath string) []*diagnostic.Error {
+	node = rules.UnwrapNode(node)
+	switch v := node.(type) {
+	case *ast.SequenceNode:
+		var errs []*diagnostic.Error
+		for _, item := range v.Values {
+			errs = append(errs, checkValueNoExpressions(item, keyPath)...)
+		}
+		return errs
+	case *ast.MappingNode:
+		return checkMappingNoExpressions(workflow.Mapping{MappingNode: v})
+	default:
+		spanTokens := rules.ExpressionSpanTokens(node)
+		if len(spanTokens) == 0 {
+			return nil
+		}
+		var errs []*diagnostic.Error
+		for _, st := range spanTokens {
+			errs = append(errs, &diagnostic.Error{
+				Token:   st,
+				Message: fmt.Sprintf("%s must not contain expressions", keyPath),
+			})
+		}
+		return errs
+	}
+}
+
+// checkMappingNoExpressions checks all values in a mapping for expressions.
+// Each entry uses its own key name as the keyPath for more specific error messages.
+func checkMappingNoExpressions(m workflow.Mapping) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	for _, entry := range m.Values {
+		key := entry.Key.GetToken().Value
+		errs = append(errs, checkValueNoExpressions(entry.Value, fmt.Sprintf("%q", key))...)
+	}
+	return errs
+}
+
+// checkOnExpressionPositions handles the "on" trigger config, with exceptions
+// for workflow_call.inputs[].default and workflow_call.outputs[].value.
+func checkOnExpressionPositions(mapping workflow.Mapping) []*diagnostic.Error {
+	kv := mapping.FindKey("on")
+	if kv == nil {
+		return nil
+	}
+
+	// "on" can be a string, sequence, or mapping
+	onNode := rules.UnwrapNode(kv.Value)
+	switch v := onNode.(type) {
+	case *ast.StringNode, *ast.LiteralNode:
+		var errs []*diagnostic.Error
+		for _, st := range rules.ExpressionSpanTokens(onNode) {
+			errs = append(errs, &diagnostic.Error{
+				Token:   st,
+				Message: "\"on\" must not contain expressions",
+			})
+		}
+		return errs
+	case *ast.SequenceNode:
+		var errs []*diagnostic.Error
+		for _, item := range v.Values {
+			for _, st := range rules.ExpressionSpanTokens(item) {
+				errs = append(errs, &diagnostic.Error{
+					Token:   st,
+					Message: "\"on\" must not contain expressions",
+				})
+			}
+		}
+		return errs
+	case *ast.MappingNode:
+		var errs []*diagnostic.Error
+		for _, entry := range v.Values {
+			eventName := entry.Key.GetToken().Value
+			if eventName == "workflow_call" {
+				errs = append(errs, checkWorkflowCallExpressionPositions(entry.Value)...)
+				continue
+			}
+			errs = append(errs, checkValueNoExpressions(entry.Value, fmt.Sprintf("%q", eventName))...)
+		}
+		return errs
+	}
+	return nil
+}
+
+// checkWorkflowCallExpressionPositions handles workflow_call, skipping
+// inputs[].default and outputs[].value which ARE valid expression positions.
+func checkWorkflowCallExpressionPositions(node ast.Node) []*diagnostic.Error {
+	node = rules.UnwrapNode(node)
+	wcMapping, ok := node.(*ast.MappingNode)
+	if !ok {
+		return nil
+	}
+
+	var errs []*diagnostic.Error
+
+	for _, entry := range wcMapping.Values {
+		sectionName := entry.Key.GetToken().Value
+
+		switch sectionName {
+		case "inputs":
+			inputsMapping, ok := rules.UnwrapNode(entry.Value).(*ast.MappingNode)
+			if !ok {
+				continue
+			}
+			for _, inputEntry := range inputsMapping.Values {
+				inputDefMapping, ok := rules.UnwrapNode(inputEntry.Value).(*ast.MappingNode)
+				if !ok {
+					continue
+				}
+				for _, field := range inputDefMapping.Values {
+					fieldName := field.Key.GetToken().Value
+					if fieldName == "default" {
+						// inputs[].default IS valid — skip
+						continue
+					}
+					errs = append(errs, checkValueNoExpressions(field.Value, fmt.Sprintf("%q", fieldName))...)
+				}
+			}
+		case "outputs":
+			outputsMapping, ok := rules.UnwrapNode(entry.Value).(*ast.MappingNode)
+			if !ok {
+				continue
+			}
+			for _, outputEntry := range outputsMapping.Values {
+				outputDefMapping, ok := rules.UnwrapNode(outputEntry.Value).(*ast.MappingNode)
+				if !ok {
+					continue
+				}
+				for _, field := range outputDefMapping.Values {
+					fieldName := field.Key.GetToken().Value
+					if fieldName == "value" {
+						// outputs[].value IS valid — skip
+						continue
+					}
+					errs = append(errs, checkValueNoExpressions(field.Value, fmt.Sprintf("%q", fieldName))...)
+				}
+			}
+		default:
+			// secrets, other keys — no expressions allowed
+			errs = append(errs, checkValueNoExpressions(entry.Value, fmt.Sprintf("%q", sectionName))...)
+		}
+	}
+	return errs
+}
+
 // V8: Filter negation requires at least one positive pattern.
 func checkFilterNegationPatterns(mapping workflow.Mapping) []*diagnostic.Error {
 	kv := mapping.FindKey("on")

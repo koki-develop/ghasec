@@ -1,0 +1,24 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo ${{ true }}
+            - run: echo ${{ false }}
+            - run: echo ${{ null }}
+            - run: echo ${{ 42 }}
+            - run: echo ${{ 3.14 }}
+            - run: echo ${{ 0xff }}
+            - run: echo ${{ 1e10 }}
+            - run: echo ${{ 'hello world' }}
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found
