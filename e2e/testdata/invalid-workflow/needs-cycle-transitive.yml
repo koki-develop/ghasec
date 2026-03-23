@@ -1,0 +1,35 @@
+workflows:
+  - name: needs-cycle-transitive.yml
+    content: |
+      on: push
+      jobs:
+        a:
+          needs: c
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo a
+        b:
+          needs: a
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo b
+        c:
+          needs: b
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo c
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/needs-cycle-transitive.yml:4:5
+    ...
+    2 | jobs:
+    3 |   a:
+    4 |     needs: c
+      |     ^^^^^ jobs must not have circular dependencies: a -> c -> b -> a (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

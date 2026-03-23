@@ -1,0 +1,25 @@
+workflows:
+  - name: cron-invalid-field-count.yml
+    content: |
+      on:
+        schedule:
+          - cron: "0 5 *"
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/cron-invalid-field-count.yml:3:14
+    1 | on:
+    2 |   schedule:
+    3 |     - cron: "0 5 *"
+      |              ^^^^^ invalid cron expression: expected 5 fields, but got 3 (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    1 error found in 1 file

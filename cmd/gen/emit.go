@@ -239,6 +239,45 @@ func (e *emitter) emitMappingBodyChecks(mappingExpr string, node *Node, errsVar 
 		e.blank()
 	}
 
+	// V3: Property dependency checks
+	if len(node.Dependencies) > 0 {
+		depKeys := make([]string, 0, len(node.Dependencies))
+		for k := range node.Dependencies {
+			depKeys = append(depKeys, k)
+		}
+		sort.Strings(depKeys)
+
+		depWrapperVar := fmt.Sprintf("_mDepWrap%s", sanitizeIdent(node.Path))
+		e.line("// Property dependency checks")
+		e.line("%s := workflow.Mapping{MappingNode: %s}", depWrapperVar, mappingExpr)
+		for _, prop := range depKeys {
+			reqd := node.Dependencies[prop]
+			propIdent := sanitizeIdent(prop)
+			e.line("if _depKV%s := %s.FindKey(%q); _depKV%s != nil {", propIdent, depWrapperVar, prop, propIdent)
+			e.push()
+			for _, req := range reqd {
+				e.line("if %s.FindKey(%q) == nil {", depWrapperVar, req)
+				e.push()
+				e.line("%s = append(%s, rules.ValidationError{", errsVar, errsVar)
+				e.push()
+				e.line("Kind:  rules.KindDependency,")
+				if node.Path != "" {
+					e.line("Path:  %q,", node.Path)
+				}
+				e.line("Key:   %q,", prop)
+				e.line("Got:   %q,", req)
+				e.line("Token: _depKV%s.Key.GetToken(),", propIdent)
+				e.pop()
+				e.line("})")
+				e.pop()
+				e.line("}")
+			}
+			e.pop()
+			e.line("}")
+		}
+		e.blank()
+	}
+
 	// Per-property value checks
 	sortedProps := make([]string, 0, len(node.Properties))
 	for k := range node.Properties {
@@ -345,7 +384,8 @@ func nodeHasAnyChecks(node *Node) bool {
 		len(node.Required) > 0 || node.Items != nil || len(node.PatternProps) > 0 ||
 		len(node.OneOf) > 0 || len(node.AllOf) > 0 || len(node.AnyOf) > 0 ||
 		node.If != nil || node.Pattern != "" ||
-		node.MinItems > 0 || node.MinProperties > 0
+		node.MinItems > 0 || node.MinProperties > 0 ||
+		len(node.Dependencies) > 0
 }
 
 // emitValueChecks wraps all value checks in an expression bypass guard,
@@ -480,7 +520,8 @@ func nodeHasChildMappingChecks(node *Node) bool {
 		len(node.Properties) > 0 ||
 		len(node.PatternProps) > 0 ||
 		node.AdditionalPropsSchema != nil ||
-		node.MinProperties > 0
+		node.MinProperties > 0 ||
+		len(node.Dependencies) > 0
 }
 
 // emitTypeCheck emits type assertion code for a value node.

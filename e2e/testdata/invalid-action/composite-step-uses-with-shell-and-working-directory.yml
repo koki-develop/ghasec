@@ -1,0 +1,39 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: composite
+        steps:
+          - uses: actions/checkout@v4
+            shell: bash
+            working-directory: /tmp
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:7:7
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: actions/checkout@v4
+    7 |       shell: bash
+      |       ^^^^^ "shell" must be used with "run" (invalid-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    --> {{.Dir}}/action.yml:8:7
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: actions/checkout@v4
+    ...
+    8 |       working-directory: /tmp
+      |       ^^^^^^^^^^^^^^^^^ "working-directory" must be used with "run" (invalid-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
+
+    2 errors found in 1 file

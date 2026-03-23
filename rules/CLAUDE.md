@@ -24,7 +24,7 @@ See `rules/unused-ignore/README.md` for full syntax documentation.
 ## Key Design Decisions
 
 - Uses `goccy/go-yaml` AST (not `gopkg.in/yaml.v3`) — all rule checks operate on typed wrappers from the `workflow` package (`workflow.WorkflowMapping`, `workflow.ActionMapping`, `workflow.JobMapping`, `workflow.StepMapping`) which embed `workflow.Mapping` (wrapping `*ast.MappingNode`). The analyzer extracts the top-level mapping from `*ast.File` and passes it to each rule's check method; rules never see `*ast.File` directly.
-- `invalid-workflow` and `invalid-action` use **generated code as the base** (`generated.go` from `cmd/gen/`). Hand-written code in `extensions.go` / `invalid_action.go` only **adds** validations that JSON Schema cannot express (mutual exclusion with Markers, remote action ref format). Never skip or filter generated code output.
+- `invalid-workflow` and `invalid-action` use **generated code as the base** (`generated.go` from `cmd/gen/`). Hand-written code in `extensions.go` / `invalid_action.go` only **adds** validations that JSON Schema cannot express (mutual exclusion, uniqueness constraints, cross-property references, cycle detection, etc.). Never skip or filter generated code output.
 - Rules are two-phase: required rules (structural validation) gate non-required rules (lint checks). This prevents noisy lint errors on malformed files.
 - Online rules (`Online() == true`) require network access and are disabled by default. They run only when `--online` is passed. Currently only `mismatched-sha-tag` is an online rule.
 - New rules: implement `rules.Rule` interface plus `WorkflowRule`, `ActionRule`, or both, and add to the `buildRules()` function in `cmd/root.go`. Online rules should lazily initialize their own dependencies (see `mismatched-sha-tag` for an example). Rule IDs are flat kebab-case names describing the violation they detect (e.g., `invalid-workflow`, `unpinned-action`).
@@ -47,5 +47,15 @@ Messages use **key-path subject style** — the YAML key or structural term is t
 - Unknown identifier: `unknown key "<key>"` (no static parent) or `"<parent>" has unknown <thing> "<name>"` (static parent)
 - Sequence elements: `"<key>" elements must be <type>, but got <actual>`
 - Null/empty: `"<key>" must not be empty` (mapping/sequence with null value), `"<key>" element must not be empty` (null sequence element)
+- Dependency: `"<key>" must be used with "<other>"` (property presence dependency)
+- Uniqueness: `step id "<id>" must be unique` (duplicate identifier within a scope)
+- Invalid reference: `job "<id>" needs nonexistent job "<ref>"` (cross-property reference)
+- Cycle: `jobs must not have circular dependencies: a -> b -> a`
 
 **Tone:** Use `must` for all messages. Required rules enforce structural correctness; lint rules enforce security policy that the user opted into by running ghasec. `should` is too weak for either.
+
+## Manual Maintenance Required
+
+Most hand-written checks in `extensions.go` / `invalid_action.go` either auto-follow SchemaStore updates via `go generate` or produce build errors when schema structure changes. The one exception:
+
+- **Filter negation check (`checkFilterNegationPatterns` in `extensions.go`):** The `targetEvents` and `filterKeys` lists are hardcoded. If GitHub adds filter support to a new event, ghasec will silently skip it — no error, no warning. Check the [GitHub Actions documentation](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions) when updating the SchemaStore submodule.

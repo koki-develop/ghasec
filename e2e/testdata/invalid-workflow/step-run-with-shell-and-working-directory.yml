@@ -1,0 +1,19 @@
+workflows:
+  - name: step-run-with-shell-and-working-directory.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+              shell: bash
+              working-directory: /tmp
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

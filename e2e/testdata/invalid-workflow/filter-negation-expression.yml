@@ -1,0 +1,21 @@
+workflows:
+  - name: filter-negation-expression.yml
+    content: |
+      on:
+        push:
+          branches:
+            - ${{ vars.BRANCH }}
+            - '!main'
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

@@ -1,0 +1,24 @@
+workflows:
+  - name: step-duplicate-id-across-jobs.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - id: s1
+              run: echo a
+        deploy:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - id: s1
+              run: echo b
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

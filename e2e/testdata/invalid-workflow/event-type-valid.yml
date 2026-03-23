@@ -1,0 +1,19 @@
+workflows:
+  - name: event-type-valid.yml
+    content: |
+      on:
+        pull_request:
+          types: [opened, synchronize]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

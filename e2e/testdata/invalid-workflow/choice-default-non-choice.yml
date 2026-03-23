@@ -1,0 +1,23 @@
+workflows:
+  - name: choice-default-non-choice.yml
+    content: |
+      on:
+        workflow_dispatch:
+          inputs:
+            name:
+              type: string
+              description: name
+              default: anything
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

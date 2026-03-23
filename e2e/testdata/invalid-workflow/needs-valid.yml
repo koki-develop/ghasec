@@ -1,0 +1,23 @@
+workflows:
+  - name: needs-valid.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo build
+        deploy:
+          needs: build
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo deploy
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

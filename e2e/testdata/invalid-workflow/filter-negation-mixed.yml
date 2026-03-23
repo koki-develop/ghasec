@@ -1,0 +1,21 @@
+workflows:
+  - name: filter-negation-mixed.yml
+    content: |
+      on:
+        push:
+          branches:
+            - '**'
+            - '!releases/**'
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

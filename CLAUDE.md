@@ -31,7 +31,7 @@ go generate ./rules/invalid-workflow/ ./rules/invalid-action/
 The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output**.
 
 - `cmd/root.go` — CLI entry point (cobra). Orchestrates the full pipeline.
-- `cmd/gen/` — Code generator. Reads JSON Schema from SchemaStore submodule (`schemastore/`), converts to IR, emits Go validation code via `text/template`. Output: `rules/invalid-workflow/generated.go` and `rules/invalid-action/generated.go`.
+- `cmd/gen/` — Code generator. Reads JSON Schema from SchemaStore submodule (`schemastore/`), converts to IR, emits Go validation code via `text/template`. Also extracts per-event activity type enums from the raw JSON schema (lost during compilation due to draft-07 `$ref` sibling behavior). Output: `rules/invalid-workflow/generated.go` and `rules/invalid-action/generated.go`.
 - `analyzer/` — Runs rules against a parsed AST file. Required rules run first; if any fail, non-required rules are skipped entirely.
 - `renderer/` — Diagnostic error rendering with source annotation, syntax highlighting, `NO_COLOR` support, and automatic ancestor breadcrumb computation from token positions.
 - `workflow/` — Typed wrappers around `goccy/go-yaml` AST nodes and `ActionRef` for action references. Rules use these wrappers for domain-specific navigation.

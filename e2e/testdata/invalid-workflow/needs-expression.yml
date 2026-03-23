@@ -1,0 +1,23 @@
+workflows:
+  - name: needs-expression.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo build
+        deploy:
+          needs: ${{ fromJson(needs.build.outputs.matrix) }}
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo deploy
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

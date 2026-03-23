@@ -1,0 +1,51 @@
+workflows:
+  - name: step-duplicate-id-multiple-groups.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - id: a
+              run: echo 1
+            - id: b
+              run: echo 2
+            - id: a
+              run: echo 3
+            - id: b
+              run: echo 4
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/step-duplicate-id-multiple-groups.yml:10:13
+    ...
+     2 | jobs:
+     3 |   build:
+    ...
+     5 |     steps:
+     6 |       - id: a
+       |             ^
+    ...
+    10 |       - id: a
+       |             ^ step id "a" must be unique (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/step-duplicate-id-multiple-groups.yml:12:13
+    ...
+     2 | jobs:
+     3 |   build:
+    ...
+     5 |     steps:
+    ...
+     8 |       - id: b
+       |             ^
+    ...
+    12 |       - id: b
+       |             ^ step id "b" must be unique (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    2 errors found in 1 file

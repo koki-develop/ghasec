@@ -22,7 +22,8 @@ type Node struct {
 	ParentName            string
 	ContextTerm           string
 	SkipChildren          bool
-	MinItems              int    // minimum number of sequence items (G4)
-	MinProperties         int    // minimum number of mapping properties (G4)
-	Pattern               string // string regex pattern constraint (G5)
+	MinItems              int                 // minimum number of sequence items (G4)
+	MinProperties         int                 // minimum number of mapping properties (G4)
+	Pattern               string              // string regex pattern constraint (G5)
+	Dependencies          map[string][]string // property dependencies: key → required co-keys (V3)
 }

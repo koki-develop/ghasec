@@ -41,12 +41,24 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 	// B1: Filter conflicts (branches/branches-ignore, tags/tags-ignore, paths/paths-ignore)
 	errs = append(errs, checkOnFilterConflicts(mapping.Mapping)...)
 
+	// V6: Cron expression validation
+	errs = append(errs, checkCronExpressions(mapping.Mapping)...)
+
+	// V7: Choice default must be in options
+	errs = append(errs, checkChoiceDefaultInOptions(mapping.Mapping)...)
+
+	// V8: Filter negation requires positive pattern
+	errs = append(errs, checkFilterNegationPatterns(mapping.Mapping)...)
+
 	// B2: Job-level mutual exclusion (runs-on/uses, uses/steps)
 	// B3: Step-level mutual exclusion (uses/run)
 	// C1: Remote action ref format
+	// V1: Step ID uniqueness
+	// V2: Needs reference validity and cycle detection
 	if kv := mapping.FindKey("jobs"); kv != nil {
 		if jobsMapping, ok := rules.UnwrapNode(kv.Value).(*ast.MappingNode); ok {
 			errs = append(errs, checkJobExtensions(jobsMapping)...)
+			errs = append(errs, checkNeedsValidity(jobsMapping)...)
 		}
 	}
 
@@ -107,6 +119,8 @@ func toDiagnostic(ve rules.ValidationError) *diagnostic.Error {
 		}
 	case rules.KindMinItems:
 		msg = fmt.Sprintf("%q must not be empty", ve.Key)
+	case rules.KindDependency:
+		msg = fmt.Sprintf("%q must be used with %q", ve.Key, ve.Got)
 	default:
 		msg = fmt.Sprintf("validation error on %q: %s", ve.Key, ve.Got)
 	}

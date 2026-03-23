@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
 )
@@ -184,6 +185,20 @@ func convert(s *jsonschema.Schema, path string) *Node {
 		node.Pattern = s.Pattern.String()
 	}
 
+	// V3: Property dependencies
+	if s.Dependencies != nil {
+		for prop, dep := range s.Dependencies {
+			if reqd, ok := dep.([]string); ok {
+				if node.Dependencies == nil {
+					node.Dependencies = make(map[string][]string)
+				}
+				node.Dependencies[prop] = reqd
+			} else {
+				fmt.Fprintf(os.Stderr, "warning: unsupported dependency type %T for property %q at path %q (skipped)\n", dep, prop, path)
+			}
+		}
+	}
+
 	// Combiners
 	for _, sub := range s.OneOf {
 		node.OneOf = append(node.OneOf, convert(sub, path))
@@ -228,5 +243,5 @@ func nodeHasAnyIRChecks(n *Node) bool {
 		len(n.Properties) > 0 || len(n.Required) > 0 ||
 		n.Items != nil || len(n.PatternProps) > 0 ||
 		len(n.OneOf) > 0 || len(n.AllOf) > 0 || len(n.AnyOf) > 0 ||
-		n.If != nil || n.Pattern != ""
+		n.If != nil || n.Pattern != "" || len(n.Dependencies) > 0
 }

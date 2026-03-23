@@ -1,0 +1,48 @@
+workflows:
+  - name: step-duplicate-id-triple.yml
+    content: |
+      on: push
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - id: s1
+              run: echo a
+            - id: s1
+              run: echo b
+            - id: s1
+              run: echo c
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/step-duplicate-id-triple.yml:8:13
+    ...
+    2 | jobs:
+    3 |   build:
+    ...
+    5 |     steps:
+    6 |       - id: s1
+      |             ^^
+    ...
+    8 |       - id: s1
+      |             ^^ step id "s1" must be unique (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/step-duplicate-id-triple.yml:10:13
+    ...
+     2 | jobs:
+     3 |   build:
+    ...
+     5 |     steps:
+     6 |       - id: s1
+       |             ^^
+    ...
+    10 |       - id: s1
+       |             ^^ step id "s1" must be unique (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    2 errors found in 1 file

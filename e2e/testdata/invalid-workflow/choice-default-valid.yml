@@ -1,0 +1,24 @@
+workflows:
+  - name: choice-default-valid.yml
+    content: |
+      on:
+        workflow_dispatch:
+          inputs:
+            env:
+              type: choice
+              description: target environment
+              options: [dev, staging, prod]
+              default: dev
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

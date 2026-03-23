@@ -36,6 +36,8 @@ func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 	}
 
 	// Hand-written extensions (run AFTER generated validation, never replace it).
+	// V1: Step ID uniqueness in composite steps
+	// V3: shell/working-directory require run in composite steps
 	// C1: Remote action ref in composite steps
 	// B3: Step mutual exclusion in composite steps
 	if runsKV := mapping.FindKey("runs"); runsKV != nil {
@@ -43,9 +45,41 @@ func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 			m := workflow.Mapping{MappingNode: runsMapping}
 			if stepsKV := m.FindKey("steps"); stepsKV != nil {
 				if seq, ok := rules.UnwrapNode(stepsKV.Value).(*ast.SequenceNode); ok {
+					errs = append(errs, checkStepIDUniqueness(seq)...)
 					errs = append(errs, checkCompositeStepExtensions(seq)...)
 				}
 			}
+		}
+	}
+	return errs
+}
+
+// V1: Step ID uniqueness within composite action steps.
+func checkStepIDUniqueness(seq *ast.SequenceNode) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	seen := make(map[string]*token.Token)
+	for _, item := range seq.Values {
+		stepMapping, ok := rules.UnwrapNode(item).(*ast.MappingNode)
+		if !ok {
+			continue
+		}
+		step := workflow.Mapping{MappingNode: stepMapping}
+		idKV := step.FindKey("id")
+		if idKV == nil {
+			continue
+		}
+		idValue := rules.StringValue(idKV.Value)
+		if idValue == "" || rules.IsExpressionNode(idKV.Value) {
+			continue
+		}
+		if firstToken, exists := seen[idValue]; exists {
+			errs = append(errs, &diagnostic.Error{
+				Token:   idKV.Value.GetToken(),
+				Message: fmt.Sprintf("step id %q must be unique", idValue),
+				Markers: []*token.Token{firstToken},
+			})
+		} else {
+			seen[idValue] = idKV.Value.GetToken()
 		}
 	}
 	return errs
@@ -75,6 +109,19 @@ func checkCompositeStepExtensions(seq *ast.SequenceNode) []*diagnostic.Error {
 				Message: "\"uses\" and \"run\" are mutually exclusive",
 				Markers: []*token.Token{secondToken},
 			})
+		}
+
+		// V3: shell/working-directory require run (action composite steps use oneOf,
+		// not the dependencies keyword, so this must be hand-written)
+		if usesKV != nil && runKV == nil {
+			for _, depKey := range []string{"shell", "working-directory"} {
+				if depKV := step.FindKey(depKey); depKV != nil {
+					errs = append(errs, &diagnostic.Error{
+						Token:   depKV.Key.GetToken(),
+						Message: fmt.Sprintf("%q must be used with %q", depKey, "run"),
+					})
+				}
+			}
 		}
 
 		// C1: Remote action ref format
@@ -135,6 +182,8 @@ func toDiagnostic(ve rules.ValidationError) *diagnostic.Error {
 		}
 	case rules.KindMinItems:
 		msg = fmt.Sprintf("%q must not be empty", ve.Key)
+	case rules.KindDependency:
+		msg = fmt.Sprintf("%q must be used with %q", ve.Key, ve.Got)
 	default:
 		msg = fmt.Sprintf("validation error on %q: %s", ve.Key, ve.Got)
 	}

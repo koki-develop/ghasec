@@ -1,0 +1,39 @@
+workflows:
+  - name: needs-nonexistent-and-cycle.yml
+    content: |
+      on: push
+      jobs:
+        a:
+          needs: [b, nonexistent]
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo a
+        b:
+          needs: a
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo b
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/needs-nonexistent-and-cycle.yml:4:5
+    ...
+    2 | jobs:
+    3 |   a:
+    4 |     needs: [b, nonexistent]
+      |     ^^^^^ jobs must not have circular dependencies: a -> b -> a (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/needs-nonexistent-and-cycle.yml:4:16
+    ...
+    2 | jobs:
+    3 |   a:
+    4 |     needs: [b, nonexistent]
+      |                ^^^^^^^^^^^ job "a" needs nonexistent job "nonexistent" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    2 errors found in 1 file

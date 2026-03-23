@@ -1,0 +1,19 @@
+workflows:
+  - name: cron-valid-complex.yml
+    content: |
+      on:
+        schedule:
+          - cron: "0,30 9-17 * 1-6 1-5"
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

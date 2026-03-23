@@ -28,11 +28,22 @@ func run() error {
 	generateAction := *schemaType == "all" || *schemaType == "action"
 
 	if generateWorkflow {
-		s, err := loadSchema(filepath.Join(schemaDir, "github-workflow.json"))
+		workflowSchemaPath := filepath.Join(schemaDir, "github-workflow.json")
+		s, err := loadSchema(workflowSchemaPath)
 		if err != nil {
 			return fmt.Errorf("loading workflow schema: %w", err)
 		}
 		ir := convert(s, "")
+		// V4: Extract per-event type enums from the raw schema (lost during
+		// compilation due to draft-07 $ref overriding siblings) and inject
+		// them into the IR.
+		eventTypeEnums, err := extractEventTypeEnums(workflowSchemaPath)
+		if err != nil {
+			return fmt.Errorf("extracting event type enums: %w", err)
+		}
+		if err := injectEventTypeEnums(ir, eventTypeEnums); err != nil {
+			return fmt.Errorf("injecting event type enums: %w", err)
+		}
 		e := &emitter{}
 		e.EmitValidateFunc("validateWorkflow", "workflow.WorkflowMapping", ir)
 		if err := generateFile(generateParams{

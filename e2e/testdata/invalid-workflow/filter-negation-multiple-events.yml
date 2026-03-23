@@ -1,0 +1,38 @@
+workflows:
+  - name: filter-negation-multiple-events.yml
+    content: |
+      on:
+        push:
+          branches:
+            - '!main'
+        pull_request:
+          branches:
+            - '!main'
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/filter-negation-multiple-events.yml:3:5
+    1 | on:
+    2 |   push:
+    3 |     branches:
+      |     ^^^^^^^^ if a "branches" pattern starts with "!", at least one positive pattern is also required (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/filter-negation-multiple-events.yml:6:5
+    1 | on:
+    ...
+    5 |   pull_request:
+    6 |     branches:
+      |     ^^^^^^^^ if a "branches" pattern starts with "!", at least one positive pattern is also required (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    2 errors found in 1 file
