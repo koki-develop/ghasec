@@ -41,6 +41,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          submodules: true
       - uses: ./.github/actions/setup
 
       - run: goreleaser release --clean
