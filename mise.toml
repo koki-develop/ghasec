@@ -2,3 +2,4 @@
 go = "1.26.1"
 "aqua:golangci/golangci-lint" = "2.11.3"
 "aqua:evilmartians/lefthook" = "2.1.4"
+"aqua:goreleaser/goreleaser" = "2.14.3"
