@@ -40,8 +40,8 @@ func Validate(expr string) string {
 
 // validateField validates a single cron field (e.g., "0,15,30,45" or "*/5" or "1-5").
 func validateField(field string, spec fieldSpec) string {
-	entries := strings.Split(field, ",")
-	for _, entry := range entries {
+	entries := strings.SplitSeq(field, ",")
+	for entry := range entries {
 		if entry == "" {
 			return "empty entry"
 		}
@@ -55,9 +55,9 @@ func validateField(field string, spec fieldSpec) string {
 // validateEntry validates a single entry within a comma-separated field.
 func validateEntry(entry string, spec fieldSpec) string {
 	// Handle step values: */N or N-M/N or N/N
-	if idx := strings.Index(entry, "/"); idx != -1 {
-		base := entry[:idx]
-		step := entry[idx+1:]
+	if before, after, ok := strings.Cut(entry, "/"); ok {
+		base := before
+		step := after
 		stepVal, err := strconv.Atoi(step)
 		if err != nil {
 			return fmt.Sprintf("invalid step value %q", step)
@@ -69,7 +69,7 @@ func validateEntry(entry string, spec fieldSpec) string {
 	}
 
 	// Handle range: N-M
-	if idx := strings.Index(entry, "-"); idx != -1 {
+	if found := strings.Contains(entry, "-"); found {
 		return validateRange(entry, spec)
 	}
 

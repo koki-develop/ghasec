@@ -445,8 +445,8 @@ func (e *emitter) emitValueChecksOnExpr(valueExpr string, node *Node, errsVar st
 		// D1-D2: Pass parent key token for better required-error positioning.
 		// If valueExpr looks like "_kvFoo.Value", derive "_kvFoo.Key.GetToken()".
 		parentTokenExpr := ""
-		if strings.HasSuffix(valueExpr, ".Value") {
-			kvVar := strings.TrimSuffix(valueExpr, ".Value")
+		if before, ok := strings.CutSuffix(valueExpr, ".Value"); ok {
+			kvVar := before
 			parentTokenExpr = kvVar + ".Key.GetToken()"
 		}
 		e.emitMappingBodyChecks(fmt.Sprintf("_subM%s", sanitizeIdent(keyName)), node, errsVar, parentTokenExpr)
@@ -965,8 +965,8 @@ func (e *emitter) emitOneOfTypeBranching(valueExpr string, branches []*Node, err
 			e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.MappingNode); _ok {", subVar, valueExpr)
 			e.push()
 			ptExpr := ""
-			if strings.HasSuffix(valueExpr, ".Value") {
-				ptExpr = strings.TrimSuffix(valueExpr, ".Value") + ".Key.GetToken()"
+			if before, ok := strings.CutSuffix(valueExpr, ".Value"); ok {
+				ptExpr = before + ".Key.GetToken()"
 			}
 			e.emitMappingBodyChecks(subVar, b, errsVar, ptExpr)
 			e.pop()
@@ -1118,8 +1118,8 @@ func (e *emitter) emitOneOfDiscrimEnum(valueExpr string, branches []*Node, errsV
 		// Emit mapping body checks for this branch (required keys, properties, etc.)
 		// D1-D2: Pass parent key token for better required-error positioning.
 		parentTokenExpr := ""
-		if strings.HasSuffix(valueExpr, ".Value") {
-			kvVar := strings.TrimSuffix(valueExpr, ".Value")
+		if before, ok := strings.CutSuffix(valueExpr, ".Value"); ok {
+			kvVar := before
 			parentTokenExpr = kvVar + ".Key.GetToken()"
 		}
 		e.emitMappingBodyChecks(mappingVar, branch, errsVar, parentTokenExpr)
@@ -1237,8 +1237,8 @@ func (e *emitter) emitOneOfDiscrimPresent(valueExpr string, branches []*Node, er
 
 		// D1-D2: Pass parent key token for better required-error positioning.
 		parentTokenExpr := ""
-		if strings.HasSuffix(valueExpr, ".Value") {
-			kvVar := strings.TrimSuffix(valueExpr, ".Value")
+		if before, ok := strings.CutSuffix(valueExpr, ".Value"); ok {
+			kvVar := before
 			parentTokenExpr = kvVar + ".Key.GetToken()"
 		}
 		e.emitMappingBodyChecks(mappingVar, b, errsVar, parentTokenExpr)
@@ -1346,8 +1346,8 @@ func (e *emitter) emitAnyOf(valueExpr string, branches []*Node, errsVar string, 
 			e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.MappingNode); _ok {", subVar, valueExpr)
 			e.push()
 			ptExpr := ""
-			if strings.HasSuffix(valueExpr, ".Value") {
-				ptExpr = strings.TrimSuffix(valueExpr, ".Value") + ".Key.GetToken()"
+			if before, ok := strings.CutSuffix(valueExpr, ".Value"); ok {
+				ptExpr = before + ".Key.GetToken()"
 			}
 			e.emitMappingBodyChecks(subVar, b, errsVar, ptExpr)
 			e.pop()
@@ -1421,8 +1421,8 @@ func (e *emitter) emitIfThenElse(valueExpr string, node *Node, errsVar string, k
 	}
 
 	ptExpr := ""
-	if strings.HasSuffix(valueExpr, ".Value") {
-		ptExpr = strings.TrimSuffix(valueExpr, ".Value") + ".Key.GetToken()"
+	if before, ok := strings.CutSuffix(valueExpr, ".Value"); ok {
+		ptExpr = before + ".Key.GetToken()"
 	}
 	if node.Then != nil {
 		e.line("if %s == %q {", condVar, condValue)
