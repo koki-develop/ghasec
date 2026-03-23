@@ -31,13 +31,13 @@ go generate ./rules/invalid-workflow/ ./rules/invalid-action/
 The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output**.
 
 - `cmd/root.go` — CLI entry point (cobra). Orchestrates the full pipeline.
-- `cmd/gen/` — Code generator. Reads JSON Schema from SchemaStore submodule (`schemastore/`), converts to IR, emits Go validation code via `text/template`. Also extracts per-event activity type enums from the raw JSON schema (lost during compilation due to draft-07 `$ref` sibling behavior). Output: `rules/invalid-workflow/generated.go` and `rules/invalid-action/generated.go`.
-- `analyzer/` — See `analyzer/CLAUDE.md` for details. Runs rules against a parsed AST file. Required rules run first; if any fail, non-required rules are skipped entirely.
-- `renderer/` — See `renderer/CLAUDE.md` for details. Diagnostic error rendering with source annotation, syntax highlighting, `NO_COLOR` support, and automatic ancestor breadcrumb computation from token positions.
-- `workflow/` — See `workflow/CLAUDE.md` for details. Typed wrappers around `goccy/go-yaml` AST nodes and `ActionRef` for action references. Rules use these wrappers for domain-specific navigation.
-- `expression/` — See `expression/CLAUDE.md` for details. Hand-rolled lexer and recursive descent parser for GitHub Actions `${{ }}` expression syntax. Provides `ExtractExpressions` (finds `${{ }}` spans in strings, quote-aware) and `Parse` (validates expression syntax). Used by the `invalid-expression` rule for syntax checking and by `rules/helpers.go` for expression-position detection.
-- `rules/` — See `rules/CLAUDE.md` for details. `invalid-workflow` and `invalid-action` are required rules (structural validation). These use a mix of schema-generated validation (unknown keys, required fields, type/enum checks) and hand-written checks (mutual exclusion, step validation, expression position validation, domain-specific messages).
-- `e2e/` — E2E tests. See `e2e/CLAUDE.md` for details.
+- `cmd/gen/` — Code generator. Reads JSON Schema from SchemaStore submodule, emits Go validation code. Output: `rules/invalid-workflow/generated.go` and `rules/invalid-action/generated.go`.
+- `analyzer/` — Rule execution and diagnostic filtering. See `analyzer/CLAUDE.md`.
+- `renderer/` — Diagnostic error rendering with source annotation. See `renderer/CLAUDE.md`.
+- `workflow/` — Typed AST wrappers for workflow/action navigation. See `workflow/CLAUDE.md`.
+- `expression/` — Lexer and parser for `${{ }}` expression syntax. See `expression/CLAUDE.md`.
+- `rules/` — Pluggable validation rules. See `rules/CLAUDE.md`.
+- `e2e/` — E2E tests. See `e2e/CLAUDE.md`.
 
 ## Key Design Decisions
 
