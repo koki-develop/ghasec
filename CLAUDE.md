@@ -21,6 +21,7 @@ go test ./...                 # All tests (unit + E2E)
 go test ./rules/unpinned-action/...  # Single package
 go test -run TestName ./pkg/  # Single test
 go test ./e2e/...             # E2E tests only
+go test -count=1 ./e2e/...   # E2E tests without cache (use when cached results are stale)
 
 # Code generation (after updating SchemaStore submodule)
 go generate ./rules/invalid-workflow/ ./rules/invalid-action/
