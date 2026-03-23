@@ -42,5 +42,5 @@ The parser validates syntax only — no semantic checks (type checking, function
 ## Usage Context
 
 - Used by the `invalid-expression` rule for syntax checking.
-- Used by `rules/helpers.go` (`ContainsExpression`, `IsExpression`) for expression-position detection.
+- Used by `rules/helpers.go` (`IsExpressionNode`, `ExpressionSpanToken`, `ExpressionSpanTokens`) for expression detection and span extraction.
 - Expression-position checks (forbidding `${{ }}` in static fields) live in the required rules, not in `invalid-expression`.
