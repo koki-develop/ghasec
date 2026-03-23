@@ -9,6 +9,7 @@
 Each rule lives in its own subdirectory under `rules/`. Run `ls rules/` to see all rules. Notable distinctions:
 
 - `invalid-workflow` and `invalid-action` are **required** rules (structural validation). All others are non-required (lint checks).
+- `invalid-expression` is a **non-required** rule that validates `${{ }}` expression syntax (Phase 1: syntax only, no semantic checks). It also detects bare `if:` expressions without `${{ }}` wrappers. Expression-position checks (forbidding `${{ }}` in static fields like `steps[].id`, `permissions`, `on.*` config) live in the required rules (`invalid-workflow`/`invalid-action`), not in `invalid-expression`.
 - `mismatched-sha-tag` is the only **online** rule (requires `--online` flag).
 
 ## Ignore Directives
@@ -36,6 +37,8 @@ The renderer automatically computes ancestor breadcrumb lines from the error tok
 
 Rules only need to set `Token` and `Message` on `diagnostic.Error`. Use `ExtraContexts` only for non-ancestor tokens that provide important context (e.g., `default-permissions` uses it to show the last permission entry, `checkout-persist-credentials` uses it to show the `uses` value when the error is on `persist-credentials`).
 
+For diagnostics pointing to a `${{ }}` span within a larger string, use `rules.ExpressionSpanToken` to create a synthetic token covering only the expression span (not the entire YAML string value). This adjusts the column position and token value for precise caret placement, including quote offset correction for quoted YAML strings.
+
 ## Diagnostic Message Format
 
 Messages use **key-path subject style** — the YAML key or structural term is the subject of the sentence. When a mapping entry itself is the subject (e.g., a specific job, input, or output), include the entry's key name: `job "<id>" must be ...`, `input "<name>" must be ...`. For keys within an entry, the annotated source output provides positional context — no extra prefix needed.
@@ -51,6 +54,8 @@ Messages use **key-path subject style** — the YAML key or structural term is t
 - Uniqueness: `step id "<id>" must be unique` (duplicate identifier within a scope)
 - Invalid reference: `job "<id>" needs nonexistent job "<ref>"` (cross-property reference)
 - Cycle: `jobs must not have circular dependencies: a -> b -> a`
+- Expression in static position: `"<key>" must not contain expressions`
+- Expression syntax error: `invalid expression syntax: <parser message>`
 
 **Tone:** Use `must` for all messages. Required rules enforce structural correctness; lint rules enforce security policy that the user opted into by running ghasec. `should` is too weak for either.
 

@@ -35,7 +35,8 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 - `analyzer/` — Runs rules against a parsed AST file. Required rules run first; if any fail, non-required rules are skipped entirely.
 - `renderer/` — Diagnostic error rendering with source annotation, syntax highlighting, `NO_COLOR` support, and automatic ancestor breadcrumb computation from token positions.
 - `workflow/` — Typed wrappers around `goccy/go-yaml` AST nodes and `ActionRef` for action references. Rules use these wrappers for domain-specific navigation.
-- `rules/` — See `rules/CLAUDE.md` for details. `invalid-workflow` and `invalid-action` are required rules (structural validation). These use a mix of schema-generated validation (unknown keys, required fields, type/enum checks) and hand-written checks (mutual exclusion, step validation, domain-specific messages).
+- `expression/` — Hand-rolled lexer and recursive descent parser for GitHub Actions `${{ }}` expression syntax. Provides `ExtractExpressions` (finds `${{ }}` spans in strings, quote-aware) and `Parse` (validates expression syntax). Used by the `invalid-expression` rule for syntax checking and by `rules/helpers.go` for expression-position detection.
+- `rules/` — See `rules/CLAUDE.md` for details. `invalid-workflow` and `invalid-action` are required rules (structural validation). These use a mix of schema-generated validation (unknown keys, required fields, type/enum checks) and hand-written checks (mutual exclusion, step validation, expression position validation, domain-specific messages).
 - `e2e/` — E2E tests. See `e2e/CLAUDE.md` for details.
 
 ## Key Design Decisions
