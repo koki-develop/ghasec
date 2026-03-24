@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.2](https://github.com/koki-develop/ghasec/compare/v0.0.1...v0.0.2) (2026-03-24)
+
+
+### Features
+
+* Release v0.0.2 ([4094627](https://github.com/koki-develop/ghasec/commit/409462728ee775c1f137fd878194092c204755a4))
+
 ## [0.0.1](https://github.com/koki-develop/ghasec/compare/v0.0.1...v0.0.1) (2026-03-24)
 
 
