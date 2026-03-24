@@ -21,6 +21,7 @@ jobs:
       issues: write # for create labels
     outputs:
       should-release: ${{ steps.release-please.outputs.release_created }}
+      version: ${{ steps.release-please.outputs.version }}
     steps:
       - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         id: release-please
@@ -43,6 +44,11 @@ jobs:
           persist-credentials: false
           submodules: true
       - uses: ./.github/actions/setup
+
+      - name: Create local tag for goreleaser
+        run: git tag "v${VERSION}"
+        env:
+          VERSION: ${{ needs.release-please.outputs.version }}
 
       - run: goreleaser release --clean
         env:
