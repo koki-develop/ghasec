@@ -4,7 +4,9 @@ Checks that a commit SHA pinned in an action reference matches the tag written i
 
 ## Risk
 
-When an action is pinned to a commit SHA with a tag comment, the comment serves as a human-readable indicator of which version is in use. If the SHA and tag drift apart — for example after updating the SHA without updating the comment, or vice versa — the comment becomes misleading. Reviewers and maintainers may believe a specific version is deployed when it is not, potentially missing security patches or introducing unexpected behavior.
+When an action is pinned to a commit SHA with a tag comment, the comment is the primary signal reviewers use to assess which version — and which security posture — is in use. If the SHA and tag drift apart, the comment becomes a false assertion about the code being executed.
+
+This mismatch undermines the security value of SHA pinning. A reviewer who sees `# v6.0.2` may approve the workflow believing a vetted release is in use, while the actual SHA points to a different — potentially vulnerable or unaudited — commit. In a supply chain attack scenario, an attacker who gains write access to a workflow file could change the SHA to point to malicious code while leaving the tag comment unchanged to avoid detection during code review.
 
 ## Examples
 
