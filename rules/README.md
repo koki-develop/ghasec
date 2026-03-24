@@ -11,4 +11,5 @@ Rules marked as **Online** require network access (e.g., GitHub API) and are dis
 | [default-permissions](./default-permissions/README.md) | Checks that workflow-level `permissions` is set to `{}`. | |
 | [job-all-permissions](./job-all-permissions/README.md) | Checks that job-level `permissions` does not use `read-all` or `write-all`. | |
 | [job-timeout-minutes](./job-timeout-minutes/README.md) | Checks that every job explicitly sets `timeout-minutes`. | |
+| [script-injection](./script-injection/README.md) | Checks that `run:` steps and `actions/github-script`'s `script:` input do not contain `${{ }}` expressions. | |
 | [mismatched-sha-tag](./mismatched-sha-tag/README.md) | Checks that a commit SHA pinned in an action reference matches the tag in its inline comment. | Yes |
