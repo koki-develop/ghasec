@@ -1,5 +1,5 @@
 workflows:
-  - name: workflow.yml
+  - name: valid-branch-reachable.yml
     content: |
       on: push
       permissions: {}
@@ -8,13 +8,10 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-              with:
-                persist-credentials: false
+            - uses: actions/setup-node@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v2
 
 expected:
   exit_code: 0
   stdout: ""
   stderr: |
     no errors found
-    warning: 2 online rules skipped; use --online to enable them

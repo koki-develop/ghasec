@@ -97,6 +97,7 @@ func TestE2E(t *testing.T) {
 // extraCLIArgs maps test case names to additional CLI flags.
 var extraCLIArgs = map[string][]string{
 	"mismatched-sha-tag": {"--online"},
+	"impostor-commit":    {"--online"},
 }
 
 // extraEnvVars maps test case names to additional environment variables.
@@ -112,17 +113,7 @@ var suppressOfflineWarningExclude = map[string]bool{
 
 // mockGitHubTags maps test case names to their mock GitHub API tag data.
 // Key format: "/repos/{owner}/{repo}/git/ref/tags/{tag}".
-var mockGitHubTags = map[string]map[string]mockGitRef{
-	"mismatched-sha-tag": {
-		"/repos/actions/checkout/git/ref/tags/v4": {
-			Ref: "refs/tags/v4",
-			Object: mockGitObject{
-				Type: "commit",
-				SHA:  "de0fac2e4500dabe0009e67214ff5f5447ce83dd",
-			},
-		},
-	},
-}
+var mockGitHubTags = map[string]map[string]mockGitRef{}
 
 type mockGitRef struct {
 	Ref    string        `json:"ref"`
@@ -132,6 +123,124 @@ type mockGitRef struct {
 type mockGitObject struct {
 	Type string `json:"type"`
 	SHA  string `json:"sha"`
+}
+
+// mockGitHubHandler maps test case names to custom HTTP handlers for the mock
+// GitHub API server. Use this for rules that need multi-endpoint mocking
+// (tag listing, branch listing, compare, etc.) beyond simple tag resolution.
+// Takes precedence over mockGitHubTags when both match.
+var mockGitHubHandler = map[string]http.HandlerFunc{
+	"mismatched-sha-tag": mismatchedSHATagHandler,
+	"impostor-commit":    impostorCommitHandler,
+}
+
+func mismatchedSHATagHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	const validSHA = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+
+	switch r.URL.Path {
+	// Tag resolution for mismatched-sha-tag
+	case "/repos/actions/checkout/git/ref/tags/v4":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref:    "refs/tags/v4",
+			Object: mockGitObject{Type: "commit", SHA: validSHA},
+		})
+	// Tag listing — needed because impostor-commit rule also runs during mismatched-sha-tag tests
+	case "/repos/actions/checkout/git/matching-refs/tags/":
+		_ = json.NewEncoder(w).Encode([]mockGitRef{
+			{Ref: "refs/tags/v4", Object: mockGitObject{Type: "commit", SHA: validSHA}},
+		})
+	default:
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	}
+}
+
+func impostorCommitHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	const (
+		reachableSHA  = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+		impostorSHA   = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+		taggedSHA     = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+		annotatedSHA  = "cccccccccccccccccccccccccccccccccccccccc"
+		tagObjectSHA  = "dddddddddddddddddddddddddddddddddddddd"
+		nonDefaultSHA = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+	)
+
+	switch r.URL.Path {
+	// ===== actions/checkout =====
+	case "/repos/actions/checkout/git/matching-refs/tags/":
+		_ = json.NewEncoder(w).Encode([]mockGitRef{
+			{Ref: "refs/tags/v4", Object: mockGitObject{Type: "commit", SHA: taggedSHA}},
+		})
+	case "/repos/actions/checkout/git/ref/tags/v4":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref: "refs/tags/v4", Object: mockGitObject{Type: "commit", SHA: taggedSHA},
+		})
+
+	// ===== actions/setup-go (annotated tag) =====
+	case "/repos/actions/setup-go/git/matching-refs/tags/":
+		_ = json.NewEncoder(w).Encode([]mockGitRef{
+			{Ref: "refs/tags/v5", Object: mockGitObject{Type: "tag", SHA: tagObjectSHA}},
+		})
+	case "/repos/actions/setup-go/git/ref/tags/v5":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref: "refs/tags/v5", Object: mockGitObject{Type: "tag", SHA: tagObjectSHA},
+		})
+	case "/repos/actions/setup-go/git/tags/" + tagObjectSHA:
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Object: mockGitObject{Type: "commit", SHA: annotatedSHA},
+		})
+
+	// ===== actions/setup-node =====
+	case "/repos/actions/setup-node/git/matching-refs/tags/":
+		_ = json.NewEncoder(w).Encode([]mockGitRef{})
+	case "/repos/actions/setup-node/git/ref/tags/v1":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref: "refs/tags/v1", Object: mockGitObject{Type: "commit", SHA: impostorSHA},
+		})
+	case "/repos/actions/setup-node/git/ref/tags/v2":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref: "refs/tags/v2", Object: mockGitObject{Type: "commit", SHA: reachableSHA},
+		})
+	case "/repos/actions/setup-node/branches":
+		_ = json.NewEncoder(w).Encode([]map[string]string{{"name": "main"}})
+	case "/repos/actions/setup-node/compare/main..." + reachableSHA:
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "behind"})
+	case "/repos/actions/setup-node/compare/main..." + impostorSHA:
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+
+	// ===== actions/cache (non-default branch) =====
+	case "/repos/actions/cache/git/matching-refs/tags/":
+		_ = json.NewEncoder(w).Encode([]mockGitRef{})
+	case "/repos/actions/cache/git/ref/tags/v1":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref: "refs/tags/v1", Object: mockGitObject{Type: "commit", SHA: nonDefaultSHA},
+		})
+	case "/repos/actions/cache/branches":
+		_ = json.NewEncoder(w).Encode([]map[string]string{
+			{"name": "main"},
+			{"name": "releases/v2"},
+		})
+	case "/repos/actions/cache/compare/main..." + nonDefaultSHA:
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	case "/repos/actions/cache/compare/releases/v2..." + nonDefaultSHA:
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "behind"})
+
+	// ===== evil/action (API failure) =====
+	case "/repos/evil/action/git/matching-refs/tags/":
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+		return
+
+	default:
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	}
 }
 
 func runTestCase(t *testing.T, name string) {
@@ -151,7 +260,11 @@ func runTestCase(t *testing.T, name string) {
 	}
 
 	var extraEnv []string
-	if tags, ok := lookupTestConfig(mockGitHubTags, name); ok {
+	if handler, ok := lookupTestConfig(mockGitHubHandler, name); ok {
+		srv := httptest.NewServer(handler)
+		t.Cleanup(srv.Close)
+		extraEnv = append(extraEnv, "GHASEC_GITHUB_API_URL="+srv.URL)
+	} else if tags, ok := lookupTestConfig(mockGitHubTags, name); ok {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ref, ok := tags[r.URL.Path]
 			if !ok {

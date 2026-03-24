@@ -3,9 +3,11 @@ package github
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,11 +17,13 @@ import (
 const defaultBaseURL = "https://api.github.com"
 
 type Client struct {
-	httpClient *http.Client
-	baseURL    string
-	token      string
-	cache      sync.Map // key: "owner/repo@tag", value: cacheEntry
-	flight     singleflight.Group
+	httpClient   *http.Client
+	baseURL      string
+	token        string
+	cache        sync.Map // key: "owner/repo@tag", value: cacheEntry
+	flight       singleflight.Group
+	verifyCache  sync.Map // key: "verify:owner/repo@sha", value: verifyCacheEntry
+	verifyFlight singleflight.Group
 }
 
 type cacheEntry struct {
@@ -53,12 +57,27 @@ func NewClient(opts ...Option) *Client {
 	return c
 }
 
-// gitRef represents the response from both the git refs API and git tags API.
+// gitRef is the common JSON structure shared across multiple git reference endpoints
+// (git/ref/tags, git/matching-refs/tags, git/tags).
 type gitRef struct {
+	Ref    string `json:"ref"`
 	Object struct {
 		Type string `json:"type"`
 		SHA  string `json:"sha"`
 	} `json:"object"`
+}
+
+type compareResponse struct {
+	Status string `json:"status"`
+}
+
+type branch struct {
+	Name string `json:"name"`
+}
+
+type verifyCacheEntry struct {
+	ok  bool
+	err error
 }
 
 // ResolveTagSHA resolves a git tag to its underlying commit SHA.
@@ -165,4 +184,199 @@ func apiError(resp *http.Response, context string) error {
 		return fmt.Errorf("%s: HTTP %d: %s", context, resp.StatusCode, body.Message)
 	}
 	return fmt.Errorf("%s: HTTP %d", context, resp.StatusCode)
+}
+
+// VerifyCommit checks whether a commit SHA is reachable from any branch or tag
+// in the given repository. Results are cached.
+func (c *Client) VerifyCommit(ctx context.Context, owner, repo, sha string) (bool, error) {
+	key := fmt.Sprintf("verify:%s/%s@%s", owner, repo, sha)
+	if v, ok := c.verifyCache.Load(key); ok {
+		entry := v.(verifyCacheEntry)
+		return entry.ok, entry.err
+	}
+
+	v, err, _ := c.verifyFlight.Do(key, func() (any, error) {
+		ok, err := c.verifyCommit(ctx, owner, repo, sha)
+		c.verifyCache.Store(key, verifyCacheEntry{ok: ok, err: err})
+		return ok, err
+	})
+	if err != nil {
+		return false, err
+	}
+	return v.(bool), nil
+}
+
+func (c *Client) verifyCommit(ctx context.Context, owner, repo, sha string) (bool, error) {
+	// Phase 1: Check tags
+	tags, err := c.listTags(ctx, owner, repo)
+	if err != nil {
+		return false, err
+	}
+	for _, tag := range tags {
+		commitSHA := tag.Object.SHA
+		if tag.Object.Type == "tag" {
+			commitSHA, err = c.dereferenceTag(ctx, owner, repo, tag.Object.SHA)
+			if err != nil {
+				return false, err
+			}
+		}
+		if commitSHA == sha {
+			return true, nil
+		}
+	}
+
+	// Phase 2: Check branches with bounded concurrency
+	branches, err := c.listBranches(ctx, owner, repo)
+	if err != nil {
+		return false, err
+	}
+
+	const concurrency = 5
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	type result struct {
+		reachable bool
+		err       error
+	}
+	results := make(chan result, len(branches))
+	sem := make(chan struct{}, concurrency)
+
+	for _, br := range branches {
+		sem <- struct{}{}
+		go func(branchName string) {
+			defer func() { <-sem }()
+			status, err := c.compareCommit(ctx, owner, repo, branchName, sha)
+			if err != nil {
+				results <- result{err: err}
+				return
+			}
+			reachable := status == "behind" || status == "identical"
+			if reachable {
+				cancel()
+			}
+			results <- result{reachable: reachable}
+		}(br.Name)
+	}
+
+	var firstErr error
+	for range len(branches) {
+		r := <-results
+		if r.err != nil && firstErr == nil && !errors.Is(r.err, context.Canceled) {
+			firstErr = r.err
+		}
+		if r.reachable {
+			return true, nil
+		}
+	}
+	if firstErr != nil {
+		return false, firstErr
+	}
+	return false, nil
+}
+
+func (c *Client) listTags(ctx context.Context, owner, repo string) ([]gitRef, error) {
+	var all []gitRef
+	path := fmt.Sprintf("/repos/%s/%s/git/matching-refs/tags/", owner, repo)
+	for path != "" {
+		var page []gitRef
+		nextPath, err := c.doGetPaginated(ctx, path, &page,
+			fmt.Sprintf("failed to list tags on %s/%s", owner, repo))
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, page...)
+		path = nextPath
+	}
+	return all, nil
+}
+
+func (c *Client) listBranches(ctx context.Context, owner, repo string) ([]branch, error) {
+	var all []branch
+	path := fmt.Sprintf("/repos/%s/%s/branches", owner, repo)
+	for path != "" {
+		var page []branch
+		nextPath, err := c.doGetPaginated(ctx, path, &page,
+			fmt.Sprintf("failed to list branches on %s/%s", owner, repo))
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, page...)
+		path = nextPath
+	}
+	return all, nil
+}
+
+func (c *Client) compareCommit(ctx context.Context, owner, repo, base, sha string) (string, error) {
+	path := fmt.Sprintf("/repos/%s/%s/compare/%s...%s", owner, repo, base, sha)
+	url := c.baseURL + path
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	c.setHeaders(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	// 404 means the commits share no common history (not reachable from this branch).
+	// This is also returned if the repo was deleted between listBranches and this call,
+	// but that race is unavoidable with the compare API.
+	if resp.StatusCode == http.StatusNotFound {
+		return "", nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", apiError(resp, fmt.Sprintf("failed to compare %s...%s on %s/%s", base, sha, owner, repo))
+	}
+
+	var cr compareResponse
+	if err := json.NewDecoder(resp.Body).Decode(&cr); err != nil {
+		return "", fmt.Errorf("failed to compare %s...%s on %s/%s: %w", base, sha, owner, repo, err)
+	}
+	return cr.Status, nil
+}
+
+func (c *Client) doGetPaginated(ctx context.Context, path string, result any, errContext string) (string, error) {
+	url := c.baseURL + path
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	c.setHeaders(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", apiError(resp, errContext)
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+		return "", fmt.Errorf("%s: %w", errContext, err)
+	}
+
+	return parseLinkNext(resp.Header.Get("Link"), c.baseURL), nil
+}
+
+func parseLinkNext(header, baseURL string) string {
+	for _, part := range strings.Split(header, ",") {
+		part = strings.TrimSpace(part)
+		if !strings.Contains(part, `rel="next"`) {
+			continue
+		}
+		start := strings.Index(part, "<")
+		end := strings.Index(part, ">")
+		if start < 0 || end < 0 || end <= start {
+			continue
+		}
+		link := part[start+1 : end]
+		return strings.TrimPrefix(link, baseURL)
+	}
+	return ""
 }

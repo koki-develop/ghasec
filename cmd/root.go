@@ -18,6 +18,7 @@ import (
 	"github.com/koki-develop/ghasec/rules"
 	checkoutpersistcredentials "github.com/koki-develop/ghasec/rules/checkout-persist-credentials"
 	defaultpermissions "github.com/koki-develop/ghasec/rules/default-permissions"
+	impostorcommit "github.com/koki-develop/ghasec/rules/impostor-commit"
 	invalidaction "github.com/koki-develop/ghasec/rules/invalid-action"
 	invalidexpression "github.com/koki-develop/ghasec/rules/invalid-expression"
 	invalidworkflow "github.com/koki-develop/ghasec/rules/invalid-workflow"
@@ -184,6 +185,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
 		&jobtimeoutminutes.Rule{},
 		&scriptinjection.Rule{},
 		&missingsharefcomment.Rule{},
+		&impostorcommit.Rule{Verifier: newCommitVerifier()},
 		&mismatchedshatag.Rule{Resolver: newTagResolver()},
 	}
 	for _, r := range all {
@@ -233,6 +235,14 @@ func pluralize(word string, count int) string {
 		return word
 	}
 	return word + "s"
+}
+
+func newCommitVerifier() impostorcommit.CommitVerifier {
+	var opts []ghclient.Option
+	if baseURL := os.Getenv("GHASEC_GITHUB_API_URL"); baseURL != "" {
+		opts = append(opts, ghclient.WithBaseURL(baseURL))
+	}
+	return ghclient.NewClient(opts...)
 }
 
 func newTagResolver() mismatchedshatag.TagResolver {

@@ -10,7 +10,7 @@ Each rule lives in its own subdirectory under `rules/`. Run `ls rules/` to see a
 
 - `invalid-workflow` and `invalid-action` are **required** rules (structural validation). All others are non-required (lint checks).
 - `invalid-expression` is a **non-required** rule that validates `${{ }}` expression syntax (Phase 1: syntax only, no semantic checks). It also detects bare `if:` expressions without `${{ }}` wrappers. Expression-position checks (forbidding `${{ }}` in static fields like `steps[].id`, `permissions`, `on.*` config) live in the required rules (`invalid-workflow`/`invalid-action`), not in `invalid-expression`.
-- `mismatched-sha-tag` is the only **online** rule (requires `--online` flag).
+- `mismatched-sha-tag` and `impostor-commit` are **online** rules (require `--online` flag).
 
 ## Ignore Directives
 
@@ -27,7 +27,7 @@ See `rules/unused-ignore/README.md` for full syntax documentation.
 - Uses `goccy/go-yaml` AST (not `gopkg.in/yaml.v3`) — all rule checks operate on typed wrappers from the `workflow` package (`workflow.WorkflowMapping`, `workflow.ActionMapping`, `workflow.JobMapping`, `workflow.StepMapping`) which embed `workflow.Mapping` (wrapping `*ast.MappingNode`). The analyzer extracts the top-level mapping from `*ast.File` and passes it to each rule's check method; rules never see `*ast.File` directly.
 - `invalid-workflow` and `invalid-action` use **generated code as the base** (`generated.go` from `cmd/gen/`). Hand-written code in `extensions.go` / `invalid_action.go` only **adds** validations that JSON Schema cannot express (mutual exclusion, uniqueness constraints, cross-property references, cycle detection, etc.). Never skip or filter generated code output.
 - Rules are two-phase: required rules (structural validation) gate non-required rules (lint checks). This prevents noisy lint errors on malformed files.
-- Online rules (`Online() == true`) require network access and are disabled by default. They run only when `--online` is passed. Currently only `mismatched-sha-tag` is an online rule.
+- Online rules (`Online() == true`) require network access and are disabled by default. They run only when `--online` is passed. Currently `mismatched-sha-tag` and `impostor-commit` are online rules.
 - New rules: implement `rules.Rule` interface plus `WorkflowRule`, `ActionRule`, or both, and add to the `buildRules()` function in `cmd/root.go`. Online rules should lazily initialize their own dependencies (see `mismatched-sha-tag` for an example). Rule IDs are flat kebab-case names describing the violation they detect (e.g., `invalid-workflow`, `unpinned-action`).
 - Tests use `github.com/stretchr/testify` (assert/require).
 

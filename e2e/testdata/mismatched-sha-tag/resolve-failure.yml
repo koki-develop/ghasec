@@ -8,6 +8,7 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
+            # ghasec-ignore:impostor-commit
             - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v999
               with:
                 persist-credentials: false
@@ -16,13 +17,14 @@ expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/resolve-failure.yml:8:75
+    --> {{.Dir}}/resolve-failure.yml:9:75
     ...
     3 | jobs:
     4 |   build:
     ...
     7 |     steps:
-    8 |       - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v999
+    ...
+    9 |       - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v999
       |                                                                           ^^^^ failed to resolve tag "v999" for "actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": failed to resolve tag "v999" on actions/checkout: HTTP 404: Not Found (mismatched-sha-tag)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md

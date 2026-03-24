@@ -273,3 +273,380 @@ func TestResolveTagSHA_DereferenceTagError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "HTTP 500")
 }
+
+// --- VerifyCommit tests ---
+
+func tagsJSON(refs ...gitRef) []byte {
+	b, _ := json.Marshal(refs)
+	return b
+}
+
+func TestVerifyCommit_TagMatch(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON(gitRef{
+				Ref: "refs/tags/v4",
+				Object: struct {
+					Type string `json:"type"`
+					SHA  string `json:"sha"`
+				}{Type: "commit", SHA: sha},
+			}))
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	ok, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestVerifyCommit_AnnotatedTagMatch(t *testing.T) {
+	commitSHA := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	tagObjectSHA := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON(gitRef{
+				Ref: "refs/tags/v4",
+				Object: struct {
+					Type string `json:"type"`
+					SHA  string `json:"sha"`
+				}{Type: "tag", SHA: tagObjectSHA},
+			}))
+		case "/repos/actions/checkout/git/tags/" + tagObjectSHA:
+			_, _ = w.Write(refJSON("commit", commitSHA))
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	ok, err := c.VerifyCommit(context.Background(), "actions", "checkout", commitSHA)
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestVerifyCommit_BranchReachable_Behind(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON())
+		case "/repos/actions/checkout/branches":
+			_ = json.NewEncoder(w).Encode([]branch{{Name: "main"}})
+		case "/repos/actions/checkout/compare/main..." + sha:
+			_ = json.NewEncoder(w).Encode(compareResponse{Status: "behind"})
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	ok, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestVerifyCommit_BranchReachable_Identical(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON())
+		case "/repos/actions/checkout/branches":
+			_ = json.NewEncoder(w).Encode([]branch{{Name: "main"}})
+		case "/repos/actions/checkout/compare/main..." + sha:
+			_ = json.NewEncoder(w).Encode(compareResponse{Status: "identical"})
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	ok, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestVerifyCommit_NotReachable(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON())
+		case "/repos/actions/checkout/branches":
+			_ = json.NewEncoder(w).Encode([]branch{{Name: "main"}})
+		case "/repos/actions/checkout/compare/main..." + sha:
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	ok, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
+func TestVerifyCommit_TagListError(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+	})
+
+	_, err := c.VerifyCommit(context.Background(), "actions", "checkout", "aaaa")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "HTTP 500")
+}
+
+func TestVerifyCommit_BranchListError(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON())
+		case "/repos/actions/checkout/branches":
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+		}
+	})
+
+	_, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "HTTP 500")
+}
+
+func TestVerifyCommit_NonDefaultBranchReachable(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON())
+		case "/repos/actions/checkout/branches":
+			_ = json.NewEncoder(w).Encode([]branch{{Name: "main"}, {Name: "releases/v2"}})
+		case "/repos/actions/checkout/compare/main..." + sha:
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+		case "/repos/actions/checkout/compare/releases/v2..." + sha:
+			_ = json.NewEncoder(w).Encode(compareResponse{Status: "behind"})
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	ok, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestVerifyCommit_Cache(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	var callCount atomic.Int32
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		callCount.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON(gitRef{
+				Ref: "refs/tags/v4",
+				Object: struct {
+					Type string `json:"type"`
+					SHA  string `json:"sha"`
+				}{Type: "commit", SHA: sha},
+			}))
+		}
+	})
+
+	ctx := context.Background()
+	ok1, err := c.VerifyCommit(ctx, "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.True(t, ok1)
+
+	ok2, err := c.VerifyCommit(ctx, "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.True(t, ok2)
+
+	assert.Equal(t, int32(1), callCount.Load(), "second call should hit cache")
+}
+
+func TestVerifyCommit_PaginatedTags(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == "/repos/actions/checkout/git/matching-refs/tags/" && r.URL.Query().Get("page") != "2":
+			w.Header().Set("Link", `<`+r.URL.Path+`?page=2>; rel="next"`)
+			_, _ = w.Write(tagsJSON(gitRef{
+				Ref: "refs/tags/v3",
+				Object: struct {
+					Type string `json:"type"`
+					SHA  string `json:"sha"`
+				}{Type: "commit", SHA: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+			}))
+		case r.URL.Path == "/repos/actions/checkout/git/matching-refs/tags/" && r.URL.Query().Get("page") == "2":
+			_, _ = w.Write(tagsJSON(gitRef{
+				Ref: "refs/tags/v4",
+				Object: struct {
+					Type string `json:"type"`
+					SHA  string `json:"sha"`
+				}{Type: "commit", SHA: sha},
+			}))
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	ok, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestVerifyCommit_CompareAPIError(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON())
+		case "/repos/actions/checkout/branches":
+			_ = json.NewEncoder(w).Encode([]branch{{Name: "main"}})
+		case "/repos/actions/checkout/compare/main..." + sha:
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+		}
+	})
+
+	_, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "HTTP 500")
+}
+
+func TestVerifyCommit_ZeroBranches(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON())
+		case "/repos/actions/checkout/branches":
+			_ = json.NewEncoder(w).Encode([]branch{})
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	ok, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
+func TestVerifyCommit_CompareAheadIsNotReachable(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON())
+		case "/repos/actions/checkout/branches":
+			_ = json.NewEncoder(w).Encode([]branch{{Name: "main"}})
+		case "/repos/actions/checkout/compare/main..." + sha:
+			_ = json.NewEncoder(w).Encode(compareResponse{Status: "ahead"})
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	ok, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
+func TestVerifyCommit_CompareDivergedIsNotReachable(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON())
+		case "/repos/actions/checkout/branches":
+			_ = json.NewEncoder(w).Encode([]branch{{Name: "main"}})
+		case "/repos/actions/checkout/compare/main..." + sha:
+			_ = json.NewEncoder(w).Encode(compareResponse{Status: "diverged"})
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	ok, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
+func TestVerifyCommit_AnnotatedTagDereferenceError(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	tagObjectSHA := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/matching-refs/tags/":
+			_, _ = w.Write(tagsJSON(gitRef{
+				Ref: "refs/tags/v4",
+				Object: struct {
+					Type string `json:"type"`
+					SHA  string `json:"sha"`
+				}{Type: "tag", SHA: tagObjectSHA},
+			}))
+		case "/repos/actions/checkout/git/tags/" + tagObjectSHA:
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	_, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "HTTP 500")
+}
+
+func TestParseLinkNext(t *testing.T) {
+	tests := []struct {
+		name    string
+		header  string
+		baseURL string
+		want    string
+	}{
+		{"empty", "", "https://api.github.com", ""},
+		{"no next", `<https://api.github.com/repos/a/b/tags?page=1>; rel="prev"`, "https://api.github.com", ""},
+		{"has next", `<https://api.github.com/repos/a/b/tags?page=2>; rel="next"`, "https://api.github.com", "/repos/a/b/tags?page=2"},
+		{"next is second", `<https://api.github.com/repos/a/b/tags?page=1>; rel="prev", <https://api.github.com/repos/a/b/tags?page=3>; rel="next"`, "https://api.github.com", "/repos/a/b/tags?page=3"},
+		{"malformed no angle", `https://api.github.com/repos/a/b/tags?page=2; rel="next"`, "https://api.github.com", ""},
+		{"strips base url", `</repos/a/b/tags?page=2>; rel="next"`, "", "/repos/a/b/tags?page=2"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseLinkNext(tt.header, tt.baseURL)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

@@ -1,0 +1,79 @@
+package impostorcommit
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/workflow"
+)
+
+const id = "impostor-commit"
+
+// CommitVerifier checks whether a commit SHA is reachable from any branch or
+// tag in the given repository.
+type CommitVerifier interface {
+	VerifyCommit(ctx context.Context, owner, repo, sha string) (bool, error)
+}
+
+type Rule struct {
+	Verifier CommitVerifier
+}
+
+func (r *Rule) ID() string     { return id }
+func (r *Rule) Required() bool { return false }
+func (r *Rule) Online() bool   { return true }
+
+func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	mapping.EachStep(func(step workflow.StepMapping) {
+		errs = append(errs, r.checkStep(step)...)
+	})
+	return errs
+}
+
+func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	mapping.EachStep(func(step workflow.StepMapping) {
+		errs = append(errs, r.checkStep(step)...)
+	})
+	return errs
+}
+
+func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
+	ref, ok := step.Uses()
+	if !ok {
+		return nil
+	}
+
+	if ref.IsLocal() || ref.IsDocker() {
+		return nil
+	}
+
+	if !ref.Ref().IsFullSHA() {
+		return nil
+	}
+
+	owner, repo := ref.OwnerRepo()
+	if owner == "" {
+		return nil
+	}
+
+	sha := string(ref.Ref())
+	reachable, err := r.Verifier.VerifyCommit(context.Background(), owner, repo, sha)
+	if err != nil {
+		return []*diagnostic.Error{{
+			Token:   ref.RefToken(),
+			Message: fmt.Sprintf("failed to verify commit for %q: %v", ref.String(), err),
+		}}
+	}
+
+	if !reachable {
+		return []*diagnostic.Error{{
+			Token:   ref.RefToken(),
+			Message: fmt.Sprintf("commit must belong to %s/%s", owner, repo),
+		}}
+	}
+
+	return nil
+}
