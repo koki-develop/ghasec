@@ -25,6 +25,9 @@ go test -count=1 ./e2e/...   # E2E tests without cache (use when cached results 
 
 # Code generation (after updating SchemaStore submodule)
 go generate ./rules/invalid-workflow/ ./rules/invalid-action/
+
+# Generate Homebrew formula (requires published GitHub release)
+go run ./cmd/formula -version 0.0.2 > ghasec.rb
 ```
 
 ## Architecture
@@ -33,6 +36,7 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 
 - `cmd/root.go` — CLI entry point (cobra). Orchestrates the full pipeline.
 - `cmd/gen/` — Code generator. Reads JSON Schema from SchemaStore submodule, emits Go validation code. Output: `rules/invalid-workflow/generated.go` and `rules/invalid-action/generated.go`.
+- `cmd/formula/` — Homebrew formula generator. Downloads release archives from GitHub, computes sha256, outputs `ghasec.rb` to stdout.
 - `analyzer/` — Rule execution and diagnostic filtering. See `analyzer/CLAUDE.md`.
 - `renderer/` — Diagnostic error rendering with source annotation. See `renderer/CLAUDE.md`.
 - `workflow/` — Typed AST wrappers for workflow/action navigation. See `workflow/CLAUDE.md`.
