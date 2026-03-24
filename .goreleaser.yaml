@@ -1,9 +1,5 @@
 version: 2
 
-release:
-  draft: true
-  use_existing_draft: true
-
 before:
   hooks:
     - go mod tidy
