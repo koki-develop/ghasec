@@ -33,6 +33,12 @@ $ brew install koki-develop/tap/ghasec
 $ go install github.com/koki-develop/ghasec@latest
 ```
 
+### Docker
+
+```console
+$ docker run --rm -v "$(pwd):/mnt" ghcr.io/koki-develop/ghasec:latest
+```
+
 ### GitHub Releases
 
 Download the binary for your platform from the [Releases](https://github.com/koki-develop/ghasec/releases/latest) page.
