@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.4](https://github.com/koki-develop/ghasec/compare/v0.0.3...v0.0.4) (2026-03-24)
+
+
+### Patches
+
+* remove unnecessary local tag creation before goreleaser ([ba5b545](https://github.com/koki-develop/ghasec/commit/ba5b54523f14e00cae5d873a4c79561cdb1cac17))
+
 ## [0.0.3](https://github.com/koki-develop/ghasec/compare/v0.1.0...v0.0.3) (2026-03-24)
 
 
