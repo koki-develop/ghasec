@@ -74,7 +74,7 @@ func checkExpressionPositions(mapping workflow.ActionMapping) []*diagnostic.Erro
 		}
 	}
 
-	// 2. inputs.<id>.description, inputs.<id>.default
+	// 2. inputs.<id>.description
 	if inputsKV := mapping.FindKey("inputs"); inputsKV != nil {
 		if inputsMapping, ok := rules.UnwrapNode(inputsKV.Value).(*ast.MappingNode); ok {
 			for _, inputEntry := range inputsMapping.Values {
@@ -83,7 +83,7 @@ func checkExpressionPositions(mapping workflow.ActionMapping) []*diagnostic.Erro
 					continue
 				}
 				im := workflow.Mapping{MappingNode: inputDefMapping}
-				for _, key := range []string{"description", "default"} {
+				for _, key := range []string{"description"} {
 					if kv := im.FindKey(key); kv != nil {
 						for _, st := range rules.ExpressionSpanTokens(kv.Value) {
 							errs = append(errs, &diagnostic.Error{

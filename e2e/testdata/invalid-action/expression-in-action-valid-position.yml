@@ -3,6 +3,10 @@ actions:
     content: |
       name: Test Action
       description: A test
+      inputs:
+        token:
+          description: Auth token
+          default: ${{ github.token }}
       outputs:
         result:
           description: Result
