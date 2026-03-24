@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.0.5](https://github.com/koki-develop/ghasec/compare/v0.0.4...v0.0.5) (2026-03-24)
+
+
+### Features
+
+* add Dockerfile for running ghasec via pre-built binary ([3ef3422](https://github.com/koki-develop/ghasec/commit/3ef34226b64286ace30eb9762a8a743542aedf4f))
+* add missing-sha-ref-comment rule ([1a47775](https://github.com/koki-develop/ghasec/commit/1a477757246efa386be5d2c135e5a12fb7de9e28))
+* Release v0.0.5 ([535b199](https://github.com/koki-develop/ghasec/commit/535b199a32c8054fb9ee88930a82b98e741b71b0))
+
+
+### Patches
+
+* pass GHASEC_VERSION build arg to Docker build-push-action ([c72737b](https://github.com/koki-develop/ghasec/commit/c72737bede23f7bad59ac9ac78f26561455db1ac))
+* remove example hint from missing-ref diagnostic message ([d11121f](https://github.com/koki-develop/ghasec/commit/d11121f13dd267df90ed2d19dac5bf1ad2565230))
+* remove misleading hint from default-permissions missing message ([b38c4cd](https://github.com/koki-develop/ghasec/commit/b38c4cda0ea8198fabcc59d12fe9348825174f2d))
+
 ## [0.0.4](https://github.com/koki-develop/ghasec/compare/v0.0.3...v0.0.4) (2026-03-24)
 
 
