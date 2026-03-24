@@ -24,6 +24,7 @@ import (
 	joballpermissions "github.com/koki-develop/ghasec/rules/job-all-permissions"
 	jobtimeoutminutes "github.com/koki-develop/ghasec/rules/job-timeout-minutes"
 	mismatchedshatag "github.com/koki-develop/ghasec/rules/mismatched-sha-tag"
+	missingsharefcomment "github.com/koki-develop/ghasec/rules/missing-sha-ref-comment"
 	scriptinjection "github.com/koki-develop/ghasec/rules/script-injection"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	"github.com/spf13/cobra"
@@ -182,6 +183,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
 		&joballpermissions.Rule{},
 		&jobtimeoutminutes.Rule{},
 		&scriptinjection.Rule{},
+		&missingsharefcomment.Rule{},
 		&mismatchedshatag.Rule{Resolver: newTagResolver()},
 	}
 	for _, r := range all {

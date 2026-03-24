@@ -8,7 +8,7 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - uses: actions/github-script@60a0d9590ef291ceca015d0a41334550cfc133a8
+            - uses: actions/github-script@60a0d9590ef291ceca015d0a41334550cfc133a8 # v4
               with:
                 script: |
                   const title = '${{ github.event.issue.title }}';
@@ -24,7 +24,7 @@ expected:
      4 |   build:
     ...
      7 |     steps:
-     8 |       - uses: actions/github-script@60a0d9590ef291ceca015d0a41334550cfc133a8
+     8 |       - uses: actions/github-script@60a0d9590ef291ceca015d0a41334550cfc133a8 # v4
      9 |         with:
     10 |           script: |
     11 |             const title = '{{"${{ github.event.issue.title }}"}}';

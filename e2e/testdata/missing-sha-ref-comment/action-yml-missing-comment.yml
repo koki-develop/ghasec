@@ -1,0 +1,33 @@
+actions:
+  - name: action.yml
+    content: |
+      name: My Action
+      description: Test action
+      runs:
+        using: composite
+        steps:
+          - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:6:13
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "persist-credentials: false" must be set in "with" (checkout-persist-credentials)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
+
+    --> {{.Dir}}/action.yml:6:13
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" must have an inline comment with a ref (missing-sha-ref-comment)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/missing-sha-ref-comment/README.md
+
+    2 errors found in 1 file

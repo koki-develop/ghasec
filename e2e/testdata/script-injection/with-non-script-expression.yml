@@ -8,7 +8,7 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - uses: actions/setup-go@60a0d9590ef291ceca015d0a41334550cfc133a8
+            - uses: actions/setup-go@60a0d9590ef291ceca015d0a41334550cfc133a8 # v5
               with:
                 go-version: ${{ matrix.go }}
 

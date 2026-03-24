@@ -8,9 +8,10 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - uses: actions/github-script@60a0d9590ef291ceca015d0a41334550cfc133a8 # v4
+            # ghasec-ignore:missing-sha-ref-comment
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
               with:
-                script: console.log('hello')
+                persist-credentials: false
 
 expected:
   exit_code: 0

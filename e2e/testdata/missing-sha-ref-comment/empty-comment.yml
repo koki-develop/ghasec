@@ -8,7 +8,7 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ghasec-ignore:nonexistent
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #
               with:
                 persist-credentials: false
 
@@ -22,20 +22,9 @@ expected:
     4 |   build:
     ...
     7 |     steps:
-    8 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ghasec-ignore:nonexistent
+    8 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #
       |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" must have an inline comment with a ref (missing-sha-ref-comment)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/missing-sha-ref-comment/README.md
 
-    --> {{.Dir}}/workflow.yml:8:89
-    ...
-    3 | jobs:
-    4 |   build:
-    ...
-    7 |     steps:
-    8 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ghasec-ignore:nonexistent
-      |                                                                                         ^^^^^^^^^^^ unknown rule "nonexistent" (unused-ignore)
-    ...
-      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md
-
-    2 errors found in 1 file
+    1 error found in 1 file

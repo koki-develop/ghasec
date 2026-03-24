@@ -1,0 +1,34 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - name: setup
+              id: setup-step
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:10:15
+    ...
+     3 | jobs:
+     4 |   build:
+    ...
+     7 |     steps:
+     8 |       - name: setup
+    ...
+    10 |         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+       |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" must have an inline comment with a ref (missing-sha-ref-comment)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/missing-sha-ref-comment/README.md
+
+    1 error found in 1 file
