@@ -1,0 +1,17 @@
+workflows:
+  - name: anchored-job-with-timeout.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build: &build
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hello
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    no errors found

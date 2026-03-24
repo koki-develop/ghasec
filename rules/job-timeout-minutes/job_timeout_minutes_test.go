@@ -116,3 +116,12 @@ func TestRule_TokenPosition(t *testing.T) {
 	assert.Equal(t, 4, errs[0].Token.Position.Line)
 	assert.Equal(t, 3, errs[0].Token.Position.Column)
 }
+
+func TestRule_AnchoredJobMapping(t *testing.T) {
+	r := &jobtimeoutminutes.Rule{}
+	src := "on: push\npermissions: {}\njobs:\n  build: &build\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hello"
+	m := parseMapping(t, src)
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "timeout-minutes")
+}

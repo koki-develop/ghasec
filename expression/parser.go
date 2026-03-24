@@ -135,6 +135,7 @@ func (p *parser) parsePrimary() {
 			return
 		}
 		p.advance()
+		p.parsePostfix()
 	default:
 		p.addError(fmt.Sprintf("expected expression, but got %s", p.tokenDesc()))
 		p.advance() // consume the bad token to avoid duplicate errors from callers
@@ -206,6 +207,7 @@ func (p *parser) expectExpression(after string) bool {
 	}
 	if !p.isExpressionStart() {
 		p.addError(fmt.Sprintf("expected expression after %s, but got %s", after, p.tokenDesc()))
+		p.advance() // consume bad token to prevent duplicate error in parse()
 		return false
 	}
 	return true

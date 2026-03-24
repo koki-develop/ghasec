@@ -4,6 +4,7 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
 )
 
@@ -43,9 +44,9 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 }
 
 func valueTokens(node ast.Node) []*token.Token {
-	m, ok := node.(*ast.MappingNode)
+	m, ok := rules.UnwrapNode(node).(*ast.MappingNode)
 	if !ok || len(m.Values) == 0 {
-		return []*token.Token{node.GetToken()}
+		return []*token.Token{rules.UnwrapNode(node).GetToken()}
 	}
 	tokens := make([]*token.Token, len(m.Values))
 	for i, v := range m.Values {
@@ -55,7 +56,7 @@ func valueTokens(node ast.Node) []*token.Token {
 }
 
 func isEmptyMapping(node ast.Node) bool {
-	m, ok := node.(*ast.MappingNode)
+	m, ok := rules.UnwrapNode(node).(*ast.MappingNode)
 	if !ok {
 		return false
 	}

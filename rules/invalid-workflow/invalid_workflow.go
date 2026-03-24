@@ -160,7 +160,7 @@ func isPermissionsScopePath(path string) bool {
 // isOnEventPath checks if a path refers to a direct child of "on"
 // (e.g. "on.push", "on.*") but NOT deeper descendants like "on.workflow_call.inputs.*.type".
 func isOnEventPath(path string) bool {
-	if !strings.HasPrefix(path, "on.") && !strings.HasPrefix(path, "on*") {
+	if !strings.HasPrefix(path, "on.") {
 		return false
 	}
 	// Count dots after "on." — if more than one, it's a deep descendant

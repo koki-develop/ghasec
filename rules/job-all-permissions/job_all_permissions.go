@@ -5,6 +5,7 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
 )
 
@@ -21,14 +22,14 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 	if jobsKV == nil {
 		return nil
 	}
-	jobsMapping, ok := jobsKV.Value.(*ast.MappingNode)
+	jobsMapping, ok := rules.UnwrapNode(jobsKV.Value).(*ast.MappingNode)
 	if !ok {
 		return nil
 	}
 
 	var errs []*diagnostic.Error
 	for _, jobEntry := range jobsMapping.Values {
-		jobMapping, ok := jobEntry.Value.(*ast.MappingNode)
+		jobMapping, ok := rules.UnwrapNode(jobEntry.Value).(*ast.MappingNode)
 		if !ok {
 			continue
 		}
@@ -45,7 +46,7 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 
 func checkPermissionsValue(node ast.Node) *diagnostic.Error {
 	var value string
-	switch v := node.(type) {
+	switch v := rules.UnwrapNode(node).(type) {
 	case *ast.StringNode:
 		value = v.Value
 	case *ast.LiteralNode:
@@ -59,7 +60,7 @@ func checkPermissionsValue(node ast.Node) *diagnostic.Error {
 	}
 
 	return &diagnostic.Error{
-		Token:   node.GetToken(),
+		Token:   rules.UnwrapNode(node).GetToken(),
 		Message: fmt.Sprintf(`"permissions" must not be %q; grant individual scopes instead`, value),
 	}
 }

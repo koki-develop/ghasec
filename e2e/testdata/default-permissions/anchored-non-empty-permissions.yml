@@ -1,0 +1,26 @@
+workflows:
+  - name: anchored-non-empty-permissions.yml
+    content: |
+      on: push
+      permissions: &perms
+        contents: read
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hello
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/anchored-non-empty-permissions.yml:2:1
+    ...
+    2 | permissions: &perms
+      | ^^^^^^^^^^^ "permissions" must be {}; grant permissions per job instead (default-permissions)
+    3 |   contents: read
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
+
+    1 error found in 1 file

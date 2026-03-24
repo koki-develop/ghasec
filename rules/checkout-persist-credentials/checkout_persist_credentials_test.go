@@ -172,3 +172,11 @@ func TestRule_CheckAction_NonComposite(t *testing.T) {
 	errs := r.CheckAction(m)
 	assert.Empty(t, errs)
 }
+
+func TestRule_AnchoredPersistCredentials(t *testing.T) {
+	r := &checkoutpersistcredentials.Rule{}
+	src := "on: push\npermissions: {}\njobs:\n  build:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          persist-credentials: &cred false"
+	m := parseMapping(t, src)
+	errs := r.CheckWorkflow(m)
+	assert.Empty(t, errs)
+}

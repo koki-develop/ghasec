@@ -6,6 +6,7 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
 )
 
@@ -88,7 +89,9 @@ func findPersistCredentialsError(step workflow.StepMapping) (*token.Token, bool)
 		return nil, false
 	}
 
-	switch v := pcKV.Value.(type) {
+	unwrapped := rules.UnwrapNode(pcKV.Value)
+
+	switch v := unwrapped.(type) {
 	case *ast.BoolNode:
 		if !v.Value {
 			return nil, true
@@ -99,5 +102,5 @@ func findPersistCredentialsError(step workflow.StepMapping) (*token.Token, bool)
 		}
 	}
 
-	return pcKV.Value.GetToken(), false
+	return unwrapped.GetToken(), false
 }

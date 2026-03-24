@@ -70,6 +70,18 @@ func TestRule_UnterminatedExpression(t *testing.T) {
 	assert.Contains(t, errs[0].Message, "invalid expression syntax")
 }
 
+func TestRule_BareIfBlockScalar(t *testing.T) {
+	r := &Rule{}
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo test\n        if: |\n          success() =="
+	m := parseWorkflow(t, src)
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "invalid expression syntax")
+	// The error token must point to the block scalar content line, not the | indicator line.
+	// "if: |" is on line 7, content "success() ==" is on line 8.
+	assert.Equal(t, 8, errs[0].Token.Position.Line)
+}
+
 func TestRule_ActionSyntaxError(t *testing.T) {
 	r := &Rule{}
 	src := "name: Test\ndescription: test\nruns:\n  using: composite\n  steps:\n    - run: echo ${{ contains( }}\n"

@@ -309,6 +309,10 @@ func TestParse(t *testing.T) {
 		{name: "function then dot", input: "fromJSON(steps.x.outputs.y).key"},
 		{name: "function then bracket", input: "toJSON(matrix)['os']"},
 		{name: "integer then dot ident", input: "42"},
+
+		// Postfix access after parenthesized expression
+		{name: "paren then dot", input: "(fromJSON(x)).key"},
+		{name: "paren then bracket", input: "(a)[0]"},
 	}
 
 	for _, tt := range valid {
@@ -427,6 +431,24 @@ func TestParseErrors(t *testing.T) {
 			errs := Parse(tt.input)
 			require.NotEmpty(t, errs, "expected errors for: %s", tt.input)
 			assert.Contains(t, errs[0].Message, tt.wantErrMsg)
+		})
+	}
+}
+
+func TestParse_NoDuplicateErrors(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{name: "operator then rparen", input: "a || )"},
+		{name: "operator then rbracket", input: "a && ]"},
+		{name: "equality then rparen", input: "a == )"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := Parse(tt.input)
+			require.NotEmpty(t, errs)
+			assert.Len(t, errs, 1, "expected exactly 1 error, got %d: %v", len(errs), errs)
 		})
 	}
 }

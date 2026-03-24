@@ -89,9 +89,14 @@ func (r *Rule) walkNode(node ast.Node, errs *[]*diagnostic.Error, currentKey str
 		// For if: values without ${{ }}, parse the whole value as an expression
 		if currentKey == "if" && len(spans) == 0 && !strings.Contains(value, "${{") {
 			parseErrs := expression.Parse(value)
-			for _, e := range parseErrs {
+			if len(parseErrs) > 0 {
+				e := parseErrs[0]
+				trimmedLen := len(strings.TrimRight(value, "\n"))
+				start := min(e.Offset, max(trimmedLen-1, 0))
+				end := min(start+1, len(value))
+				spanTok := rules.ExpressionSpanToken(node, value, start, end)
 				*errs = append(*errs, &diagnostic.Error{
-					Token:   node.GetToken(),
+					Token:   spanTok,
 					Message: fmt.Sprintf("invalid expression syntax: %s", e.Message),
 				})
 			}

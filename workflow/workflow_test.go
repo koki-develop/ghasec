@@ -351,3 +351,66 @@ func TestActionRef_OwnerRepo_DockerAction(t *testing.T) {
 	assert.Equal(t, "", owner)
 	assert.Equal(t, "", repo)
 }
+
+func TestWorkflowMapping_EachStep_AnchoredJob(t *testing.T) {
+	src := "jobs:\n  build: &build\n    steps:\n      - uses: actions/checkout@v4\n      - run: echo hello"
+	w := parseWorkflow(t, src)
+	var count int
+	w.EachStep(func(step workflow.StepMapping) {
+		count++
+	})
+	assert.Equal(t, 2, count)
+}
+
+func TestWorkflowMapping_EachStep_AnchoredSteps(t *testing.T) {
+	src := "jobs:\n  build:\n    steps: &steps\n      - uses: actions/checkout@v4"
+	w := parseWorkflow(t, src)
+	var count int
+	w.EachStep(func(step workflow.StepMapping) {
+		count++
+	})
+	assert.Equal(t, 1, count)
+}
+
+func TestWorkflowMapping_EachStep_AnchoredStep(t *testing.T) {
+	src := "jobs:\n  build:\n    steps:\n      - &step\n        uses: actions/checkout@v4"
+	w := parseWorkflow(t, src)
+	var count int
+	w.EachStep(func(step workflow.StepMapping) {
+		count++
+	})
+	assert.Equal(t, 1, count)
+}
+
+func TestActionMapping_EachStep_AnchoredRuns(t *testing.T) {
+	src := "name: My Action\nruns: &runs\n  using: composite\n  steps:\n    - uses: actions/checkout@v4"
+	a := parseAction(t, src)
+	var count int
+	a.EachStep(func(step workflow.StepMapping) {
+		count++
+	})
+	assert.Equal(t, 1, count)
+}
+
+func TestStepMapping_With_Anchored(t *testing.T) {
+	src := "jobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4\n        with: &with\n          persist-credentials: false"
+	w := parseWorkflow(t, src)
+	w.EachStep(func(step workflow.StepMapping) {
+		withMapping, ok := step.With()
+		assert.True(t, ok)
+		kv := withMapping.FindKey("persist-credentials")
+		assert.NotNil(t, kv)
+	})
+}
+
+func TestStepMapping_Uses_Anchored(t *testing.T) {
+	src := "jobs:\n  build:\n    steps:\n      - uses: &ref actions/checkout@v4"
+	w := parseWorkflow(t, src)
+	var ref workflow.ActionRef
+	var found bool
+	w.EachStep(func(step workflow.StepMapping) {
+		ref, found = step.Uses()
+	})
+	assert.True(t, found)
+	assert.Equal(t, "actions/checkout@v4", ref.String())
+}

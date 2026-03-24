@@ -140,3 +140,12 @@ func TestRule_TokenPosition(t *testing.T) {
 	require.Len(t, errs, 1)
 	assert.Equal(t, 6, errs[0].Token.Position.Line)
 }
+
+func TestRule_AnchoredJobMapping(t *testing.T) {
+	r := &joballpermissions.Rule{}
+	src := "on: push\npermissions: {}\njobs:\n  build: &build\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    permissions: read-all\n    steps:\n      - run: echo hello"
+	m := parseMapping(t, src)
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "must not be")
+}

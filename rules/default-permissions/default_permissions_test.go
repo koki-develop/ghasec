@@ -117,3 +117,11 @@ func TestRule_PermissionsNull(t *testing.T) {
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `permissions`)
 }
+
+func TestRule_AnchoredEmptyPermissions(t *testing.T) {
+	r := &defaultpermissions.Rule{}
+	src := "on: push\npermissions: &perms {}\njobs:\n  build:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - run: echo hello"
+	m := parseMapping(t, src)
+	errs := r.CheckWorkflow(m)
+	assert.Empty(t, errs)
+}

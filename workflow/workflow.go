@@ -56,6 +56,21 @@ type WorkflowMapping struct{ Mapping }
 // ActionMapping represents the top-level action metadata mapping.
 type ActionMapping struct{ Mapping }
 
+// unwrapNode unwraps AnchorNode wrappers to get the actual value node.
+// This is a local copy to avoid a circular import with the rules package.
+func unwrapNode(n ast.Node) ast.Node {
+	if n == nil {
+		return nil
+	}
+	for {
+		a, ok := n.(*ast.AnchorNode)
+		if !ok {
+			return n
+		}
+		n = a.Value
+	}
+}
+
 // EachStep iterates over all steps in a composite action's runs.steps.
 // It is a no-op for non-composite actions (where runs.steps does not exist).
 // It silently skips malformed sections, consistent with WorkflowMapping.EachStep.
@@ -64,7 +79,7 @@ func (m ActionMapping) EachStep(fn func(step StepMapping)) {
 	if runsKV == nil {
 		return
 	}
-	runsMapping, ok := runsKV.Value.(*ast.MappingNode)
+	runsMapping, ok := unwrapNode(runsKV.Value).(*ast.MappingNode)
 	if !ok {
 		return
 	}
@@ -72,12 +87,12 @@ func (m ActionMapping) EachStep(fn func(step StepMapping)) {
 	if stepsKV == nil {
 		return
 	}
-	stepsSeq, ok := stepsKV.Value.(*ast.SequenceNode)
+	stepsSeq, ok := unwrapNode(stepsKV.Value).(*ast.SequenceNode)
 	if !ok {
 		return
 	}
 	for _, stepNode := range stepsSeq.Values {
-		stepMapping, ok := stepNode.(*ast.MappingNode)
+		stepMapping, ok := unwrapNode(stepNode).(*ast.MappingNode)
 		if !ok {
 			continue
 		}
@@ -102,12 +117,12 @@ func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
 	if jobsKV == nil {
 		return
 	}
-	jobsMapping, ok := jobsKV.Value.(*ast.MappingNode)
+	jobsMapping, ok := unwrapNode(jobsKV.Value).(*ast.MappingNode)
 	if !ok {
 		return
 	}
 	for _, jobEntry := range jobsMapping.Values {
-		jobMapping, ok := jobEntry.Value.(*ast.MappingNode)
+		jobMapping, ok := unwrapNode(jobEntry.Value).(*ast.MappingNode)
 		if !ok {
 			continue
 		}
@@ -115,12 +130,12 @@ func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
 		if stepsKV == nil {
 			continue
 		}
-		stepsSeq, ok := stepsKV.Value.(*ast.SequenceNode)
+		stepsSeq, ok := unwrapNode(stepsKV.Value).(*ast.SequenceNode)
 		if !ok {
 			continue
 		}
 		for _, stepNode := range stepsSeq.Values {
-			stepMapping, ok := stepNode.(*ast.MappingNode)
+			stepMapping, ok := unwrapNode(stepNode).(*ast.MappingNode)
 			if !ok {
 				continue
 			}
@@ -137,7 +152,7 @@ func (s StepMapping) With() (Mapping, bool) {
 	if withKV == nil {
 		return Mapping{}, false
 	}
-	m, ok := withKV.Value.(*ast.MappingNode)
+	m, ok := unwrapNode(withKV.Value).(*ast.MappingNode)
 	if !ok {
 		return Mapping{}, false
 	}
@@ -152,7 +167,7 @@ func (s StepMapping) Uses() (ActionRef, bool) {
 	if usesKV == nil {
 		return ActionRef{}, false
 	}
-	switch v := usesKV.Value.(type) {
+	switch v := unwrapNode(usesKV.Value).(type) {
 	case *ast.StringNode:
 		return NewActionRef(v.Value, v.GetToken()), true
 	case *ast.LiteralNode:
