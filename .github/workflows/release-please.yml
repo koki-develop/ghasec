@@ -55,12 +55,30 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+  publish:
+    if: ${{ needs.release-please.outputs.should-release == 'true' }}
+    timeout-minutes: 10
+    needs:
+      - release-please
+      - release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # for publish a release
+    steps:
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ needs.release-please.outputs.tag-name }}
+        run: gh release edit "${TAG_NAME}" --draft=false
+
   homebrew-tap:
     if: ${{ needs.release-please.outputs.should-release == 'true' }}
     timeout-minutes: 10
     needs:
       - release-please
       - release
+      - publish
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -90,21 +108,3 @@ jobs:
             --field sha="$SHA"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
-  publish:
-    if: ${{ needs.release-please.outputs.should-release == 'true' }}
-    timeout-minutes: 10
-    needs:
-      - release-please
-      - release
-      - homebrew-tap
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # for publish a release
-    steps:
-      - name: Publish release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          TAG_NAME: ${{ needs.release-please.outputs.tag-name }}
-        run: gh release edit "${TAG_NAME}" --draft=false
