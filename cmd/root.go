@@ -38,6 +38,7 @@ var (
 )
 
 func init() {
+	rootCmd.Version = resolveVersion()
 	rootCmd.Flags().BoolVar(&online, "online", false, "enable rules that require network access")
 	rootCmd.Flags().BoolVar(&noColor, "no-color", false, "disable colored output")
 }
