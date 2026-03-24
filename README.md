@@ -21,6 +21,12 @@ Catch security risks in your GitHub Actions workflows.
 
 ## Installation
 
+### Homebrew
+
+```console
+$ brew install koki-develop/tap/ghasec
+```
+
 ### Go
 
 ```console
