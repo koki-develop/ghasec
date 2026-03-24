@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.0](https://github.com/koki-develop/ghasec/compare/v0.0.2...v0.1.0) (2026-03-24)
+
+
+### Features
+
+* add Homebrew formula generator command ([b57f516](https://github.com/koki-develop/ghasec/commit/b57f516a9c888da1eaaa6cf50e5b09fe4a90b91a))
+* add script-injection rule and fix multiline expression positioning ([6a64e0f](https://github.com/koki-develop/ghasec/commit/6a64e0fb8ec41aba38b9632bcfe253d21c87216a))
+
+
+### Patches
+
+* apply italic style to Ref: label in diagnostic output ([c356c9f](https://github.com/koki-develop/ghasec/commit/c356c9f38ecc3cc496739f0fab31d931fa6238c2))
+* unwrap anchor nodes in rules and fix bare if block scalar marker positioning ([aa8c8f4](https://github.com/koki-develop/ghasec/commit/aa8c8f41de32668edc246589b19e1e3c09a683a9))
+
 ## [0.0.2](https://github.com/koki-develop/ghasec/compare/v0.0.1...v0.0.2) (2026-03-24)
 
 
