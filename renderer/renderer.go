@@ -57,7 +57,7 @@ func (r *Renderer) PrintDiagnosticError(path string, e *diagnostic.Error) error 
 		message = fmt.Sprintf("%s (%s)", e.Message, e.RuleID)
 		url := fmt.Sprintf("https://github.com/koki-develop/ghasec/blob/main/rules/%s/README.md", e.RuleID)
 		ruleRef = fmt.Sprintf("  %s %s",
-			r.styled(annotate.Dim)("Ref:"),
+			r.styled(annotate.ComposeStyles(annotate.Dim, annotate.Italic))("Ref:"),
 			r.styled(annotate.ComposeStyles(annotate.Dim, annotate.Italic))(url))
 	}
 	contextTokens := computeAncestors(e.Token)
