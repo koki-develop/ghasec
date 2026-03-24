@@ -13,14 +13,20 @@ import (
 	"github.com/koki-develop/ghasec/diagnostic"
 )
 
-// Renderer handles diagnostic error rendering with consistent styling.
-type Renderer struct {
+// Renderer defines the interface for rendering diagnostic output.
+type Renderer interface {
+	PrintParseError(path string, err error) error
+	PrintDiagnosticError(path string, e *diagnostic.Error) error
+}
+
+// DefaultRenderer handles diagnostic error rendering with consistent styling.
+type DefaultRenderer struct {
 	noColor bool
 }
 
-// New creates a Renderer. When noColor is true, all styling is disabled.
-func New(noColor bool) *Renderer {
-	return &Renderer{noColor: noColor}
+// NewDefault creates a DefaultRenderer. When noColor is true, all styling is disabled.
+func NewDefault(noColor bool) *DefaultRenderer {
+	return &DefaultRenderer{noColor: noColor}
 }
 
 // yamlError is the interface that goccy/go-yaml parse errors implement.
@@ -30,7 +36,7 @@ type yamlError interface {
 }
 
 // PrintParseError renders a YAML parse error with source annotation.
-func (r *Renderer) PrintParseError(path string, err error) error {
+func (r *DefaultRenderer) PrintParseError(path string, err error) error {
 	yErr, ok := err.(yamlError)
 	if !ok {
 		return fmt.Errorf("unexpected parse error type for %s: %w", path, err)
@@ -47,7 +53,7 @@ func (r *Renderer) PrintParseError(path string, err error) error {
 }
 
 // PrintDiagnosticError renders a diagnostic error with source annotation.
-func (r *Renderer) PrintDiagnosticError(path string, e *diagnostic.Error) error {
+func (r *DefaultRenderer) PrintDiagnosticError(path string, e *diagnostic.Error) error {
 	if !isValidToken(e.Token) {
 		return fmt.Errorf("diagnostic error without position for %s: %s", path, e.Message)
 	}
@@ -194,14 +200,14 @@ type annotationParams struct {
 }
 
 // styled returns fn when color is enabled, or an identity function when disabled.
-func (r *Renderer) styled(fn annotate.StyleFunc) annotate.StyleFunc {
+func (r *DefaultRenderer) styled(fn annotate.StyleFunc) annotate.StyleFunc {
 	if r.noColor {
 		return func(s string) string { return s }
 	}
 	return fn
 }
 
-func (r *Renderer) buildLabels(src []byte, p annotationParams) []annotate.Label {
+func (r *DefaultRenderer) buildLabels(src []byte, p annotationParams) []annotate.Label {
 	primary := annotate.Label{
 		Span:   tokenSpan(src, p.tk),
 		Marker: annotate.MarkerCaret,
@@ -239,7 +245,7 @@ func (r *Renderer) buildLabels(src []byte, p annotationParams) []annotate.Label 
 	return labels
 }
 
-func (r *Renderer) formatHeader(path string, src []byte, tk *token.Token) string {
+func (r *DefaultRenderer) formatHeader(path string, src []byte, tk *token.Token) string {
 	col := tk.Position.Column
 	offset := min(lineColumnOffset(src, tk.Position.Line, tk.Position.Column), len(src))
 	if offset < len(src) && (src[offset] == '"' || src[offset] == '\'') {
@@ -250,7 +256,7 @@ func (r *Renderer) formatHeader(path string, src []byte, tk *token.Token) string
 	return fmt.Sprintf("%s %s", arrow, displayPath)
 }
 
-func (r *Renderer) printAnnotatedError(p annotationParams) error {
+func (r *DefaultRenderer) printAnnotatedError(p annotationParams) error {
 	src, readErr := os.ReadFile(p.path)
 	if readErr != nil {
 		return fmt.Errorf("failed to read source file %s: %w", p.path, readErr)

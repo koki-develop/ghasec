@@ -96,8 +96,9 @@ func TestE2E(t *testing.T) {
 
 // extraCLIArgs maps test case names to additional CLI flags.
 var extraCLIArgs = map[string][]string{
-	"mismatched-sha-tag": {"--online"},
-	"impostor-commit":    {"--online"},
+	"mismatched-sha-tag":    {"--online"},
+	"impostor-commit":       {"--online"},
+	"github-actions-format": {"--format", "github-actions"},
 }
 
 // extraEnvVars maps test case names to additional environment variables.
@@ -108,7 +109,8 @@ var extraEnvVars = map[string][]string{
 // suppressOfflineWarning lists test cases that do NOT want the offline warning
 // suppressed by default (i.e., they intentionally test offline-warning behavior).
 var suppressOfflineWarningExclude = map[string]bool{
-	"offline-warning": true,
+	"offline-warning":                          true,
+	"github-actions-format/no-offline-warning": true,
 }
 
 // mockGitHubTags maps test case names to their mock GitHub API tag data.
@@ -439,6 +441,30 @@ func TestE2E_AutoDiscoverWithActions(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, 1, exitErr.ExitCode())
 	assert.Contains(t, stderrBuf.String(), "2 errors found in 2 files")
+}
+
+func TestE2E_InvalidFormat(t *testing.T) {
+	tmpDir := t.TempDir()
+	workflowDir := filepath.Join(tmpDir, ".github", "workflows")
+	require.NoError(t, os.MkdirAll(workflowDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(workflowDir, "ci.yml"), []byte("on: push\n"), 0o644))
+
+	cmd := exec.Command(binaryPath, "--format", "invalid")
+	cmd.Dir = tmpDir
+	cmd.Env = append(os.Environ(), "NO_COLOR=", "GHASEC_DISABLE_OFFLINE_WARNING=")
+
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	err := cmd.Run()
+	require.Error(t, err)
+
+	exitErr, ok := err.(*exec.ExitError)
+	require.True(t, ok)
+	assert.Equal(t, 1, exitErr.ExitCode())
+	assert.Empty(t, stdoutBuf.String())
+	assert.Equal(t, "error: unknown format \"invalid\"; must be \"default\" or \"github-actions\"\n", stderrBuf.String())
 }
 
 func expandTemplate(t *testing.T, text, tmpDir string) string {

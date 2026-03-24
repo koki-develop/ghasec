@@ -19,14 +19,16 @@
 
 `tokenSpan` converts a YAML token's position into a byte-offset span over the source. It derives byte offsets from line and column (not `Token.Offset`) to work around a goccy/go-yaml bug where comment tokens cause subsequent offsets to drift by -1 per comment. The span is clamped to a single line, guaranteed to have non-zero length, and handles quoted strings and null/empty tokens.
 
-## Color Support
+## Color Support (DefaultRenderer)
 
-- `New(noColor bool)` — when `noColor` is true, all ANSI styling and syntax highlighting are disabled.
+- `NewDefault(noColor bool)` — when `noColor` is true, all ANSI styling and syntax highlighting are disabled.
 - Styling is applied via `annotate.StyleFunc` wrappers that become identity functions when color is off.
 - Supports `NO_COLOR` environment variable (handled at the CLI level in `cmd/root.go`).
 
 ## Key API
 
-- `New(noColor bool) *Renderer` — constructor.
+- `Renderer` — interface with `PrintParseError` and `PrintDiagnosticError`. Used by `cmd/root.go` to abstract over output formats.
+- `NewDefault(noColor bool) *DefaultRenderer` — constructor for the annotated stderr renderer (default format).
+- `NewGitHubActions() *GitHubActionsRenderer` — constructor for the GitHub Actions `::error` workflow command renderer. Outputs to stdout. See `github_actions.go`.
 - `PrintParseError(path string, err error) error` — render a YAML parse error (from `goccy/go-yaml`).
 - `PrintDiagnosticError(path string, e *diagnostic.Error) error` — render a diagnostic error with source annotation, ancestor breadcrumbs, and rule reference URL.

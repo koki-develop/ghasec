@@ -1,0 +1,19 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: |
+                actions/checkout@v6
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=checkout-persist-credentials,file={{.Dir}}/workflow.yml,line=8::"persist-credentials: false" must be set in "with"
+    ::error title=unpinned-action,file={{.Dir}}/workflow.yml,line=8::"actions/checkout@v6\n" must be pinned to a full length commit SHA
+  stderr: ""

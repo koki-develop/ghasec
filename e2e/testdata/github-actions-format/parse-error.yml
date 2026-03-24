@@ -1,0 +1,9 @@
+workflows:
+  - name: workflow.yml
+    content: "on: push\n  bad: indent\n"
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=parse-error,file={{.Dir}}/workflow.yml,line=1::mapping value is not allowed in this context
+  stderr: ""

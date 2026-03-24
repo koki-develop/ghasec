@@ -38,12 +38,14 @@ const concurrency = 4
 var (
 	online  bool
 	noColor bool
+	format  string
 )
 
 func init() {
 	rootCmd.Version = resolveVersion()
 	rootCmd.Flags().BoolVar(&online, "online", false, "enable rules that require network access")
 	rootCmd.Flags().BoolVar(&noColor, "no-color", false, "disable colored output")
+	rootCmd.Flags().StringVar(&format, "format", "default", `output format ("default" or "github-actions")`)
 }
 
 type classifiedFiles struct {
@@ -80,6 +82,10 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if format != "default" && format != "github-actions" {
+			return fmt.Errorf("unknown format %q; must be \"default\" or \"github-actions\"", format)
+		}
+
 		files, err := resolveFiles(args)
 		if err != nil {
 			return err
@@ -90,7 +96,7 @@ var rootCmd = &cobra.Command{
 
 		activeRules, skippedOnline := buildRules(online)
 
-		if skippedOnline > 0 {
+		if skippedOnline > 0 && format != "github-actions" {
 			defer func() {
 				if _, disabled := os.LookupEnv("GHASEC_DISABLE_OFFLINE_WARNING"); !disabled {
 					fmt.Fprintf(os.Stderr, "warning: %d online %s skipped; use --online to enable them\n",
@@ -100,8 +106,13 @@ var rootCmd = &cobra.Command{
 		}
 
 		a := analyzer.New(concurrency, activeRules...)
-		_, envNoColor := os.LookupEnv("NO_COLOR")
-		rdr := renderer.New(noColor || envNoColor)
+		var rdr renderer.Renderer
+		if format == "github-actions" {
+			rdr = renderer.NewGitHubActions()
+		} else {
+			_, envNoColor := os.LookupEnv("NO_COLOR")
+			rdr = renderer.NewDefault(noColor || envNoColor)
+		}
 
 		var tasks []fileTask
 		for _, f := range files.Workflows {
@@ -163,12 +174,16 @@ var rootCmd = &cobra.Command{
 		}
 
 		if errorCount > 0 {
-			fmt.Fprintf(os.Stderr, "%d %s found in %d %s\n",
-				errorCount, pluralize("error", errorCount),
-				errorFileCount, pluralize("file", errorFileCount))
+			if format != "github-actions" {
+				fmt.Fprintf(os.Stderr, "%d %s found in %d %s\n",
+					errorCount, pluralize("error", errorCount),
+					errorFileCount, pluralize("file", errorFileCount))
+			}
 			return errValidationFailed
 		}
-		fmt.Fprintln(os.Stderr, "no errors found")
+		if format != "github-actions" {
+			fmt.Fprintln(os.Stderr, "no errors found")
+		}
 		return nil
 	},
 }

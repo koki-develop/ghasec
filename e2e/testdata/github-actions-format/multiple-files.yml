@@ -1,0 +1,30 @@
+workflows:
+  - name: a.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@v6
+              with:
+                persist-credentials: false
+  - name: b.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/setup-go@v5
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=unpinned-action,file={{.Dir}}/a.yml,line=8::"actions/checkout@v6" must be pinned to a full length commit SHA
+    ::error title=unpinned-action,file={{.Dir}}/b.yml,line=8::"actions/setup-go@v5" must be pinned to a full length commit SHA
+  stderr: ""

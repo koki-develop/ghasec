@@ -1,0 +1,17 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: composite
+        steps:
+          - uses: actions/checkout@v6
+            with:
+              persist-credentials: false
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=unpinned-action,file={{.Dir}}/action.yml,line=6::"actions/checkout@v6" must be pinned to a full length commit SHA
+  stderr: ""
