@@ -264,7 +264,7 @@ func checkCompositeStepExtensions(seq *ast.SequenceNode) []*diagnostic.Error {
 			if ok && !ref.IsLocal() && !ref.IsDocker() && ref.Ref() == "" {
 				errs = append(errs, &diagnostic.Error{
 					Token:   ref.Token(),
-					Message: fmt.Sprintf("%q must have a ref (e.g. %s@<ref>)", ref.String(), ref.String()),
+					Message: fmt.Sprintf("%q must have a ref", ref.String()),
 				})
 			}
 		}

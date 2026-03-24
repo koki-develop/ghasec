@@ -18,7 +18,7 @@ expected:
     ...
     5 |   steps:
     6 |     - uses: {{"${{ github.actor }}"}}
-      |             ^^^^^^^^^^^^^^^^^^^ {{"\"${{ github.actor }}\""}} must have a ref (e.g. {{"${{ github.actor }}"}}@<ref>) (invalid-action)
+      |             ^^^^^^^^^^^^^^^^^^^ {{"\"${{ github.actor }}\""}} must have a ref (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 
     --> {{.Dir}}/action.yml:6:13

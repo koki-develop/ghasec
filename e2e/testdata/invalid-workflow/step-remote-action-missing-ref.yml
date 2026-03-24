@@ -19,7 +19,7 @@ expected:
     ...
     5 |     steps:
     6 |       - uses: actions/checkout
-      |               ^^^^^^^^^^^^^^^^ "actions/checkout" must have a ref (e.g. actions/checkout@<ref>) (invalid-workflow)
+      |               ^^^^^^^^^^^^^^^^ "actions/checkout" must have a ref (invalid-workflow)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
     1 error found in 1 file

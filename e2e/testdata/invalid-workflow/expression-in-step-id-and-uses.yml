@@ -34,7 +34,7 @@ expected:
     7 |     steps:
     8 |       - id: ${{"{{" }} github.actor {{"}}"}}
     9 |         uses: ${{"{{" }} github.actor {{"}}"}}
-      |               ^^^^^^^^^^^^^^^^^^^ "${{"{{" }} github.actor {{"}}"}}" must have a ref (e.g. ${{"{{" }} github.actor {{"}}"}}@<ref>) (invalid-workflow)
+      |               ^^^^^^^^^^^^^^^^^^^ "${{"{{" }} github.actor {{"}}"}}" must have a ref (invalid-workflow)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
     --> {{.Dir}}/workflow.yml:9:15

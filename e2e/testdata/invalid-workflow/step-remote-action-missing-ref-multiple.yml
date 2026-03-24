@@ -20,7 +20,7 @@ expected:
     ...
     5 |     steps:
     6 |       - uses: actions/checkout
-      |               ^^^^^^^^^^^^^^^^ "actions/checkout" must have a ref (e.g. actions/checkout@<ref>) (invalid-workflow)
+      |               ^^^^^^^^^^^^^^^^ "actions/checkout" must have a ref (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
@@ -32,7 +32,7 @@ expected:
     5 |     steps:
     ...
     7 |       - uses: actions/setup-node
-      |               ^^^^^^^^^^^^^^^^^^ "actions/setup-node" must have a ref (e.g. actions/setup-node@<ref>) (invalid-workflow)
+      |               ^^^^^^^^^^^^^^^^^^ "actions/setup-node" must have a ref (invalid-workflow)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
     2 errors found in 1 file
