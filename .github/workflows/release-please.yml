@@ -87,7 +87,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           TAG: ${{ needs.release-please.outputs.tag-name }}
 
-  publish:
+  docker-push:
     needs:
       - release-please
       - release
