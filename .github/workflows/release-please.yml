@@ -55,12 +55,49 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+  homebrew-tap:
+    if: ${{ needs.release-please.outputs.should-release == 'true' }}
+    timeout-minutes: 10
+    needs:
+      - release-please
+      - release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: go run ./cmd/formula -version "${VERSION}" > ghasec.rb
+        env:
+          VERSION: ${{ needs.release-please.outputs.version }}
+
+      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        id: app-token
+        with:
+          app-id: ${{ secrets.HOMEBREW_TAP_APP_ID }}
+          private-key: ${{ secrets.HOMEBREW_TAP_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: homebrew-tap
+          permission-contents: write # for updating files
+      - name: Update Homebrew Formula
+        run: |
+          SHA=$(gh api repos/koki-develop/homebrew-tap/contents/Formula/ghasec.rb --jq '.sha')
+          gh api --method PUT repos/koki-develop/homebrew-tap/contents/Formula/ghasec.rb \
+            --field message="chore: update ghasec to $TAG" \
+            --field content=@<(base64 -i ./ghasec.rb) \
+            --field sha="$SHA"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
   publish:
     if: ${{ needs.release-please.outputs.should-release == 'true' }}
     timeout-minutes: 10
     needs:
       - release-please
       - release
+      - homebrew-tap
     runs-on: ubuntu-latest
     permissions:
       contents: write # for publish a release
