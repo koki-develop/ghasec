@@ -6,7 +6,7 @@ actions:
       runs:
         using: composite
         steps:
-          - run: echo ${{ github.actor }}
+          - run: echo ${{ github.actor }} # ghasec-ignore:script-injection
             shell: bash
 
 expected:

@@ -8,18 +8,18 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - run: echo ${{ 1 == 1 }}
-            - run: echo ${{ 1 != 2 }}
-            - run: echo ${{ 1 < 2 }}
-            - run: echo ${{ 1 <= 2 }}
-            - run: echo ${{ 2 > 1 }}
-            - run: echo ${{ 2 >= 1 }}
-            - run: echo ${{ true && true }}
-            - run: echo ${{ true || false }}
-            - run: echo ${{ !false }}
-            - run: echo ${{ github.event_name }}
-            - run: echo ${{ github.event['action'] }}
-            - run: echo ${{ (true) }}
+            - run: echo ${{ 1 == 1 }} # ghasec-ignore:script-injection
+            - run: echo ${{ 1 != 2 }} # ghasec-ignore:script-injection
+            - run: echo ${{ 1 < 2 }} # ghasec-ignore:script-injection
+            - run: echo ${{ 1 <= 2 }} # ghasec-ignore:script-injection
+            - run: echo ${{ 2 > 1 }} # ghasec-ignore:script-injection
+            - run: echo ${{ 2 >= 1 }} # ghasec-ignore:script-injection
+            - run: echo ${{ true && true }} # ghasec-ignore:script-injection
+            - run: echo ${{ true || false }} # ghasec-ignore:script-injection
+            - run: echo ${{ !false }} # ghasec-ignore:script-injection
+            - run: echo ${{ github.event_name }} # ghasec-ignore:script-injection
+            - run: echo ${{ github.event['action'] }} # ghasec-ignore:script-injection
+            - run: echo ${{ (true) }} # ghasec-ignore:script-injection
 
 expected:
   exit_code: 0

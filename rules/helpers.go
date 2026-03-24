@@ -133,16 +133,26 @@ func NodeTypeName(n ast.Node) string {
 }
 
 // ExpressionSpanToken creates a synthetic token that points to a ${{ }} span
-// within a string value, for precise error positioning. It adjusts the column
-// and value to cover only the expression span (e.g., "${{ github.actor }}")
+// within a string value, for precise error positioning. It adjusts the line,
+// column, and value to cover only the expression span (e.g., "${{ github.actor }}")
 // rather than the entire string.
+//
+// For block scalars (| and >), the function correctly computes the line and
+// column by accounting for newlines within the value and the content indentation.
 //
 // spanStart is the byte offset of "${{" within the string value.
 // spanEnd is the byte offset past "}}" within the string value.
-func ExpressionSpanToken(base *token.Token, value string, spanStart, spanEnd int) *token.Token {
-	// If the YAML value is quoted, the token position points to the opening
-	// quote character, but Value (and therefore spanStart) is relative to the
-	// unquoted content. Add 1 to skip the opening quote in the source.
+func ExpressionSpanToken(node ast.Node, value string, spanStart, spanEnd int) *token.Token {
+	base := node.GetToken()
+
+	// For literal block scalars, compute the correct line and column by
+	// counting newlines in the value prefix and using the content indentation.
+	if lit, ok := UnwrapNode(node).(*ast.LiteralNode); ok {
+		return literalSpanToken(lit, value, spanStart, spanEnd)
+	}
+
+	// For inline/quoted strings, the expression is on the same line as the
+	// base token. Adjust the column by the span offset within the value.
 	quoteOffset := 0
 	if base.Origin != "" {
 		trimmed := strings.TrimLeft(base.Origin, " \t\n\r")
@@ -162,6 +172,53 @@ func ExpressionSpanToken(base *token.Token, value string, spanStart, spanEnd int
 	}
 }
 
+// literalSpanToken creates a synthetic token for a span within a block scalar
+// (| or >). It derives the correct source line and column by:
+// 1. Counting newlines in the value before spanStart to determine line offset
+// 2. Computing the column as the distance from the last newline + content indentation
+// 3. Using the block indicator line + 1 + lineOffset as the actual source line
+func literalSpanToken(lit *ast.LiteralNode, value string, spanStart, spanEnd int) *token.Token {
+	base := lit.Start
+
+	// Derive content indentation by comparing Origin (raw, with indent) to
+	// Value (parsed, indent stripped). The difference in the first line's
+	// length gives the indentation width.
+	indent := 0
+	valTok := lit.Value.GetToken()
+	if valTok.Origin != "" && value != "" {
+		originFirst := strings.SplitN(valTok.Origin, "\n", 2)[0]
+		valueFirst := strings.SplitN(value, "\n", 2)[0]
+		if d := len(originFirst) - len(valueFirst); d > 0 {
+			indent = d
+		}
+	}
+
+	// Count newlines before spanStart to find the line offset within the value.
+	prefix := value[:spanStart]
+	lineOffset := strings.Count(prefix, "\n")
+
+	// Compute column: distance from the last newline in prefix (or from start
+	// if no newlines) gives the column within the stripped value line. Add the
+	// content indentation to get the actual source column (1-indexed).
+	// When there are no newlines, LastIndex returns -1, so (spanStart - (-1) - 1) == spanStart.
+	lastNL := strings.LastIndex(prefix, "\n")
+	col := indent + (spanStart - lastNL - 1) + 1
+
+	// The actual source line: | indicator line + 1 (first content line) + lineOffset
+	line := base.Position.Line + 1 + lineOffset
+
+	return &token.Token{
+		Type:  base.Type,
+		Value: value[spanStart:spanEnd],
+		Prev:  base.Prev,
+		Position: &token.Position{
+			Line:   line,
+			Column: col,
+			Offset: base.Position.Offset + spanStart, // approximate
+		},
+	}
+}
+
 // ExpressionSpanTokens returns a synthetic token for each ${{ }} span in a
 // string node's value. If the value contains no expressions, returns nil.
 func ExpressionSpanTokens(node ast.Node) []*token.Token {
@@ -173,10 +230,9 @@ func ExpressionSpanTokens(node ast.Node) []*token.Token {
 	if len(spans) == 0 && len(errs) == 0 {
 		return nil
 	}
-	base := node.GetToken()
 	var tokens []*token.Token
 	for _, span := range spans {
-		tokens = append(tokens, ExpressionSpanToken(base, value, span.Start, span.End))
+		tokens = append(tokens, ExpressionSpanToken(node, value, span.Start, span.End))
 	}
 	// For unterminated expressions, create a token covering from "${{" to end of string
 	for _, e := range errs {
@@ -187,7 +243,7 @@ func ExpressionSpanTokens(node ast.Node) []*token.Token {
 		if end > len(value) {
 			end = len(value)
 		}
-		tokens = append(tokens, ExpressionSpanToken(base, value, e.Offset, end))
+		tokens = append(tokens, ExpressionSpanToken(node, value, e.Offset, end))
 	}
 	return tokens
 }

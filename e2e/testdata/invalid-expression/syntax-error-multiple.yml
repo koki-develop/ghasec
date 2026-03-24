@@ -8,7 +8,7 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - run: ${{ == }} and ${{ == }}
+            - run: ${{ == }} and ${{ == }} # ghasec-ignore:script-injection
 
 expected:
   exit_code: 1
@@ -20,7 +20,7 @@ expected:
     4 |   build:
     ...
     7 |     steps:
-    8 |       - run: ${{"{{" }} == {{"}}"}} and ${{"{{" }} == {{"}}"}}
+    8 |       - run: ${{"{{" }} == {{"}}"}} and ${{"{{" }} == {{"}}"}} # ghasec-ignore:script-injection
       |              ^^^^^^^^^ invalid expression syntax: expected expression, but got '==' (invalid-expression)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-expression/README.md
 
@@ -30,7 +30,7 @@ expected:
     4 |   build:
     ...
     7 |     steps:
-    8 |       - run: ${{"{{" }} == {{"}}"}} and ${{"{{" }} == {{"}}"}}
+    8 |       - run: ${{"{{" }} == {{"}}"}} and ${{"{{" }} == {{"}}"}} # ghasec-ignore:script-injection
       |                            ^^^^^^^^^ invalid expression syntax: expected expression, but got '==' (invalid-expression)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-expression/README.md
 

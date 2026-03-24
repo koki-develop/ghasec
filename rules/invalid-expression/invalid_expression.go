@@ -56,7 +56,6 @@ func (r *Rule) walkNode(node ast.Node, errs *[]*diagnostic.Error, currentKey str
 		if value == "" {
 			return
 		}
-		tok := node.GetToken()
 
 		spans, extractErrs := expression.ExtractExpressions(value)
 		for _, e := range extractErrs {
@@ -68,7 +67,7 @@ func (r *Rule) walkNode(node ast.Node, errs *[]*diagnostic.Error, currentKey str
 			if end > len(value) {
 				end = len(value)
 			}
-			spanTok := rules.ExpressionSpanToken(tok, value, e.Offset, end)
+			spanTok := rules.ExpressionSpanToken(node, value, e.Offset, end)
 			*errs = append(*errs, &diagnostic.Error{
 				Token:   spanTok,
 				Message: fmt.Sprintf("invalid expression syntax: %s", e.Message),
@@ -79,7 +78,7 @@ func (r *Rule) walkNode(node ast.Node, errs *[]*diagnostic.Error, currentKey str
 			if len(parseErrs) > 0 {
 				// Report only the first error per expression span to avoid
 				// noisy duplicate diagnostics (e.g., two '"' in ${{ "hello" }}).
-				spanTok := rules.ExpressionSpanToken(tok, value, span.Start, span.End)
+				spanTok := rules.ExpressionSpanToken(node, value, span.Start, span.End)
 				*errs = append(*errs, &diagnostic.Error{
 					Token:   spanTok,
 					Message: fmt.Sprintf("invalid expression syntax: %s", parseErrs[0].Message),
@@ -92,7 +91,7 @@ func (r *Rule) walkNode(node ast.Node, errs *[]*diagnostic.Error, currentKey str
 			parseErrs := expression.Parse(value)
 			for _, e := range parseErrs {
 				*errs = append(*errs, &diagnostic.Error{
-					Token:   tok,
+					Token:   node.GetToken(),
 					Message: fmt.Sprintf("invalid expression syntax: %s", e.Message),
 				})
 			}

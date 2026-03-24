@@ -6,7 +6,7 @@ actions:
       runs:
         using: composite
         steps:
-          - run: echo ${{ github. }}
+          - run: echo ${{ github. }} # ghasec-ignore:script-injection
             shell: bash
 
 expected:
@@ -18,7 +18,7 @@ expected:
     3 | runs:
     ...
     5 |   steps:
-    6 |     - run: echo ${{"{{" }} github. {{"}}"}}
+    6 |     - run: echo ${{"{{" }} github. {{"}}"}} # ghasec-ignore:script-injection
       |                 ^^^^^^^^^^^^^^ invalid expression syntax: expected property name after '.' (invalid-expression)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-expression/README.md

@@ -1,0 +1,41 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo ${{ github.actor }}
+            - run: echo hello
+            - run: echo ${{ github.token }}
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:8:19
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: echo {{"${{ github.actor }}"}}
+      |                   ^^^^^^^^^^^^^^^^^^^ "run" must not contain expressions; use environment variables instead (script-injection)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/script-injection/README.md
+
+    --> {{.Dir}}/workflow.yml:10:19
+    ...
+     3 | jobs:
+     4 |   build:
+    ...
+     7 |     steps:
+    ...
+    10 |       - run: echo {{"${{ github.token }}"}}
+       |                   ^^^^^^^^^^^^^^^^^^^ "run" must not contain expressions; use environment variables instead (script-injection)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/script-injection/README.md
+
+    2 errors found in 1 file

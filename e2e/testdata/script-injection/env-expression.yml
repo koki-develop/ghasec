@@ -8,7 +8,9 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - run: ${{ github.actor }} and ${{ github.ref }} # ghasec-ignore:script-injection
+            - run: echo $FOO
+              env:
+                FOO: ${{ github.token }}
 
 expected:
   exit_code: 0

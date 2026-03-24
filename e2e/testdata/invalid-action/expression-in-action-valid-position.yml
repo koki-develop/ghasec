@@ -16,7 +16,7 @@ actions:
         steps:
           - id: test
             if: ${{ github.actor == 'bot' }}
-            run: echo ${{ github.actor }}
+            run: echo ${{ github.actor }} # ghasec-ignore:script-injection
             shell: bash
 
 expected:

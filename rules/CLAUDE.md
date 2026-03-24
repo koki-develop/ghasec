@@ -37,7 +37,7 @@ The renderer automatically computes ancestor breadcrumb lines from the error tok
 
 Rules only need to set `Token` and `Message` on `diagnostic.Error`. Use `ExtraContexts` only for non-ancestor tokens that provide important context (e.g., `default-permissions` uses it to show the last permission entry, `checkout-persist-credentials` uses it to show the `uses` value when the error is on `persist-credentials`).
 
-For diagnostics pointing to a `${{ }}` span within a larger string, use `rules.ExpressionSpanToken` to create a synthetic token covering only the expression span (not the entire YAML string value). This adjusts the column position and token value for precise caret placement, including quote offset correction for quoted YAML strings.
+For diagnostics pointing to a `${{ }}` span within a larger string, use `rules.ExpressionSpanToken` to create a synthetic token covering only the expression span (not the entire YAML string value). It takes the `ast.Node` (not a raw token) so it can detect block scalars (`|` / `>`) and compute correct line/column positions for multiline values. For inline/quoted strings, it adjusts the column with quote offset correction.
 
 ## Diagnostic Message Format
 

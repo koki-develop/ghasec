@@ -8,9 +8,9 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - run: echo ${{ github.event.action }}
-            - run: echo ${{ github.event['action'] }}
-            - run: echo ${{ github.event.*.name }}
+            - run: echo ${{ github.event.action }} # ghasec-ignore:script-injection
+            - run: echo ${{ github.event['action'] }} # ghasec-ignore:script-injection
+            - run: echo ${{ github.event.*.name }} # ghasec-ignore:script-injection
 
 expected:
   exit_code: 0

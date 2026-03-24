@@ -8,7 +8,7 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - run: echo ${{ format('it''s', 'ok') }}
+            - run: echo ${{ format('it''s', 'ok') }} # ghasec-ignore:script-injection
 
 expected:
   exit_code: 0

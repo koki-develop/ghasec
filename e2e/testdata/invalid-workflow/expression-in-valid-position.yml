@@ -12,7 +12,7 @@ workflows:
             FOO: ${{ github.actor }}
           steps:
             - if: ${{ github.event_name == 'push' }}
-              run: echo ${{ github.actor }}
+              run: echo ${{ github.actor }} # ghasec-ignore:script-injection
               env:
                 BAR: ${{ github.ref }}
 

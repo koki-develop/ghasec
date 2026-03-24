@@ -8,19 +8,19 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - run: echo ${{ contains('hello', 'ell') }}
-            - run: echo ${{ startsWith('hello', 'he') }}
-            - run: echo ${{ endsWith('hello', 'lo') }}
-            - run: echo ${{ format('a{0}b', 'x') }}
-            - run: echo ${{ join(github.event.*.name, ', ') }}
-            - run: echo ${{ toJSON(github.event) }}
-            - run: echo ${{ fromJSON('{}') }}
-            - run: echo ${{ hashFiles('**/*.lock') }}
-            - run: echo ${{ success() }}
-            - run: echo ${{ failure() }}
-            - run: echo ${{ always() }}
-            - run: echo ${{ cancelled() }}
-            - run: echo ${{ format('{0}', 'a') }}
+            - run: echo ${{ contains('hello', 'ell') }} # ghasec-ignore:script-injection
+            - run: echo ${{ startsWith('hello', 'he') }} # ghasec-ignore:script-injection
+            - run: echo ${{ endsWith('hello', 'lo') }} # ghasec-ignore:script-injection
+            - run: echo ${{ format('a{0}b', 'x') }} # ghasec-ignore:script-injection
+            - run: echo ${{ join(github.event.*.name, ', ') }} # ghasec-ignore:script-injection
+            - run: echo ${{ toJSON(github.event) }} # ghasec-ignore:script-injection
+            - run: echo ${{ fromJSON('{}') }} # ghasec-ignore:script-injection
+            - run: echo ${{ hashFiles('**/*.lock') }} # ghasec-ignore:script-injection
+            - run: echo ${{ success() }} # ghasec-ignore:script-injection
+            - run: echo ${{ failure() }} # ghasec-ignore:script-injection
+            - run: echo ${{ always() }} # ghasec-ignore:script-injection
+            - run: echo ${{ cancelled() }} # ghasec-ignore:script-injection
+            - run: echo ${{ format('{0}', 'a') }} # ghasec-ignore:script-injection
 
 expected:
   exit_code: 0

@@ -1,0 +1,26 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: composite
+        steps:
+          - run: echo ${{ github.token }}
+            shell: bash
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:6:17
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - run: echo {{"${{ github.token }}"}}
+      |                 ^^^^^^^^^^^^^^^^^^^ "run" must not contain expressions; use environment variables instead (script-injection)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/script-injection/README.md
+
+    1 error found in 1 file

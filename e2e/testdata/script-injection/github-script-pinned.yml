@@ -1,0 +1,31 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/github-script@60a0d9590ef291ceca015d0a41334550cfc133a8
+              with:
+                script: console.log('${{ github.token }}')
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:10:32
+    ...
+     3 | jobs:
+     4 |   build:
+    ...
+     7 |     steps:
+     8 |       - uses: actions/github-script@60a0d9590ef291ceca015d0a41334550cfc133a8
+     9 |         with:
+    10 |           script: console.log('{{"${{ github.token }}"}}')
+       |                                ^^^^^^^^^^^^^^^^^^^ "script" must not contain expressions; use environment variables instead (script-injection)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/script-injection/README.md
+
+    1 error found in 1 file

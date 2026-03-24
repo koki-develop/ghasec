@@ -8,7 +8,7 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - run: echo ${{ }} # ghasec-ignore:script-injection
+            - run: echo ${{ github.event.issue.title }}
 
 expected:
   exit_code: 1
@@ -20,8 +20,8 @@ expected:
     4 |   build:
     ...
     7 |     steps:
-    8 |       - run: echo ${{"{{" }} {{"}}"}} # ghasec-ignore:script-injection
-      |                   ^^^^^^ invalid expression syntax: expected expression, but got end of input (invalid-expression)
-      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-expression/README.md
+    8 |       - run: echo {{"${{ github.event.issue.title }}"}}
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "run" must not contain expressions; use environment variables instead (script-injection)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/script-injection/README.md
 
     1 error found in 1 file

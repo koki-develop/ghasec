@@ -8,8 +8,8 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - run: echo ${{ contains(format('{0}', 'hello'), 'ell') }}
-            - run: echo ${{ (true && (false || true)) }}
+            - run: echo ${{ contains(format('{0}', 'hello'), 'ell') }} # ghasec-ignore:script-injection
+            - run: echo ${{ (true && (false || true)) }} # ghasec-ignore:script-injection
 
 expected:
   exit_code: 0
