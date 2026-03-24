@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0](https://github.com/koki-develop/ghasec/compare/v0.0.5...v0.1.0) (2026-03-24)
+
+
+### Features
+
+* add --format flag with github-actions output format ([cfbc74a](https://github.com/koki-develop/ghasec/commit/cfbc74a746174f86c89cb762453f321259bc3ed2))
+* add impostor-commit rule ([aaeb73b](https://github.com/koki-develop/ghasec/commit/aaeb73b91c032194788c620b673c9c4d0e6f22af))
+
 ## [0.0.5](https://github.com/koki-develop/ghasec/compare/v0.0.4...v0.0.5) (2026-03-24)
 
 
