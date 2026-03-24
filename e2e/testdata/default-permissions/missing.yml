@@ -15,7 +15,7 @@ expected:
   stderr: |
     --> {{.Dir}}/default-permissions.yml:1:1
     1 | on: push
-      | ^ "permissions: {}" must be set; grant permissions per job instead (default-permissions)
+      | ^ "permissions: {}" must be set (default-permissions)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
 

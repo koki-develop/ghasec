@@ -11,7 +11,7 @@ import (
 const id = "default-permissions"
 
 const (
-	messageMissing  = `"permissions: {}" must be set; grant permissions per job instead`
+	messageMissing  = `"permissions: {}" must be set`
 	messageNonEmpty = `"permissions" must be {}; grant permissions per job instead`
 )
 
