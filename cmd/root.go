@@ -73,6 +73,7 @@ func classifyFile(path string) string {
 
 var rootCmd = &cobra.Command{
 	Use:           "ghasec [files...]",
+	Long:          "Catch security risks in your GitHub Actions workflows.",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
