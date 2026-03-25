@@ -94,10 +94,27 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
+func (r *Rule) Why() string {
+    return "<why this issue matters for security>"
+}
+
+func (r *Rule) Fix() string {
+    return "<how to fix the issue>"
+}
+
 func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
     // Use mapping.FindKey(), mapping.EachStep(), step.Uses() etc.
 }
 ```
+
+**`Explainer` interface (`--format agent` support):**
+
+Non-required rules must implement the `rules.Explainer` interface to provide guidance in `--format agent` Markdown output:
+
+- `Why() string` — Explains why this issue matters for security (e.g., what an attacker could exploit).
+- `Fix() string` — Explains how to fix the issue concisely (e.g., what to change or add).
+
+The `AgentRenderer` looks up `Explainer` on each rule at render time. If implemented, the output includes `**Why**` and `**Fix**` fields alongside the rule ID and message. If not implemented (structural/required rules), those fields are omitted.
 
 There are two common rule patterns:
 
