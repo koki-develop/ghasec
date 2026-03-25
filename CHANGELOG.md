@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/koki-develop/ghasec/compare/v0.1.0...v0.2.0) (2026-03-25)
+
+
+### Features
+
+* add dangerous-checkout rule ([c3ed192](https://github.com/koki-develop/ghasec/commit/c3ed192f199fbdcc5244d8aab08f723e1b88e1ce))
+* add file:line:col prefix to github-actions format messages ([16b7e37](https://github.com/koki-develop/ghasec/commit/16b7e3718adaedda5689c0e67df232587e438fcb))
+* add progress bar for real-time linting progress ([338cd36](https://github.com/koki-develop/ghasec/commit/338cd369da71939fa711b1cabf9adf8f53c19cdf))
+* add rich summary output with colors and icons ([b57ae9c](https://github.com/koki-develop/ghasec/commit/b57ae9c07a1fba8477abdd17f5828e217061ee09))
+* show hint to set GITHUB_TOKEN on rate limit errors ([de13a55](https://github.com/koki-develop/ghasec/commit/de13a5531304152dfe63c4865d1f2836b7a2a832))
+
 ## [0.1.0](https://github.com/koki-develop/ghasec/compare/v0.0.5...v0.1.0) (2026-03-24)
 
 
