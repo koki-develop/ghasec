@@ -55,6 +55,7 @@ type expected struct {
 }
 
 type testCase struct {
+	Args      string         `yaml:"args"`
 	Workflows []testWorkflow `yaml:"workflows"`
 	Actions   []testAction   `yaml:"actions"`
 	Expected  expected       `yaml:"expected"`
@@ -92,14 +93,6 @@ func TestE2E(t *testing.T) {
 		return nil
 	})
 	require.NoError(t, err)
-}
-
-// extraCLIArgs maps test case names to additional CLI flags.
-var extraCLIArgs = map[string][]string{
-	"mismatched-sha-tag":    {"--online"},
-	"impostor-commit":       {"--online"},
-	"github-actions-format": {"--format", "github-actions"},
-	"agent-format":          {"--format", "agent"},
 }
 
 // extraEnvVars maps test case names to additional environment variables.
@@ -272,8 +265,8 @@ func runTestCase(t *testing.T, name string) {
 	sort.Strings(files)
 
 	var extraArgs []string
-	if args, ok := lookupTestConfig(extraCLIArgs, name); ok {
-		extraArgs = args
+	if tc.Args != "" {
+		extraArgs = strings.Fields(tc.Args)
 	}
 
 	var extraEnv []string

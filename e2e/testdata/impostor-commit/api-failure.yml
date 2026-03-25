@@ -1,3 +1,4 @@
+args: --online
 workflows:
   - name: api-failure.yml
     content: |

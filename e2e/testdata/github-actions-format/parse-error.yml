@@ -1,3 +1,4 @@
+args: --format github-actions
 workflows:
   - name: workflow.yml
     content: "on: push\n  bad: indent\n"

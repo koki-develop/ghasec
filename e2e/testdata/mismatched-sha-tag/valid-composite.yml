@@ -1,3 +1,4 @@
+args: --online
 actions:
   - name: action.yml
     content: |

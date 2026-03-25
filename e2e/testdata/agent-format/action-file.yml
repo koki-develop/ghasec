@@ -1,3 +1,4 @@
+args: --format agent
 actions:
   - name: action.yml
     content: |

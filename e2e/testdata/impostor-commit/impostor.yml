@@ -1,3 +1,4 @@
+args: --online
 workflows:
   - name: impostor.yml
     content: |

@@ -1,3 +1,4 @@
+args: --format github-actions
 actions:
   - name: action.yml
     content: |

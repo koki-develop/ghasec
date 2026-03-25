@@ -1,3 +1,4 @@
+args: --online
 workflows:
   - name: valid-non-default-branch.yml
     content: |

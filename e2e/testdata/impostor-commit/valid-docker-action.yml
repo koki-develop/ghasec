@@ -1,3 +1,4 @@
+args: --online
 workflows:
   - name: valid-docker-action.yml
     content: |

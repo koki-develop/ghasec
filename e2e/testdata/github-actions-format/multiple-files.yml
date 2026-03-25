@@ -1,3 +1,4 @@
+args: --format github-actions
 workflows:
   - name: a.yml
     content: |
