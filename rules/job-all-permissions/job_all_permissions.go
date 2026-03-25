@@ -17,6 +17,14 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
+func (r *Rule) Why() string {
+	return "read-all or write-all at the job level grants broad permissions, undoing the protection of a locked-down workflow-level permissions: {}"
+}
+
+func (r *Rule) Fix() string {
+	return "Declare individual permission scopes that the job actually needs instead of read-all or write-all"
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	jobsKV := mapping.FindKey("jobs")
 	if jobsKV == nil {

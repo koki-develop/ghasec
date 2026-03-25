@@ -14,6 +14,14 @@ type Rule interface {
 	Online() bool
 }
 
+// Explainer provides optional guidance for agent-facing output.
+// Rules that implement this interface will have Why/Fix fields
+// included in the agent output format.
+type Explainer interface {
+	Why() string
+	Fix() string
+}
+
 // WorkflowRule validates workflow files (.github/workflows/*.yml|yaml).
 // CheckWorkflow must be safe for concurrent use from multiple goroutines.
 type WorkflowRule interface {

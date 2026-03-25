@@ -21,6 +21,14 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
+func (r *Rule) Why() string {
+	return "GitHub Actions grants broad default permissions to GITHUB_TOKEN. Without explicit restriction, every job inherits these broad defaults, increasing the blast radius if a step is compromised"
+}
+
+func (r *Rule) Fix() string {
+	return "Set top-level permissions: {} and grant specific permissions per job"
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	fileStart := mapping.FirstToken()
 

@@ -15,6 +15,14 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
+func (r *Rule) Why() string {
+	return "Jobs default to a 360-minute timeout. Without an explicit timeout, a compromised step has a large window to exfiltrate data or pivot into the internal network, especially on self-hosted runners"
+}
+
+func (r *Rule) Fix() string {
+	return "Set timeout-minutes to an appropriate value for the expected runtime"
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	jobsKV := mapping.FindKey("jobs")
 	if jobsKV == nil {

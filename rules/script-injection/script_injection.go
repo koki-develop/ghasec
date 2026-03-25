@@ -18,6 +18,14 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
+func (r *Rule) Why() string {
+	return "${{ }} expressions interpolated into shell scripts or JavaScript can be manipulated by untrusted input (e.g., PR titles, issue bodies), enabling arbitrary code execution"
+}
+
+func (r *Rule) Fix() string {
+	return "Pass expression values through environment variables instead of inline interpolation"
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	mapping.EachStep(func(step workflow.StepMapping) {

@@ -27,6 +27,14 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return true }
 
+func (r *Rule) Why() string {
+	return "If the SHA and tag comment drift apart, the comment becomes a false assertion. A reviewer may approve the workflow believing a vetted release is in use while a different commit runs"
+}
+
+func (r *Rule) Fix() string {
+	return "Update the SHA to match the tag in the comment, or correct the comment to match the SHA"
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	mapping.EachStep(func(step workflow.StepMapping) {

@@ -24,6 +24,14 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return true }
 
+func (r *Rule) Why() string {
+	return "GitHub shares object storage across forks. An attacker can reference a malicious fork commit using the original repository's namespace, and the SHA resolves successfully"
+}
+
+func (r *Rule) Fix() string {
+	return "Verify the commit belongs to the referenced repository's history and update the SHA accordingly"
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	mapping.EachStep(func(step workflow.StepMapping) {

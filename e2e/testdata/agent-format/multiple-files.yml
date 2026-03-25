@@ -1,0 +1,46 @@
+workflows:
+  - name: a.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@v6
+              with:
+                persist-credentials: false
+  - name: b.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          permissions:
+            contents: read
+          steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 1
+  stdout: |
+    ## {{.Dir}}/a.yml:8:32
+
+    ```yaml
+          - uses: actions/checkout@v6
+    ```
+
+    - **Rule**: unpinned-action
+    - **Message**: "actions/checkout@v6" must be pinned to a full length commit SHA
+    - **Why**: Git tags and branches are mutable. A compromised upstream can move a tag to point to malicious code, executing it silently on the next run
+    - **Fix**: Pin to the full 40-character commit SHA. Add the version as an inline comment to keep it human-readable
+
+    ---
+
+    1 error found in 1 of 2 files.
+  stderr: ""

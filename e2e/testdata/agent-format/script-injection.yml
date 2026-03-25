@@ -1,0 +1,30 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo "${{ github.event.issue.title }}"
+
+expected:
+  exit_code: 1
+  stdout: |
+    ## {{.Dir}}/workflow.yml:8:20
+
+    ```yaml
+          - run: echo {{"\"${{ github.event.issue.title }}\""}}
+    ```
+
+    - **Rule**: script-injection
+    - **Message**: "run" must not contain expressions; use environment variables instead
+    - **Why**: {{"${{ }}"}} expressions interpolated into shell scripts or JavaScript can be manipulated by untrusted input (e.g., PR titles, issue bodies), enabling arbitrary code execution
+    - **Fix**: Pass expression values through environment variables instead of inline interpolation
+
+    ---
+
+    1 error found in 1 of 1 file.
+  stderr: ""

@@ -58,7 +58,7 @@ Usage:
   ghasec [files...] [flags]
 
 Flags:
-      --format string   output format ("default" or "github-actions") (default "default")
+      --format string   output format ("default", "github-actions", or "agent") (default "default")
   -h, --help            help for ghasec
       --no-color        disable colored output
       --online          enable rules that require network access
@@ -90,6 +90,16 @@ The GitHub API is subject to [rate limiting](https://docs.github.com/en/rest/usi
 ```console
 $ GITHUB_TOKEN=ghp_... ghasec --online
 ```
+
+### Agent Format
+
+Use `--format agent` to produce Markdown output designed for AI coding agents. Each diagnostic includes the source line, a description of why the issue matters, and how to fix it:
+
+```console
+$ ghasec --format agent
+```
+
+This format is optimized for AI agents like Claude Code or Cursor — pass the output directly and let the agent fix the issues autonomously.
 
 ### Ignoring Rules
 

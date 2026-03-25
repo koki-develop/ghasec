@@ -18,6 +18,14 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
+func (r *Rule) Why() string {
+	return "By default, actions/checkout persists the GITHUB_TOKEN in the local git config. Subsequent steps — including third-party actions — can extract and misuse this token"
+}
+
+func (r *Rule) Fix() string {
+	return "Add persist-credentials: false to the with section of the checkout step"
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	mapping.EachStep(func(step workflow.StepMapping) {

@@ -15,6 +15,14 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
+func (r *Rule) Why() string {
+	return "Git tags and branches are mutable. A compromised upstream can move a tag to point to malicious code, executing it silently on the next run"
+}
+
+func (r *Rule) Fix() string {
+	return "Pin to the full 40-character commit SHA. Add the version as an inline comment to keep it human-readable"
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	mapping.EachStep(func(step workflow.StepMapping) {

@@ -18,6 +18,14 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
+func (r *Rule) Why() string {
+	return "A 40-character SHA is opaque to human reviewers. Without an inline comment indicating the tag or branch, reviewers cannot tell whether the pinned version is current or suspicious"
+}
+
+func (r *Rule) Fix() string {
+	return "Add an inline comment with the corresponding tag or branch, e.g., # v6.0.0"
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	var errs []*diagnostic.Error
 	mapping.EachStep(func(step workflow.StepMapping) {
