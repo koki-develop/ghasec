@@ -77,6 +77,20 @@ You can also specify files explicitly:
 $ ghasec example.yml
 ```
 
+### Online Rules
+
+Some rules require network access to the GitHub API. Use the `--online` flag to enable them:
+
+```console
+$ ghasec --online
+```
+
+The GitHub API is subject to [rate limiting](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api). Set the `GITHUB_TOKEN` environment variable to use a higher rate limit:
+
+```console
+$ GITHUB_TOKEN=ghp_... ghasec --online
+```
+
 ### Ignoring Rules
 
 Add a `# ghasec-ignore: <rule-name>` comment above the line to suppress a specific diagnostic:
