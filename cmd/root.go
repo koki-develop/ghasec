@@ -14,6 +14,7 @@ import (
 	"github.com/koki-develop/ghasec/discover"
 	ghclient "github.com/koki-develop/ghasec/github"
 	"github.com/koki-develop/ghasec/parser"
+	"github.com/koki-develop/ghasec/progress"
 	"github.com/koki-develop/ghasec/renderer"
 	"github.com/koki-develop/ghasec/rules"
 	checkoutpersistcredentials "github.com/koki-develop/ghasec/rules/checkout-persist-credentials"
@@ -29,6 +30,7 @@ import (
 	scriptinjection "github.com/koki-develop/ghasec/rules/script-injection"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var errValidationFailed = errors.New("validation errors found")
@@ -100,12 +102,14 @@ var rootCmd = &cobra.Command{
 		}
 
 		a := analyzer.New(concurrency, activeRules...)
+		_, envNoColor := os.LookupEnv("NO_COLOR")
+		disableColor := noColor || envNoColor
+
 		var rdr renderer.Renderer
 		if format == "github-actions" {
 			rdr = renderer.NewGitHubActions()
 		} else {
-			_, envNoColor := os.LookupEnv("NO_COLOR")
-			rdr = renderer.NewDefault(noColor || envNoColor)
+			rdr = renderer.NewDefault(disableColor)
 		}
 
 		var tasks []fileTask
@@ -114,6 +118,21 @@ var rootCmd = &cobra.Command{
 		}
 		for _, f := range files.Actions {
 			tasks = append(tasks, fileTask{path: f, isAction: true})
+		}
+
+		// Progress tracking setup
+		totalRuleExecs := len(files.Workflows)*a.WorkflowRuleCount() + len(files.Actions)*a.ActionRuleCount()
+		a.InitProgress(totalRuleExecs)
+
+		// Progress bar setup (only when stderr is a TTY and default format)
+		var prog *progress.Progress
+		stderrFd := int(os.Stderr.Fd())
+		if format == "default" && term.IsTerminal(stderrFd) {
+			prog = progress.New(os.Stderr, stderrFd, disableColor)
+			defer prog.Clear()
+			a.SetProgressCallback(func(s progress.Status) {
+				prog.Update(s)
+			})
 		}
 
 		results := make([]fileResult, len(tasks))
@@ -130,6 +149,11 @@ var rootCmd = &cobra.Command{
 				astFile, err := parser.Parse(task.path)
 				if err != nil {
 					results[i] = fileResult{path: task.path, parseErr: err}
+					ruleCount := a.WorkflowRuleCount()
+					if task.isAction {
+						ruleCount = a.ActionRuleCount()
+					}
+					a.AdjustTotal(-ruleCount)
 					return
 				}
 
@@ -143,6 +167,12 @@ var rootCmd = &cobra.Command{
 			}(i, task)
 		}
 		wg.Wait()
+
+		// Clear progress bar before printing results.
+		// defer above handles panic cleanup; this handles normal flow.
+		if prog != nil {
+			prog.Clear()
+		}
 
 		var errorCount int
 		var errorFileCount int

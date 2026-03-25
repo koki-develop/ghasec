@@ -10,14 +10,21 @@ import (
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/ignore"
+	"github.com/koki-develop/ghasec/progress"
 	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
 )
+
+// ProgressCallback is called after each progress update.
+type ProgressCallback func(status progress.Status)
 
 type Analyzer struct {
 	concurrency   int
 	workflowRules []rules.WorkflowRule
 	actionRules   []rules.ActionRule
+	progressCB    ProgressCallback
+	mu            sync.Mutex
+	status        progress.Status
 }
 
 func New(concurrency int, rr ...rules.Rule) *Analyzer {
@@ -41,9 +48,54 @@ func New(concurrency int, rr ...rules.Rule) *Analyzer {
 	return a
 }
 
+// SetProgressCallback sets the callback invoked on each progress update.
+// When nil, no progress reporting occurs.
+func (a *Analyzer) SetProgressCallback(cb ProgressCallback) {
+	a.progressCB = cb
+}
+
+// InitProgress initializes the progress counters.
+func (a *Analyzer) InitProgress(total int) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.status = progress.Status{
+		Total: total,
+	}
+}
+
+// WorkflowRuleCount returns the number of workflow rules.
+func (a *Analyzer) WorkflowRuleCount() int { return len(a.workflowRules) }
+
+// ActionRuleCount returns the number of action rules.
+func (a *Analyzer) ActionRuleCount() int { return len(a.actionRules) }
+
+// AdjustTotal adjusts the total expected rule executions by delta.
+func (a *Analyzer) AdjustTotal(delta int) {
+	a.mu.Lock()
+	a.status.Total += delta
+	s := a.status
+	cb := a.progressCB
+	a.mu.Unlock()
+	if cb != nil {
+		cb(s)
+	}
+}
+
+func (a *Analyzer) completeRule() {
+	a.mu.Lock()
+	a.status.Completed++
+	s := a.status
+	cb := a.progressCB
+	a.mu.Unlock()
+	if cb != nil {
+		cb(s)
+	}
+}
+
 func (a *Analyzer) AnalyzeWorkflow(f *ast.File) []*diagnostic.Error {
 	mapping, errs := workflowTopLevelMapping(f)
 	if errs != nil {
+		a.AdjustTotal(-len(a.workflowRules))
 		return errs
 	}
 	return runRules(a, a.workflowRules, func(r rules.WorkflowRule) []*diagnostic.Error {
@@ -54,6 +106,7 @@ func (a *Analyzer) AnalyzeWorkflow(f *ast.File) []*diagnostic.Error {
 func (a *Analyzer) AnalyzeAction(f *ast.File) []*diagnostic.Error {
 	mapping, errs := actionTopLevelMapping(f)
 	if errs != nil {
+		a.AdjustTotal(-len(a.actionRules))
 		return errs
 	}
 	return runRules(a, a.actionRules, func(r rules.ActionRule) []*diagnostic.Error {
@@ -77,12 +130,14 @@ func runRules[R rules.Rule](a *Analyzer, ruleList []R, checkFn func(R) []*diagno
 				e.RuleID = r.ID()
 				requiredErrs = append(requiredErrs, e)
 			}
+			a.completeRule()
 		} else {
 			nonRequiredRules = append(nonRequiredRules, r)
 		}
 	}
 
 	if len(requiredErrs) > 0 {
+		a.AdjustTotal(-len(nonRequiredRules))
 		result := append(requiredErrs, requiredIgnoreErrs...)
 		sortDiagnostics(result)
 		return result
@@ -104,6 +159,7 @@ func runRules[R rules.Rule](a *Analyzer, ruleList []R, checkFn func(R) []*diagno
 				errs = append(errs, e)
 			}
 			ruleResults[i] = errs
+			a.completeRule()
 		}(i, r)
 	}
 	wg.Wait()

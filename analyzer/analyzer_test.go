@@ -7,6 +7,7 @@ import (
 	yamlparser "github.com/goccy/go-yaml/parser"
 	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/progress"
 	"github.com/koki-develop/ghasec/workflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -371,4 +372,171 @@ func TestAnalyzeAction_ParallelRuleOrdering(t *testing.T) {
 	assert.Equal(t, "rule-a", errs[0].RuleID)
 	assert.Equal(t, "rule-b", errs[1].RuleID)
 	assert.Equal(t, "rule-c", errs[2].RuleID)
+}
+
+// --- Progress callback tests ---
+
+func TestAnalyzeWorkflow_ProgressCallback_AllPass(t *testing.T) {
+	reqRule := &mockWorkflowRule{id: "req", required: true, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return nil
+	}}
+	lintRule := &mockWorkflowRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return nil
+	}}
+
+	var statuses []progress.Status
+	cb := func(s progress.Status) {
+		statuses = append(statuses, s)
+	}
+
+	a := analyzer.New(1, reqRule, lintRule)
+	a.InitProgress(2)
+	a.SetProgressCallback(cb)
+	f := parseYAML(t, "key: value")
+	a.AnalyzeWorkflow(f)
+
+	require.Len(t, statuses, 2)
+	assert.Equal(t, 1, statuses[0].Completed)
+	assert.Equal(t, 2, statuses[1].Completed)
+	for _, s := range statuses {
+		assert.Equal(t, 2, s.Total)
+	}
+}
+
+func TestAnalyzeWorkflow_ProgressCallback_RequiredEarlyExit(t *testing.T) {
+	reqRule := &mockWorkflowRule{id: "req", required: true, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{{Message: "required error"}}
+	}}
+	lintRule := &mockWorkflowRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return nil
+	}}
+
+	var statuses []progress.Status
+	cb := func(s progress.Status) {
+		statuses = append(statuses, s)
+	}
+
+	a := analyzer.New(1, reqRule, lintRule)
+	a.InitProgress(2)
+	a.SetProgressCallback(cb)
+	f := parseYAML(t, "key: value")
+	a.AnalyzeWorkflow(f)
+
+	// required rule completes (1 callback) + early exit adjusts total (1 callback)
+	require.Len(t, statuses, 2)
+	assert.Equal(t, 1, statuses[0].Completed)
+	assert.Equal(t, 2, statuses[0].Total)
+	assert.Equal(t, 1, statuses[1].Completed)
+	assert.Equal(t, 1, statuses[1].Total)
+}
+
+func TestAnalyzeWorkflow_ProgressCallback_NilIsNoop(t *testing.T) {
+	a := analyzer.New(1, &mockWorkflowRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return nil
+	}})
+	// No SetProgressCallback call — should not panic
+	f := parseYAML(t, "key: value")
+	errs := a.AnalyzeWorkflow(f)
+	assert.Empty(t, errs)
+}
+
+func TestAnalyzeAction_ProgressCallback(t *testing.T) {
+	reqRule := &mockActionRule{id: "req", required: true, check: func(mapping workflow.ActionMapping) []*diagnostic.Error {
+		return nil
+	}}
+	lintRule := &mockActionRule{id: "lint", required: false, check: func(mapping workflow.ActionMapping) []*diagnostic.Error {
+		return nil
+	}}
+
+	var statuses []progress.Status
+	cb := func(s progress.Status) {
+		statuses = append(statuses, s)
+	}
+
+	a := analyzer.New(1, reqRule, lintRule)
+	a.InitProgress(2)
+	a.SetProgressCallback(cb)
+	f := parseYAML(t, "key: value")
+	a.AnalyzeAction(f)
+
+	require.Len(t, statuses, 2)
+	assert.Equal(t, 1, statuses[0].Completed)
+	assert.Equal(t, 2, statuses[1].Completed)
+}
+
+func TestAnalyzer_RuleCounts(t *testing.T) {
+	wfReq := &mockWorkflowRule{id: "wf-req", required: true, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error { return nil }}
+	wfLint := &mockWorkflowRule{id: "wf-lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error { return nil }}
+	actReq := &mockActionRule{id: "act-req", required: true, check: func(mapping workflow.ActionMapping) []*diagnostic.Error { return nil }}
+	actLint := &mockActionRule{id: "act-lint", required: false, check: func(mapping workflow.ActionMapping) []*diagnostic.Error { return nil }}
+
+	a := analyzer.New(1, wfReq, wfLint, actReq, actLint)
+	assert.Equal(t, 2, a.WorkflowRuleCount())
+	assert.Equal(t, 2, a.ActionRuleCount())
+}
+
+func TestAnalyzer_AdjustTotal(t *testing.T) {
+	var statuses []progress.Status
+	cb := func(s progress.Status) {
+		statuses = append(statuses, s)
+	}
+
+	a := analyzer.New(1)
+	a.InitProgress(30)
+	a.SetProgressCallback(cb)
+
+	a.AdjustTotal(-10)
+
+	require.Len(t, statuses, 1)
+	assert.Equal(t, 20, statuses[0].Total)
+	assert.Equal(t, 0, statuses[0].Completed)
+}
+
+func TestAnalyzeWorkflow_ProgressCallback_BadMapping(t *testing.T) {
+	lintRule := &mockWorkflowRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return nil
+	}}
+
+	var statuses []progress.Status
+	cb := func(s progress.Status) {
+		statuses = append(statuses, s)
+	}
+
+	a := analyzer.New(1, lintRule)
+	a.InitProgress(1)
+	a.SetProgressCallback(cb)
+
+	// Non-mapping document triggers early return from AnalyzeWorkflow
+	f := parseYAML(t, "- item1\n- item2\n")
+	errs := a.AnalyzeWorkflow(f)
+
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "mapping")
+	// Progress total should be adjusted down by 1 (the rule that was skipped)
+	require.Len(t, statuses, 1)
+	assert.Equal(t, 0, statuses[0].Total)
+	assert.Equal(t, 0, statuses[0].Completed)
+}
+
+func TestAnalyzeAction_ProgressCallback_BadMapping(t *testing.T) {
+	lintRule := &mockActionRule{id: "lint", required: false, check: func(mapping workflow.ActionMapping) []*diagnostic.Error {
+		return nil
+	}}
+
+	var statuses []progress.Status
+	cb := func(s progress.Status) {
+		statuses = append(statuses, s)
+	}
+
+	a := analyzer.New(1, lintRule)
+	a.InitProgress(1)
+	a.SetProgressCallback(cb)
+
+	f := parseYAML(t, "- item1\n- item2\n")
+	errs := a.AnalyzeAction(f)
+
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "mapping")
+	require.Len(t, statuses, 1)
+	assert.Equal(t, 0, statuses[0].Total)
 }

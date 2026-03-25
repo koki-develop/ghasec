@@ -25,8 +25,19 @@ The analyzer centralizes all `# ghasec-ignore` directive processing — individu
 
 Diagnostics are sorted by position (line, then column) using stable sort, so rule registration order is preserved for same-position diagnostics.
 
+## Progress Tracking
+
+The analyzer supports optional progress reporting via a callback. `cmd/root.go` uses this to drive the progress bar.
+
+- `SetProgressCallback(cb ProgressCallback)` — set callback invoked on each progress update. Must be called before analysis begins.
+- `InitProgress(total int)` — initialize the total expected rule executions.
+- `AdjustTotal(delta int)` — adjust total (e.g., on parse failure or bad mapping, subtract skipped rules).
+- Rule completion is tracked internally via `completeRule()` (called after each rule execution in `runRules`).
+- `AnalyzeWorkflow`/`AnalyzeAction` call `AdjustTotal` when early-returning due to bad top-level mapping.
+
 ## Key API
 
 - `New(concurrency int, rules ...rules.Rule) *Analyzer` — constructor. Rules are classified into `WorkflowRule` and `ActionRule` lists by interface assertion.
 - `AnalyzeWorkflow(f *ast.File) []*diagnostic.Error` — run workflow rules.
 - `AnalyzeAction(f *ast.File) []*diagnostic.Error` — run action rules.
+- `WorkflowRuleCount() int` / `ActionRuleCount() int` — rule counts by file type (used for progress total computation).
