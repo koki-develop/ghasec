@@ -24,6 +24,8 @@ type Client struct {
 	flight       singleflight.Group
 	verifyCache  sync.Map // key: "verify:owner/repo@sha", value: verifyCacheEntry
 	verifyFlight singleflight.Group
+	branchCache  sync.Map // key: "owner/repo", value: branchCacheEntry
+	branchFlight singleflight.Group
 }
 
 type cacheEntry struct {
@@ -58,13 +60,20 @@ func NewClient(opts ...Option) *Client {
 }
 
 // gitRef is the common JSON structure shared across multiple git reference endpoints
-// (git/ref/tags, git/matching-refs/tags, git/tags).
+// (git/ref/tags, git/tags).
 type gitRef struct {
 	Ref    string `json:"ref"`
 	Object struct {
 		Type string `json:"type"`
 		SHA  string `json:"sha"`
 	} `json:"object"`
+}
+
+type repoTag struct {
+	Name   string `json:"name"`
+	Commit struct {
+		SHA string `json:"sha"`
+	} `json:"commit"`
 }
 
 type compareResponse struct {
@@ -78,6 +87,11 @@ type branch struct {
 type verifyCacheEntry struct {
 	ok  bool
 	err error
+}
+
+type branchCacheEntry struct {
+	branches []branch
+	err      error
 }
 
 // ResolveTagSHA resolves a git tag to its underlying commit SHA.
@@ -207,26 +221,17 @@ func (c *Client) VerifyCommit(ctx context.Context, owner, repo, sha string) (boo
 }
 
 func (c *Client) verifyCommit(ctx context.Context, owner, repo, sha string) (bool, error) {
-	// Phase 1: Check tags
-	tags, err := c.listTags(ctx, owner, repo)
+	// Phase 1: Check tags page by page (early return on match)
+	found, err := c.checkTagsPaginated(ctx, owner, repo, sha)
 	if err != nil {
 		return false, err
 	}
-	for _, tag := range tags {
-		commitSHA := tag.Object.SHA
-		if tag.Object.Type == "tag" {
-			commitSHA, err = c.dereferenceTag(ctx, owner, repo, tag.Object.SHA)
-			if err != nil {
-				return false, err
-			}
-		}
-		if commitSHA == sha {
-			return true, nil
-		}
+	if found {
+		return true, nil
 	}
 
 	// Phase 2: Check branches with bounded concurrency
-	branches, err := c.listBranches(ctx, owner, repo)
+	branches, err := c.cachedListBranches(ctx, owner, repo)
 	if err != nil {
 		return false, err
 	}
@@ -275,20 +280,48 @@ func (c *Client) verifyCommit(ctx context.Context, owner, repo, sha string) (boo
 	return false, nil
 }
 
-func (c *Client) listTags(ctx context.Context, owner, repo string) ([]gitRef, error) {
-	var all []gitRef
-	path := fmt.Sprintf("/repos/%s/%s/git/matching-refs/tags/", owner, repo)
+func (c *Client) checkTagsPaginated(ctx context.Context, owner, repo, sha string) (bool, error) {
+	path := fmt.Sprintf("/repos/%s/%s/tags", owner, repo)
 	for path != "" {
-		var page []gitRef
+		var page []repoTag
 		nextPath, err := c.doGetPaginated(ctx, path, &page,
 			fmt.Sprintf("failed to list tags on %s/%s", owner, repo))
 		if err != nil {
-			return nil, err
+			return false, err
 		}
-		all = append(all, page...)
+		for _, tag := range page {
+			// Populate ResolveTagSHA cache as a side effect.
+			c.cacheTagResolution(owner, repo, tag.Name, tag.Commit.SHA)
+			if tag.Commit.SHA == sha {
+				return true, nil
+			}
+		}
 		path = nextPath
 	}
-	return all, nil
+	return false, nil
+}
+
+func (c *Client) cacheTagResolution(owner, repo, tag, commitSHA string) {
+	key := fmt.Sprintf("%s/%s@%s", owner, repo, tag)
+	c.cache.LoadOrStore(key, cacheEntry{sha: commitSHA})
+}
+
+func (c *Client) cachedListBranches(ctx context.Context, owner, repo string) ([]branch, error) {
+	key := fmt.Sprintf("%s/%s", owner, repo)
+	if v, ok := c.branchCache.Load(key); ok {
+		entry := v.(branchCacheEntry)
+		return entry.branches, entry.err
+	}
+
+	v, err, _ := c.branchFlight.Do(key, func() (any, error) {
+		branches, err := c.listBranches(ctx, owner, repo)
+		c.branchCache.Store(key, branchCacheEntry{branches: branches, err: err})
+		return branches, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.([]branch), nil
 }
 
 func (c *Client) listBranches(ctx context.Context, owner, repo string) ([]branch, error) {
@@ -308,7 +341,7 @@ func (c *Client) listBranches(ctx context.Context, owner, repo string) ([]branch
 }
 
 func (c *Client) compareCommit(ctx context.Context, owner, repo, base, sha string) (string, error) {
-	path := fmt.Sprintf("/repos/%s/%s/compare/%s...%s", owner, repo, base, sha)
+	path := fmt.Sprintf("/repos/%s/%s/compare/%s...%s?per_page=1", owner, repo, base, sha)
 	url := c.baseURL + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

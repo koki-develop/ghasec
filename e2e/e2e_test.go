@@ -127,6 +127,13 @@ type mockGitObject struct {
 	SHA  string `json:"sha"`
 }
 
+type mockRepoTag struct {
+	Name   string `json:"name"`
+	Commit struct {
+		SHA string `json:"sha"`
+	} `json:"commit"`
+}
+
 // mockGitHubHandler maps test case names to custom HTTP handlers for the mock
 // GitHub API server. Use this for rules that need multi-endpoint mocking
 // (tag listing, branch listing, compare, etc.) beyond simple tag resolution.
@@ -149,9 +156,11 @@ func mismatchedSHATagHandler(w http.ResponseWriter, r *http.Request) {
 			Object: mockGitObject{Type: "commit", SHA: validSHA},
 		})
 	// Tag listing — needed because impostor-commit rule also runs during mismatched-sha-tag tests
-	case "/repos/actions/checkout/git/matching-refs/tags/":
-		_ = json.NewEncoder(w).Encode([]mockGitRef{
-			{Ref: "refs/tags/v4", Object: mockGitObject{Type: "commit", SHA: validSHA}},
+	case "/repos/actions/checkout/tags":
+		_ = json.NewEncoder(w).Encode([]mockRepoTag{
+			{Name: "v4", Commit: struct {
+				SHA string `json:"sha"`
+			}{SHA: validSHA}},
 		})
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -173,19 +182,23 @@ func impostorCommitHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.URL.Path {
 	// ===== actions/checkout =====
-	case "/repos/actions/checkout/git/matching-refs/tags/":
-		_ = json.NewEncoder(w).Encode([]mockGitRef{
-			{Ref: "refs/tags/v4", Object: mockGitObject{Type: "commit", SHA: taggedSHA}},
+	case "/repos/actions/checkout/tags":
+		_ = json.NewEncoder(w).Encode([]mockRepoTag{
+			{Name: "v4", Commit: struct {
+				SHA string `json:"sha"`
+			}{SHA: taggedSHA}},
 		})
 	case "/repos/actions/checkout/git/ref/tags/v4":
 		_ = json.NewEncoder(w).Encode(mockGitRef{
 			Ref: "refs/tags/v4", Object: mockGitObject{Type: "commit", SHA: taggedSHA},
 		})
 
-	// ===== actions/setup-go (annotated tag) =====
-	case "/repos/actions/setup-go/git/matching-refs/tags/":
-		_ = json.NewEncoder(w).Encode([]mockGitRef{
-			{Ref: "refs/tags/v5", Object: mockGitObject{Type: "tag", SHA: tagObjectSHA}},
+	// ===== actions/setup-go (annotated tag — /tags API returns resolved commit SHA) =====
+	case "/repos/actions/setup-go/tags":
+		_ = json.NewEncoder(w).Encode([]mockRepoTag{
+			{Name: "v5", Commit: struct {
+				SHA string `json:"sha"`
+			}{SHA: annotatedSHA}},
 		})
 	case "/repos/actions/setup-go/git/ref/tags/v5":
 		_ = json.NewEncoder(w).Encode(mockGitRef{
@@ -197,8 +210,8 @@ func impostorCommitHandler(w http.ResponseWriter, r *http.Request) {
 		})
 
 	// ===== actions/setup-node =====
-	case "/repos/actions/setup-node/git/matching-refs/tags/":
-		_ = json.NewEncoder(w).Encode([]mockGitRef{})
+	case "/repos/actions/setup-node/tags":
+		_ = json.NewEncoder(w).Encode([]mockRepoTag{})
 	case "/repos/actions/setup-node/git/ref/tags/v1":
 		_ = json.NewEncoder(w).Encode(mockGitRef{
 			Ref: "refs/tags/v1", Object: mockGitObject{Type: "commit", SHA: impostorSHA},
@@ -216,8 +229,8 @@ func impostorCommitHandler(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
 
 	// ===== actions/cache (non-default branch) =====
-	case "/repos/actions/cache/git/matching-refs/tags/":
-		_ = json.NewEncoder(w).Encode([]mockGitRef{})
+	case "/repos/actions/cache/tags":
+		_ = json.NewEncoder(w).Encode([]mockRepoTag{})
 	case "/repos/actions/cache/git/ref/tags/v1":
 		_ = json.NewEncoder(w).Encode(mockGitRef{
 			Ref: "refs/tags/v1", Object: mockGitObject{Type: "commit", SHA: nonDefaultSHA},
@@ -234,7 +247,7 @@ func impostorCommitHandler(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "behind"})
 
 	// ===== evil/action (API failure) =====
-	case "/repos/evil/action/git/matching-refs/tags/":
+	case "/repos/evil/action/tags":
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
 		return

@@ -209,6 +209,7 @@ var rootCmd = &cobra.Command{
 }
 
 func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
+	ghClient := newGitHubClient()
 	all := []rules.Rule{
 		&invalidworkflow.Rule{},
 		&invalidaction.Rule{},
@@ -220,8 +221,8 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
 		&jobtimeoutminutes.Rule{},
 		&scriptinjection.Rule{},
 		&missingsharefcomment.Rule{},
-		&impostorcommit.Rule{Verifier: newCommitVerifier()},
-		&mismatchedshatag.Rule{Resolver: newTagResolver()},
+		&impostorcommit.Rule{Verifier: ghClient},
+		&mismatchedshatag.Rule{Resolver: ghClient},
 	}
 	for _, r := range all {
 		if r.Online() && !onlineEnabled {
@@ -265,15 +266,7 @@ func resolveFiles(args []string) (classifiedFiles, error) {
 	}, nil
 }
 
-func newCommitVerifier() impostorcommit.CommitVerifier {
-	var opts []ghclient.Option
-	if baseURL := os.Getenv("GHASEC_GITHUB_API_URL"); baseURL != "" {
-		opts = append(opts, ghclient.WithBaseURL(baseURL))
-	}
-	return ghclient.NewClient(opts...)
-}
-
-func newTagResolver() mismatchedshatag.TagResolver {
+func newGitHubClient() *ghclient.Client {
 	var opts []ghclient.Option
 	if baseURL := os.Getenv("GHASEC_GITHUB_API_URL"); baseURL != "" {
 		opts = append(opts, ghclient.WithBaseURL(baseURL))
