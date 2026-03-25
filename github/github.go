@@ -432,7 +432,7 @@ func (c *Client) doGetPaginated(ctx context.Context, path string, result any, er
 }
 
 func parseLinkNext(header, baseURL string) string {
-	for _, part := range strings.Split(header, ",") {
+	for part := range strings.SplitSeq(header, ",") {
 		part = strings.TrimSpace(part)
 		if !strings.Contains(part, `rel="next"`) {
 			continue

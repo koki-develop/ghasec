@@ -131,10 +131,7 @@ func (p *Progress) redraw() {
 	// Layout: "<spinner> Checking... [<bar>] <pct>"
 	plainPrefix := spinnerChar + " Checking... ["
 	plainClosing := "]"
-	barWidth := tw - utf8.RuneCountInString(plainPrefix) - len(plainClosing) - len(pctStr)
-	if barWidth < minBarWidth {
-		barWidth = minBarWidth
-	}
+	barWidth := max(tw-utf8.RuneCountInString(plainPrefix)-len(plainClosing)-len(pctStr), minBarWidth)
 	if barWidth > maxBarWidth {
 		barWidth = maxBarWidth
 	}

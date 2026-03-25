@@ -104,9 +104,7 @@ func fetchSHA256s(version string) (map[string]string, error) {
 
 	var wg sync.WaitGroup
 	for i, key := range archiveKeys {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			url := fmt.Sprintf(
 				"https://github.com/koki-develop/ghasec/releases/download/v%s/ghasec_%s.tar.gz",
 				version, key,
@@ -119,7 +117,7 @@ func fetchSHA256s(version string) (map[string]string, error) {
 			mu.Lock()
 			shas[key] = sha
 			mu.Unlock()
-		}()
+		})
 	}
 	wg.Wait()
 
