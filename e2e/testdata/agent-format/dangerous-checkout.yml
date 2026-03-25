@@ -1,0 +1,33 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: pull_request_target
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              with:
+                persist-credentials: false
+                ref: ${{ github.event.pull_request.head.sha }}
+
+expected:
+  exit_code: 1
+  stdout: |
+    ## {{.Dir}}/workflow.yml:11:16
+
+    ```yaml
+              ref: {{"${{ github.event.pull_request.head.sha }}"}}
+    ```
+
+    - **Rule**: dangerous-checkout
+    - **Message**: "ref" must not reference pull request head in a "pull_request_target" workflow
+    - **Why**: Workflows triggered by pull_request_target run with access to repository secrets. Checking out pull request head code allows an attacker to execute malicious code from a fork with those secrets
+    - **Fix**: Remove the ref parameter from actions/checkout so it checks out the base branch code instead of the pull request head
+
+    ---
+
+    1 error found in 1 of 1 file.
+  stderr: ""

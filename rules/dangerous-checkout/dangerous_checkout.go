@@ -30,6 +30,14 @@ func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
 func (r *Rule) Online() bool   { return false }
 
+func (r *Rule) Why() string {
+	return "Workflows triggered by pull_request_target run with access to repository secrets. Checking out pull request head code allows an attacker to execute malicious code from a fork with those secrets"
+}
+
+func (r *Rule) Fix() string {
+	return "Remove the ref parameter from actions/checkout so it checks out the base branch code instead of the pull request head"
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	if !hasPullRequestTarget(mapping) {
 		return nil
