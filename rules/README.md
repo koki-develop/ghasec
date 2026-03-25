@@ -8,6 +8,7 @@ Rules marked as **Online** require network access (e.g., GitHub API) and are dis
 | [invalid-action](./invalid-action/README.md) | Validates that a GitHub Actions action metadata file has the required structure. | |
 | [unpinned-action](./unpinned-action/README.md) | Checks that third-party action references are pinned to a full-length commit SHA. | |
 | [checkout-persist-credentials](./checkout-persist-credentials/README.md) | Checks that `actions/checkout` is configured with `persist-credentials: false`. | |
+| [dangerous-checkout](./dangerous-checkout/README.md) | Checks that `actions/checkout` in `pull_request_target` workflows does not check out pull request head code. | |
 | [default-permissions](./default-permissions/README.md) | Checks that workflow-level `permissions` is set to `{}`. | |
 | [job-all-permissions](./job-all-permissions/README.md) | Checks that job-level `permissions` does not use `read-all` or `write-all`. | |
 | [job-timeout-minutes](./job-timeout-minutes/README.md) | Checks that every job explicitly sets `timeout-minutes`. | |

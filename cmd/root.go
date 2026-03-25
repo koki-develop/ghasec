@@ -18,6 +18,7 @@ import (
 	"github.com/koki-develop/ghasec/renderer"
 	"github.com/koki-develop/ghasec/rules"
 	checkoutpersistcredentials "github.com/koki-develop/ghasec/rules/checkout-persist-credentials"
+	dangerouscheckout "github.com/koki-develop/ghasec/rules/dangerous-checkout"
 	defaultpermissions "github.com/koki-develop/ghasec/rules/default-permissions"
 	impostorcommit "github.com/koki-develop/ghasec/rules/impostor-commit"
 	invalidaction "github.com/koki-develop/ghasec/rules/invalid-action"
@@ -222,6 +223,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&invalidexpression.Rule{},
 		&unpinnedaction.Rule{},
 		&checkoutpersistcredentials.Rule{},
+		&dangerouscheckout.Rule{},
 		&defaultpermissions.Rule{},
 		&joballpermissions.Rule{},
 		&jobtimeoutminutes.Rule{},

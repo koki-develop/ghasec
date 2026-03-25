@@ -1,0 +1,23 @@
+workflows:
+  - name: dangerous-checkout.yml
+    content: |
+      on:
+        pull_request_target:
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+              with:
+                persist-credentials: false
+            - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+              with:
+                ref: ${{ github.event.pull_request.head.sha }}
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

@@ -1,0 +1,35 @@
+workflows:
+  - name: dangerous-checkout.yml
+    content: |
+      on:
+        push:
+        pull_request_target:
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+              with:
+                persist-credentials: false
+                ref: ${{ github.event.pull_request.head.sha }}
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/dangerous-checkout.yml:13:16
+    ...
+     5 | jobs:
+     6 |   build:
+    ...
+     9 |     steps:
+    10 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+    11 |         with:
+    ...
+    13 |           ref: ${{"{{" }} github.event.pull_request.head.sha {{"}}"}}
+       |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "ref" must not reference pull request head in a "pull_request_target" workflow (dangerous-checkout)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/dangerous-checkout/README.md
+
+    ✗ 1 error found in 1 of 1 file
