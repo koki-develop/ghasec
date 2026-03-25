@@ -1,0 +1,30 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          env:
+            ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+          steps:
+            - run: echo hello
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:8:7
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     env:
+    8 |       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+      |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "ACTIONS_ALLOW_UNSECURE_COMMANDS" must not be enabled (deprecated-commands)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/deprecated-commands/README.md
+
+    ✗ 1 error found in 1 of 1 file
