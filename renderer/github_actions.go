@@ -53,6 +53,12 @@ func (r *GitHubActionsRenderer) PrintSummary(totalFiles, errorCount, errorFileCo
 	return nil
 }
 
+// PrintHint renders a hint as a GitHub Actions ::warning command.
+func (r *GitHubActionsRenderer) PrintHint(message string) error {
+	_, err := fmt.Fprintf(os.Stdout, "::warning::%s\n", escapeData(message))
+	return err
+}
+
 // escapeData escapes special characters in workflow command message data.
 // Order matters: % must be escaped first to avoid double-escaping.
 func escapeData(s string) string {

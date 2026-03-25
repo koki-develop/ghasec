@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/sync/singleflight"
@@ -20,6 +21,7 @@ type Client struct {
 	httpClient   *http.Client
 	baseURL      string
 	token        string
+	rateLimitHit atomic.Bool
 	cache        sync.Map // key: "owner/repo@tag", value: cacheEntry
 	flight       singleflight.Group
 	verifyCache  sync.Map // key: "verify:owner/repo@sha", value: verifyCacheEntry
@@ -148,7 +150,7 @@ func (c *Client) doGet(ctx context.Context, path string, result any, errContext 
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return apiError(resp, errContext)
+		return c.apiError(resp, errContext)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
@@ -188,16 +190,48 @@ func (c *Client) setHeaders(req *http.Request) {
 
 // apiError builds an error from a non-200 GitHub API response,
 // including the error message from the response body when available.
-func apiError(resp *http.Response, context string) error {
+// It also detects rate limit errors (HTTP 429, or HTTP 403 with
+// X-Ratelimit-Remaining: 0 or a "rate limit" message) and sets
+// the rateLimitHit flag.
+func (c *Client) apiError(resp *http.Response, errContext string) error {
 	var body struct {
 		Message string `json:"message"`
 	}
 	_ = json.NewDecoder(resp.Body).Decode(&body)
 
-	if body.Message != "" {
-		return fmt.Errorf("%s: HTTP %d: %s", context, resp.StatusCode, body.Message)
+	if c.isRateLimited(resp, body.Message) {
+		c.rateLimitHit.Store(true)
 	}
-	return fmt.Errorf("%s: HTTP %d", context, resp.StatusCode)
+
+	if body.Message != "" {
+		return fmt.Errorf("%s: HTTP %d: %s", errContext, resp.StatusCode, body.Message)
+	}
+	return fmt.Errorf("%s: HTTP %d", errContext, resp.StatusCode)
+}
+
+func (c *Client) isRateLimited(resp *http.Response, message string) bool {
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return true
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		if resp.Header.Get("X-Ratelimit-Remaining") == "0" {
+			return true
+		}
+		if strings.Contains(strings.ToLower(message), "rate limit") {
+			return true
+		}
+	}
+	return false
+}
+
+// RateLimitHit reports whether any API call encountered a rate limit error.
+func (c *Client) RateLimitHit() bool {
+	return c.rateLimitHit.Load()
+}
+
+// HasToken reports whether the client was configured with a GitHub token.
+func (c *Client) HasToken() bool {
+	return c.token != ""
 }
 
 // VerifyCommit checks whether a commit SHA is reachable from any branch or tag
@@ -362,7 +396,7 @@ func (c *Client) compareCommit(ctx context.Context, owner, repo, base, sha strin
 		return "", nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", apiError(resp, fmt.Sprintf("failed to compare %s...%s on %s/%s", base, sha, owner, repo))
+		return "", c.apiError(resp, fmt.Sprintf("failed to compare %s...%s on %s/%s", base, sha, owner, repo))
 	}
 
 	var cr compareResponse
@@ -387,7 +421,7 @@ func (c *Client) doGetPaginated(ctx context.Context, path string, result any, er
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", apiError(resp, errContext)
+		return "", c.apiError(resp, errContext)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {

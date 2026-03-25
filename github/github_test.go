@@ -117,6 +117,96 @@ func TestResolveTagSHA_403WithMessage(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "HTTP 403")
 	assert.Contains(t, err.Error(), "API rate limit exceeded")
+	assert.True(t, c.RateLimitHit(), "rate limit flag should be set for 403 with rate limit message")
+}
+
+func TestRateLimitDetection_429(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "rate limit exceeded"})
+	})
+
+	_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v4")
+	require.Error(t, err)
+	assert.True(t, c.RateLimitHit())
+}
+
+func TestRateLimitDetection_403WithRemainingZero(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Ratelimit-Remaining", "0")
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "forbidden"})
+	})
+
+	_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v4")
+	require.Error(t, err)
+	assert.True(t, c.RateLimitHit())
+}
+
+func TestRateLimitDetection_403WithSecondaryRateLimitMessage(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "You have exceeded a secondary rate limit."})
+	})
+
+	_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v4")
+	require.Error(t, err)
+	assert.True(t, c.RateLimitHit())
+}
+
+func TestRateLimitDetection_403WithoutRateLimit(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Resource not accessible by integration"})
+	})
+
+	_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v4")
+	require.Error(t, err)
+	assert.False(t, c.RateLimitHit(), "non-rate-limit 403 should not set the flag")
+}
+
+func TestRateLimitDetection_VerifyCommit_TagsEndpoint(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "rate limit exceeded"})
+	})
+
+	_, err := c.VerifyCommit(context.Background(), "actions", "checkout", "aaaa")
+	require.Error(t, err)
+	assert.True(t, c.RateLimitHit(), "rate limit flag should be set via doGetPaginated path")
+}
+
+func TestRateLimitDetection_VerifyCommit_CompareEndpoint(t *testing.T) {
+	sha := "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/tags":
+			_, _ = w.Write(repoTagsJSON())
+		case "/repos/actions/checkout/branches":
+			_ = json.NewEncoder(w).Encode([]branch{{Name: "main"}})
+		default:
+			w.WriteHeader(http.StatusTooManyRequests)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "rate limit exceeded"})
+		}
+	})
+
+	_, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+	require.Error(t, err)
+	assert.True(t, c.RateLimitHit(), "rate limit flag should be set via compareCommit path")
+}
+
+func TestHasToken(t *testing.T) {
+	withToken := NewClient(WithBaseURL("http://localhost"), WithToken("ghp_test"))
+	assert.True(t, withToken.HasToken())
+
+	withoutToken := NewClient(WithBaseURL("http://localhost"), WithToken(""))
+	assert.False(t, withoutToken.HasToken())
 }
 
 func TestResolveTagSHA_NonJSONErrorBody(t *testing.T) {

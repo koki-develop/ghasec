@@ -27,9 +27,10 @@
 
 ## Key API
 
-- `Renderer` — interface with `PrintParseError`, `PrintDiagnosticError`, and `PrintSummary`. Used by `cmd/root.go` to abstract over output formats.
+- `Renderer` — interface with `PrintParseError`, `PrintDiagnosticError`, `PrintSummary`, and `PrintHint`. Used by `cmd/root.go` to abstract over output formats.
 - `NewDefault(noColor bool) *DefaultRenderer` — constructor for the annotated stderr renderer (default format).
 - `NewGitHubActions() *GitHubActionsRenderer` — constructor for the GitHub Actions `::error` workflow command renderer. Outputs to stdout. See `github_actions.go`.
 - `PrintParseError(path string, err error) error` — render a YAML parse error (from `goccy/go-yaml`).
 - `PrintDiagnosticError(path string, e *diagnostic.Error) error` — render a diagnostic error with source annotation, ancestor breadcrumbs, and rule reference URL.
 - `PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error` — render a styled summary block with file counts, error counts, and optional online-rules warning. No-op for `GitHubActionsRenderer`.
+- `PrintHint(message string) error` — render a styled hint message. `DefaultRenderer` outputs yellow text with an info icon to stderr. `GitHubActionsRenderer` emits a `::warning` workflow command to stdout.

@@ -96,7 +96,7 @@ var rootCmd = &cobra.Command{
 			return errors.New("no files found")
 		}
 
-		activeRules, skippedOnline := buildRules(online)
+		activeRules, skippedOnline, ghClient := buildRules(online)
 		if _, disabled := os.LookupEnv("GHASEC_DISABLE_OFFLINE_WARNING"); disabled {
 			skippedOnline = 0
 		}
@@ -201,6 +201,12 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
+		if ghClient.RateLimitHit() && !ghClient.HasToken() {
+			if err := rdr.PrintHint("set the GITHUB_TOKEN environment variable to increase the GitHub API rate limit"); err != nil {
+				return err
+			}
+		}
+
 		if errorCount > 0 {
 			return errValidationFailed
 		}
@@ -208,8 +214,8 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
-	ghClient := newGitHubClient()
+func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, client *ghclient.Client) {
+	client = newGitHubClient()
 	all := []rules.Rule{
 		&invalidworkflow.Rule{},
 		&invalidaction.Rule{},
@@ -221,8 +227,8 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int) {
 		&jobtimeoutminutes.Rule{},
 		&scriptinjection.Rule{},
 		&missingsharefcomment.Rule{},
-		&impostorcommit.Rule{Verifier: ghClient},
-		&mismatchedshatag.Rule{Resolver: ghClient},
+		&impostorcommit.Rule{Verifier: client},
+		&mismatchedshatag.Rule{Resolver: client},
 	}
 	for _, r := range all {
 		if r.Online() && !onlineEnabled {

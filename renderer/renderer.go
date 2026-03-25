@@ -18,6 +18,7 @@ type Renderer interface {
 	PrintParseError(path string, err error) error
 	PrintDiagnosticError(path string, e *diagnostic.Error) error
 	PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error
+	PrintHint(message string) error
 }
 
 // DefaultRenderer handles diagnostic error rendering with consistent styling.
@@ -332,4 +333,11 @@ func (r *DefaultRenderer) PrintSummary(totalFiles, errorCount, errorFileCount, s
 	}
 
 	return nil
+}
+
+// PrintHint renders a styled hint message to stderr.
+func (r *DefaultRenderer) PrintHint(message string) error {
+	yellow := r.styled(annotate.FgYellow)
+	_, err := fmt.Fprintln(os.Stderr, yellow("ℹ "+message))
+	return err
 }
