@@ -26,4 +26,4 @@ steps:
   - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 ```
 
-Pin to the full 40-character commit SHA and add the corresponding tag as an inline comment. This rule verifies the two stay in sync.
+Pin to the full 40-character commit SHA and add the corresponding tag as an inline comment. This rule resolves the tag via the GitHub API and verifies that the two stay in sync.

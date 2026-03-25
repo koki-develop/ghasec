@@ -22,8 +22,8 @@ steps:
 
 ```yaml
 steps:
-  # This SHA belongs to the v4 tag on the actions/checkout repository.
+  # This SHA belongs to the v6.0.2 tag on the actions/checkout repository.
   - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 ```
 
-Pin to a commit SHA that is reachable from a branch or tag in the action's repository. This rule verifies reachability via the GitHub API.
+Pin to a commit SHA that is reachable from a branch or tag in the action's repository. This rule verifies reachability via the GitHub API. It checks both workflow files and action metadata files (composite action steps).

@@ -16,7 +16,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - run: npm install && npm test
@@ -28,9 +28,53 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+```
+
+```yaml
+on: pull_request_target
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+```
+
+```yaml
+on: pull_request_target
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+```
+
+```yaml
+on: pull_request_target
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
         with:
           ref: refs/pull/${{ github.event.number }}/merge
+```
+
+```yaml
+on: pull_request_target
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 ```
 
 **Good** :white_check_mark:
@@ -41,7 +85,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 ```
 
 Omitting the `ref:` parameter causes `actions/checkout` to check out the base branch code, which is safe because it is controlled by the repository maintainers.
