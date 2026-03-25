@@ -5,5 +5,5 @@ workflows:
 expected:
   exit_code: 1
   stdout: |
-    ::error title=parse-error,file={{.Dir}}/workflow.yml,line=1::mapping value is not allowed in this context
+    ::error title=parse-error,file={{.Dir}}/workflow.yml,line=1::{{.Dir}}/workflow.yml:1:5: mapping value is not allowed in this context
   stderr: ""

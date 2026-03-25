@@ -9,7 +9,7 @@ import (
 )
 
 // GitHubActionsRenderer outputs diagnostics as GitHub Actions workflow commands.
-// Format: ::error title=<title>,file=<file>,line=<line>::<message>
+// Format: ::error title=<title>,file=<file>,line=<line>::<file>:<line>:<col>: <message>
 type GitHubActionsRenderer struct{}
 
 // NewGitHubActions creates a GitHubActionsRenderer.
@@ -27,10 +27,13 @@ func (r *GitHubActionsRenderer) PrintParseError(path string, err error) error {
 	if !isValidToken(tk) {
 		return fmt.Errorf("parse error without position for %s: %s", path, yErr.GetMessage())
 	}
-	_, writeErr := fmt.Fprintf(os.Stdout, "::error title=%s,file=%s,line=%d::%s\n",
+	_, writeErr := fmt.Fprintf(os.Stdout, "::error title=%s,file=%s,line=%d::%s:%d:%d: %s\n",
 		escapeProperty("parse-error"),
 		escapeProperty(path),
 		tk.Position.Line,
+		escapeData(path),
+		tk.Position.Line,
+		tk.Position.Column,
 		escapeData(yErr.GetMessage()))
 	return writeErr
 }
@@ -40,10 +43,13 @@ func (r *GitHubActionsRenderer) PrintDiagnosticError(path string, e *diagnostic.
 	if !isValidToken(e.Token) {
 		return fmt.Errorf("diagnostic error without position for %s: %s", path, e.Message)
 	}
-	_, err := fmt.Fprintf(os.Stdout, "::error title=%s,file=%s,line=%d::%s\n",
+	_, err := fmt.Fprintf(os.Stdout, "::error title=%s,file=%s,line=%d::%s:%d:%d: %s\n",
 		escapeProperty(e.RuleID),
 		escapeProperty(path),
 		e.Token.Position.Line,
+		escapeData(path),
+		e.Token.Position.Line,
+		e.Token.Position.Column,
 		escapeData(e.Message))
 	return err
 }

@@ -53,7 +53,7 @@ func TestGitHubActionsRenderer_PrintDiagnosticError(t *testing.T) {
 		require.NoError(t, err)
 	})
 	assert.Equal(t,
-		"::error title=unpinned-action,file=workflow.yml,line=8::\"actions/checkout@v6\" must be pinned to a full length commit SHA\n",
+		"::error title=unpinned-action,file=workflow.yml,line=8::workflow.yml:8:15: \"actions/checkout@v6\" must be pinned to a full length commit SHA\n",
 		output)
 }
 
@@ -69,7 +69,7 @@ func TestGitHubActionsRenderer_PrintParseError(t *testing.T) {
 		require.NoError(t, err)
 	})
 	assert.Equal(t,
-		"::error title=parse-error,file=broken.yml,line=1::found invalid token\n",
+		"::error title=parse-error,file=broken.yml,line=1::broken.yml:1:1: found invalid token\n",
 		output)
 }
 
@@ -134,7 +134,7 @@ func TestGitHubActionsRenderer_PrintDiagnosticError_EscapedMessage(t *testing.T)
 		require.NoError(t, err)
 	})
 	assert.Equal(t,
-		"::error title=rule-id,file=file.yml,line=1::msg with 100%25 and%0Anewline\n",
+		"::error title=rule-id,file=file.yml,line=1::file.yml:1:1: msg with 100%25 and%0Anewline\n",
 		output)
 }
 
@@ -154,7 +154,7 @@ func TestGitHubActionsRenderer_PrintDiagnosticError_EscapedPath(t *testing.T) {
 		require.NoError(t, err)
 	})
 	assert.Equal(t,
-		"::error title=rule-id,file=path%3Awith%2Cspecial,line=1::msg\n",
+		"::error title=rule-id,file=path%3Awith%2Cspecial,line=1::path:with,special:1:1: msg\n",
 		output)
 }
 

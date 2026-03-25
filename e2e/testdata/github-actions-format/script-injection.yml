@@ -15,5 +15,5 @@ workflows:
 expected:
   exit_code: 1
   stdout: |
-    ::error title=script-injection,file={{.Dir}}/workflow.yml,line=9::"run" must not contain expressions; use environment variables instead
+    ::error title=script-injection,file={{.Dir}}/workflow.yml,line=9::{{.Dir}}/workflow.yml:9:16: "run" must not contain expressions; use environment variables instead
   stderr: ""

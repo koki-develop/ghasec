@@ -5,5 +5,5 @@ workflows:
 expected:
   exit_code: 1
   stdout: |
-    ::error title=,file={{.Dir}}/workflow.yml,line=1::workflow must be a YAML mapping
+    ::error title=,file={{.Dir}}/workflow.yml,line=1::{{.Dir}}/workflow.yml:1:1: workflow must be a YAML mapping
   stderr: ""

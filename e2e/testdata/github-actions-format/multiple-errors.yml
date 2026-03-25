@@ -14,7 +14,7 @@ workflows:
 expected:
   exit_code: 1
   stdout: |
-    ::error title=checkout-persist-credentials,file={{.Dir}}/workflow.yml,line=8::"persist-credentials: false" must be set in "with"
-    ::error title=unpinned-action,file={{.Dir}}/workflow.yml,line=8::"actions/checkout@v6" must be pinned to a full length commit SHA
-    ::error title=unpinned-action,file={{.Dir}}/workflow.yml,line=9::"actions/setup-go@v5" must be pinned to a full length commit SHA
+    ::error title=checkout-persist-credentials,file={{.Dir}}/workflow.yml,line=8::{{.Dir}}/workflow.yml:8:15: "persist-credentials: false" must be set in "with"
+    ::error title=unpinned-action,file={{.Dir}}/workflow.yml,line=8::{{.Dir}}/workflow.yml:8:32: "actions/checkout@v6" must be pinned to a full length commit SHA
+    ::error title=unpinned-action,file={{.Dir}}/workflow.yml,line=9::{{.Dir}}/workflow.yml:9:32: "actions/setup-go@v5" must be pinned to a full length commit SHA
   stderr: ""
