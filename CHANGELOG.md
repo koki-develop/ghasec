@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0](https://github.com/koki-develop/ghasec/compare/v0.2.0...v0.3.0) (2026-03-25)
+
+
+### Features
+
+* add --format agent for AI-agent-friendly Markdown output ([7d684d7](https://github.com/koki-develop/ghasec/commit/7d684d7adfc9f43acd77797d47bce454f6da0aaa))
+* add agent format support for dangerous-checkout rule ([e78bc2a](https://github.com/koki-develop/ghasec/commit/e78bc2a7f942112672c45f4ac33dc21fbc842dfd))
+* add deprecated-commands rule ([85d22e2](https://github.com/koki-develop/ghasec/commit/85d22e2dbf0fe9de2d4dc039f9f3d50d346f316b))
+
 ## [0.2.0](https://github.com/koki-develop/ghasec/compare/v0.1.0...v0.2.0) (2026-03-25)
 
 
