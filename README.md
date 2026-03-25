@@ -43,6 +43,11 @@ $ docker run --rm -v "$(pwd):/mnt" ghcr.io/koki-develop/ghasec:latest
 
 Download the binary for your platform from the [Releases](https://github.com/koki-develop/ghasec/releases/latest) page.
 
+### GitHub Actions
+
+- [ghasec-action](https://github.com/koki-develop/ghasec-action) - A GitHub Action to run ghasec.
+- [setup-ghasec](https://github.com/koki-develop/setup-ghasec) - A GitHub Action to install ghasec. Use this if you want to run ghasec with custom options.
+
 ## Usage
 
 ```console
@@ -53,10 +58,11 @@ Usage:
   ghasec [files...] [flags]
 
 Flags:
-  -h, --help       help for ghasec
-      --no-color   disable colored output
-      --online     enable rules that require network access
-  -v, --version    version for ghasec
+      --format string   output format ("default" or "github-actions") (default "default")
+  -h, --help            help for ghasec
+      --no-color        disable colored output
+      --online          enable rules that require network access
+  -v, --version         version for ghasec
 ```
 
 When run without arguments, ghasec automatically discovers `.github/workflows/*.yml|yaml` and `**/action.yml|yaml` files in the current directory.
