@@ -32,4 +32,4 @@ expected:
       | ^^^^ unknown key "hoge" (invalid-workflow)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
-    4 errors found in 1 file
+    ✗ 4 errors found in 1 of 1 file

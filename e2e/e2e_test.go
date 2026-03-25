@@ -440,7 +440,7 @@ func TestE2E_AutoDiscoverWithActions(t *testing.T) {
 	exitErr, ok := err.(*exec.ExitError)
 	require.True(t, ok)
 	assert.Equal(t, 1, exitErr.ExitCode())
-	assert.Contains(t, stderrBuf.String(), "2 errors found in 2 files")
+	assert.Contains(t, stderrBuf.String(), "✗ 2 errors found in 2 of 2 files")
 }
 
 func TestE2E_InvalidFormat(t *testing.T) {

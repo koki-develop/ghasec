@@ -18,4 +18,4 @@ expected:
       |           ^^^^^^^ "branding" must be a mapping, but got string (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 
-    1 error found in 1 file
+    ✗ 1 error found in 1 of 1 file

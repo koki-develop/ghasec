@@ -13,4 +13,4 @@ expected:
       | ^ action must be a YAML mapping
     ...
 
-    1 error found in 1 file
+    ✗ 1 error found in 1 of 1 file

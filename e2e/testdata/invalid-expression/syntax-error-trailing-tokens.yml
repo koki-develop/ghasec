@@ -24,4 +24,4 @@ expected:
       |                   ^^^^^^^^^^^^^^^^^ invalid expression syntax: unexpected token 'false' after expression (invalid-expression)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-expression/README.md
 
-    1 error found in 1 file
+    ✗ 1 error found in 1 of 1 file

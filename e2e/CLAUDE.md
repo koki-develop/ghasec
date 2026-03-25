@@ -41,7 +41,7 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/rule-id/README.md
 
-    N error(s) found in M file(s)
+    ✗ N error(s) found in M of T file(s)
 ```
 
 - `workflows`: list of objects with `name` (filename) and `content` (workflow YAML as block scalar). Files are written to `{{.Dir}}/`.
@@ -51,4 +51,4 @@ expected:
 - The test runner sorts all file paths (workflows and actions combined) alphabetically before passing them to ghasec. Errors in `stderr` must follow that alphabetical file order.
 - The test runner sets `NO_COLOR=` to disable ANSI codes. All expected output is plain text.
 - Valid workflow files (no errors) produce no output entries.
-- The summary line counts only files that had errors, not total files processed.
+- The summary line shows both the error file count and the total files processed (e.g., "1 of 3 files").

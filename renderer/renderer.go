@@ -17,6 +17,7 @@ import (
 type Renderer interface {
 	PrintParseError(path string, err error) error
 	PrintDiagnosticError(path string, e *diagnostic.Error) error
+	PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error
 }
 
 // DefaultRenderer handles diagnostic error rendering with consistent styling.
@@ -290,5 +291,45 @@ func (r *DefaultRenderer) printAnnotatedError(p annotationParams) error {
 	} else {
 		fmt.Fprintf(os.Stderr, "%s\n%s\n", header, output)
 	}
+	return nil
+}
+
+func pluralize(word string, count int) string {
+	if count == 1 {
+		return word
+	}
+	return word + "s"
+}
+
+// PrintSummary renders a styled summary block with results, file counts, and
+// optional online-rules warning.
+func (r *DefaultRenderer) PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error {
+	greenBold := r.styled(annotate.ComposeStyles(annotate.FgGreen, annotate.Bold))
+	redBold := r.styled(annotate.ComposeStyles(annotate.FgRed, annotate.Bold))
+	yellow := r.styled(annotate.FgYellow)
+
+	if errorCount > 0 {
+		if _, err := fmt.Fprintln(os.Stderr, redBold(
+			fmt.Sprintf("✗ %d %s found in %d of %d %s",
+				errorCount, pluralize("error", errorCount),
+				errorFileCount, totalFiles, pluralize("file", totalFiles)))); err != nil {
+			return err
+		}
+	} else {
+		if _, err := fmt.Fprintln(os.Stderr, greenBold(
+			fmt.Sprintf("✓ %d %s checked, no errors found",
+				totalFiles, pluralize("file", totalFiles)))); err != nil {
+			return err
+		}
+	}
+
+	if skippedOnline > 0 {
+		if _, err := fmt.Fprintln(os.Stderr, yellow(
+			fmt.Sprintf("⚠ %d online %s skipped; use --online to enable them",
+				skippedOnline, pluralize("rule", skippedOnline)))); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

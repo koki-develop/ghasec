@@ -34,4 +34,4 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/job-timeout-minutes/README.md
 
-    2 errors found in 1 file
+    ✗ 2 errors found in 1 of 1 file

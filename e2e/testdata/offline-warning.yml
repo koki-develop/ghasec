@@ -16,5 +16,5 @@ expected:
   exit_code: 0
   stdout: ""
   stderr: |
-    no errors found
-    warning: 2 online rules skipped; use --online to enable them
+    ✓ 1 file checked, no errors found
+    ⚠ 2 online rules skipped; use --online to enable them

@@ -48,6 +48,11 @@ func (r *GitHubActionsRenderer) PrintDiagnosticError(path string, e *diagnostic.
 	return err
 }
 
+// PrintSummary is a no-op for the GitHub Actions format.
+func (r *GitHubActionsRenderer) PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error {
+	return nil
+}
+
 // escapeData escapes special characters in workflow command message data.
 // Order matters: % must be escaped first to avoid double-escaping.
 func escapeData(s string) string {

@@ -20,4 +20,4 @@ expected:
       |             ^^^^^^^^^^^^^^ "steps" must be a sequence, but got string (invalid-workflow)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
-    1 error found in 1 file
+    ✗ 1 error found in 1 of 1 file

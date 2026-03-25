@@ -12,4 +12,4 @@ actions:
 expected:
   exit_code: 0
   stdout: ""
-  stderr: "no errors found\n"
+  stderr: "✓ 1 file checked, no errors found\n"

@@ -43,4 +43,4 @@ expected:
       |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
-    3 errors found in 1 file
+    ✗ 3 errors found in 1 of 1 file

@@ -95,14 +95,8 @@ var rootCmd = &cobra.Command{
 		}
 
 		activeRules, skippedOnline := buildRules(online)
-
-		if skippedOnline > 0 && format != "github-actions" {
-			defer func() {
-				if _, disabled := os.LookupEnv("GHASEC_DISABLE_OFFLINE_WARNING"); !disabled {
-					fmt.Fprintf(os.Stderr, "warning: %d online %s skipped; use --online to enable them\n",
-						skippedOnline, pluralize("rule", skippedOnline))
-				}
-			}()
+		if _, disabled := os.LookupEnv("GHASEC_DISABLE_OFFLINE_WARNING"); disabled {
+			skippedOnline = 0
 		}
 
 		a := analyzer.New(concurrency, activeRules...)
@@ -173,16 +167,12 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		if errorCount > 0 {
-			if format != "github-actions" {
-				fmt.Fprintf(os.Stderr, "%d %s found in %d %s\n",
-					errorCount, pluralize("error", errorCount),
-					errorFileCount, pluralize("file", errorFileCount))
-			}
-			return errValidationFailed
+		if err := rdr.PrintSummary(len(tasks), errorCount, errorFileCount, skippedOnline); err != nil {
+			return err
 		}
-		if format != "github-actions" {
-			fmt.Fprintln(os.Stderr, "no errors found")
+
+		if errorCount > 0 {
+			return errValidationFailed
 		}
 		return nil
 	},
@@ -243,13 +233,6 @@ func resolveFiles(args []string) (classifiedFiles, error) {
 		Workflows: res.Workflows,
 		Actions:   res.Actions,
 	}, nil
-}
-
-func pluralize(word string, count int) string {
-	if count == 1 {
-		return word
-	}
-	return word + "s"
 }
 
 func newCommitVerifier() impostorcommit.CommitVerifier {

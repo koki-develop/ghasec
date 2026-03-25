@@ -5,4 +5,4 @@ actions:
 expected:
   exit_code: 1
   stdout: ""
-  stderr: "-->\ {{.Dir}}/action.yml:1:1\n1 |  \n  | ^ action must be a YAML mapping\n\n1 error found in 1 file\n"
+  stderr: "-->\ {{.Dir}}/action.yml:1:1\n1 |  \n  | ^ action must be a YAML mapping\n\n✗ 1 error found in 1 of 1 file\n"

@@ -38,4 +38,4 @@ expected:
        |                   ^^^^^^^^^^^^^^^^^^^ "run" must not contain expressions; use environment variables instead (script-injection)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/script-injection/README.md
 
-    2 errors found in 1 file
+    ✗ 2 errors found in 1 of 1 file

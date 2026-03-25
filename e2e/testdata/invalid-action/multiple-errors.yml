@@ -26,4 +26,4 @@ expected:
       | ^^^ unknown key "baz" (invalid-action)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md
 
-    3 errors found in 1 file
+    ✗ 3 errors found in 1 of 1 file

@@ -37,4 +37,4 @@ expected:
       |                   ^^^^^^^^^ invalid expression syntax: invalid number: expected digits after exponent (invalid-expression)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-expression/README.md
 
-    2 errors found in 1 file
+    ✗ 2 errors found in 1 of 1 file
