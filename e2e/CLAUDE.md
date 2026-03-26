@@ -45,7 +45,7 @@ expected:
     ✗ N error(s) found in M of T file(s)
 ```
 
-- `args` (optional): space-separated CLI flags passed to ghasec (e.g. `--online`, `--format agent`). Parsed with `strings.Fields`.
+- `args` (optional): space-separated CLI flags passed to ghasec (e.g. `--online`, `--format markdown`). Parsed with `strings.Fields`.
 - `workflows`: list of objects with `name` (filename) and `content` (workflow YAML as block scalar). Files are written to `{{.Dir}}/`.
 - `actions`: list of objects with `name` (filename, e.g. `action.yml`) and `content` (action YAML as block scalar). Files are written to the temp directory root (`{{.Dir}}/`), not `.github/workflows/`.
 - `expected`: exit_code, stdout, stderr.

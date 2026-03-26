@@ -1,4 +1,4 @@
-args: --format agent
+args: --format markdown
 workflows:
   - name: workflow.yml
     content: |
@@ -8,8 +8,10 @@ workflows:
         build:
           runs-on: ubuntu-latest
           timeout-minutes: 10
+          permissions:
+            contents: read
           steps:
-            - uses: actions/checkout@v6 # ghasec-ignore:unpinned-action
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
               with:
                 persist-credentials: false
 
@@ -17,4 +19,6 @@ expected:
   exit_code: 0
   stdout: |
     No errors found in 1 file.
+
+    > **Note**: 2 online rules skipped. Use `--online` to enable them.
   stderr: ""

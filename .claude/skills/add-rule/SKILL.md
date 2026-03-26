@@ -107,14 +107,14 @@ func (r *Rule) Check(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 }
 ```
 
-**`Explainer` interface (`--format agent` support):**
+**`Explainer` interface (`--format markdown` support):**
 
-Non-required rules must implement the `rules.Explainer` interface to provide guidance in `--format agent` Markdown output:
+Non-required rules must implement the `rules.Explainer` interface to provide guidance in `--format markdown` output:
 
 - `Why() string` — Explains why this issue matters for security (e.g., what an attacker could exploit).
 - `Fix() string` — Explains how to fix the issue concisely (e.g., what to change or add).
 
-The `AgentRenderer` looks up `Explainer` on each rule at render time. If implemented, the output includes `**Why**` and `**Fix**` fields alongside the rule ID and message. If not implemented (structural/required rules), those fields are omitted.
+The `MarkdownRenderer` looks up `Explainer` on each rule at render time. If implemented, the output includes `**Why**` and `**Fix**` fields alongside the rule ID and message. If not implemented (structural/required rules), those fields are omitted.
 
 There are two common rule patterns:
 

@@ -10,25 +10,25 @@ import (
 	"github.com/koki-develop/ghasec/rules"
 )
 
-// AgentRenderer outputs diagnostics as Markdown for AI agent consumption.
-type AgentRenderer struct {
+// MarkdownRenderer outputs diagnostics as Markdown.
+type MarkdownRenderer struct {
 	rules    map[string]rules.Rule
 	hasEntry bool
 }
 
-// NewAgent creates an AgentRenderer. The rules map is keyed by rule ID and
+// NewMarkdown creates a MarkdownRenderer. The rules map is keyed by rule ID and
 // used to look up Why/Fix guidance for each diagnostic.
-func NewAgent(ruleList []rules.Rule) *AgentRenderer {
+func NewMarkdown(ruleList []rules.Rule) *MarkdownRenderer {
 	m := make(map[string]rules.Rule, len(ruleList))
 	for _, r := range ruleList {
 		m[r.ID()] = r
 	}
-	return &AgentRenderer{rules: m}
+	return &MarkdownRenderer{rules: m}
 }
 
 // entrySeparator returns a blank line separator between entries.
 // The first entry has no separator; subsequent entries are preceded by "\n".
-func (r *AgentRenderer) entrySeparator() string {
+func (r *MarkdownRenderer) entrySeparator() string {
 	if r.hasEntry {
 		return "\n"
 	}
@@ -39,7 +39,7 @@ func (r *AgentRenderer) entrySeparator() string {
 // printEntry builds and writes a Markdown entry to stdout. It reads the source
 // file, extracts the relevant line, and formats the common header + code block.
 // The extraFields callback appends rule-specific metadata lines to the builder.
-func (r *AgentRenderer) printEntry(path string, tk *token.Token, extraFields func(sb *strings.Builder)) error {
+func (r *MarkdownRenderer) printEntry(path string, tk *token.Token, extraFields func(sb *strings.Builder)) error {
 	src, readErr := os.ReadFile(path)
 	if readErr != nil {
 		return fmt.Errorf("failed to read source file %s: %w", path, readErr)
@@ -58,7 +58,7 @@ func (r *AgentRenderer) printEntry(path string, tk *token.Token, extraFields fun
 }
 
 // PrintParseError renders a YAML parse error as Markdown.
-func (r *AgentRenderer) PrintParseError(path string, err error) error {
+func (r *MarkdownRenderer) PrintParseError(path string, err error) error {
 	yErr, ok := err.(yamlError)
 	if !ok {
 		return fmt.Errorf("unexpected parse error type for %s: %w", path, err)
@@ -74,7 +74,7 @@ func (r *AgentRenderer) PrintParseError(path string, err error) error {
 }
 
 // PrintDiagnosticError renders a diagnostic error as Markdown.
-func (r *AgentRenderer) PrintDiagnosticError(path string, e *diagnostic.Error) error {
+func (r *MarkdownRenderer) PrintDiagnosticError(path string, e *diagnostic.Error) error {
 	if !isValidToken(e.Token) {
 		return fmt.Errorf("diagnostic error without position for %s: %s", path, e.Message)
 	}
@@ -92,12 +92,14 @@ func (r *AgentRenderer) PrintDiagnosticError(path string, e *diagnostic.Error) e
 				}
 			}
 		}
+
+		fmt.Fprintf(sb, "- **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/%s/README.md\n", e.RuleID)
 	})
 }
 
 // PrintSummary outputs a summary of the scan results.
 // When errors exist, a "---" separator distinguishes the summary from diagnostics above.
-func (r *AgentRenderer) PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error {
+func (r *MarkdownRenderer) PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error {
 	var sb strings.Builder
 	if errorCount > 0 {
 		sb.WriteString(r.entrySeparator())
@@ -118,7 +120,7 @@ func (r *AgentRenderer) PrintSummary(totalFiles, errorCount, errorFileCount, ski
 }
 
 // PrintHint outputs a hint as a Markdown blockquote.
-func (r *AgentRenderer) PrintHint(message string) error {
+func (r *MarkdownRenderer) PrintHint(message string) error {
 	var sb strings.Builder
 	sb.WriteString(r.entrySeparator())
 	fmt.Fprintf(&sb, "> **Hint**: %s\n", message)

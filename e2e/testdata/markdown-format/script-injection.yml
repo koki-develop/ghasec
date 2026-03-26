@@ -1,4 +1,4 @@
-args: --format agent
+args: --format markdown
 workflows:
   - name: workflow.yml
     content: |
@@ -24,6 +24,7 @@ expected:
     - **Message**: "run" must not contain expressions; use environment variables instead
     - **Why**: {{"${{ }}"}} expressions interpolated into shell scripts or JavaScript can be manipulated by untrusted input (e.g., PR titles, issue bodies), enabling arbitrary code execution
     - **Fix**: Pass expression values through environment variables instead of inline interpolation
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/script-injection/README.md
 
     ---
 

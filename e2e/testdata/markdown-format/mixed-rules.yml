@@ -1,4 +1,4 @@
-args: --format agent
+args: --format markdown
 workflows:
   - name: workflow.yml
     content: |
@@ -24,6 +24,7 @@ expected:
     - **Message**: "permissions" must be {}; grant permissions per job instead
     - **Why**: GitHub Actions grants broad default permissions to GITHUB_TOKEN. Without explicit restriction, every job inherits these broad defaults, increasing the blast radius if a step is compromised
     - **Fix**: Set top-level permissions: {} and grant specific permissions per job
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
 
     ## {{.Dir}}/workflow.yml:5:3
 
@@ -35,6 +36,7 @@ expected:
     - **Message**: "timeout-minutes" must be set
     - **Why**: Jobs default to a 360-minute timeout. Without an explicit timeout, a compromised step has a large window to exfiltrate data or pivot into the internal network, especially on self-hosted runners
     - **Fix**: Set timeout-minutes to an appropriate value for the expected runtime
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/job-timeout-minutes/README.md
 
     ## {{.Dir}}/workflow.yml:8:15
 
@@ -46,6 +48,7 @@ expected:
     - **Message**: "persist-credentials: false" must be set in "with"
     - **Why**: By default, actions/checkout persists the GITHUB_TOKEN in the local git config. Subsequent steps — including third-party actions — can extract and misuse this token
     - **Fix**: Add persist-credentials: false to the with section of the checkout step
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md
 
     ## {{.Dir}}/workflow.yml:8:32
 
@@ -57,6 +60,7 @@ expected:
     - **Message**: "actions/checkout@v6" must be pinned to a full length commit SHA
     - **Why**: Git tags and branches are mutable. A compromised upstream can move a tag to point to malicious code, executing it silently on the next run
     - **Fix**: Pin to the full 40-character commit SHA. Add the version as an inline comment to keep it human-readable
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
     ---
 

@@ -14,9 +14,9 @@ type Rule interface {
 	Online() bool
 }
 
-// Explainer provides optional guidance for agent-facing output.
+// Explainer provides optional guidance for markdown output.
 // Rules that implement this interface will have Why/Fix fields
-// included in the agent output format.
+// included in the markdown output format.
 type Explainer interface {
 	Why() string
 	Fix() string

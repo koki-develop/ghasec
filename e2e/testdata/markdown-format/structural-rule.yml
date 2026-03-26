@@ -1,4 +1,4 @@
-args: --format agent
+args: --format markdown
 workflows:
   - name: workflow.yml
     content: |
@@ -26,6 +26,7 @@ expected:
 
     - **Rule**: invalid-workflow
     - **Message**: "uses" and "run" are mutually exclusive
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
     ---
 

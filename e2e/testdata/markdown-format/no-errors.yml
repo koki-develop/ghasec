@@ -1,4 +1,4 @@
-args: --format agent
+args: --format markdown
 workflows:
   - name: workflow.yml
     content: |

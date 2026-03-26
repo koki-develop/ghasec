@@ -49,7 +49,7 @@ func init() {
 	rootCmd.Version = resolveVersion()
 	rootCmd.Flags().BoolVar(&online, "online", false, "enable rules that require network access")
 	rootCmd.Flags().BoolVar(&noColor, "no-color", false, "disable colored output")
-	rootCmd.Flags().StringVar(&format, "format", "default", `output format ("default", "github-actions", or "agent")`)
+	rootCmd.Flags().StringVar(&format, "format", "default", `output format ("default", "github-actions", or "markdown")`)
 }
 
 type classifiedFiles struct {
@@ -86,8 +86,8 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if format != "default" && format != "github-actions" && format != "agent" {
-			return fmt.Errorf("unknown format %q; must be \"default\", \"github-actions\", or \"agent\"", format)
+		if format != "default" && format != "github-actions" && format != "markdown" {
+			return fmt.Errorf("unknown format %q; must be \"default\", \"github-actions\", or \"markdown\"", format)
 		}
 
 		files, err := resolveFiles(args)
@@ -111,8 +111,8 @@ var rootCmd = &cobra.Command{
 		switch format {
 		case "github-actions":
 			rdr = renderer.NewGitHubActions()
-		case "agent":
-			rdr = renderer.NewAgent(activeRules)
+		case "markdown":
+			rdr = renderer.NewMarkdown(activeRules)
 		default:
 			rdr = renderer.NewDefault(disableColor)
 		}

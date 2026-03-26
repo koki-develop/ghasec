@@ -30,8 +30,8 @@
 - `Renderer` — interface with `PrintParseError`, `PrintDiagnosticError`, `PrintSummary`, and `PrintHint`. Used by `cmd/root.go` to abstract over output formats.
 - `NewDefault(noColor bool) *DefaultRenderer` — constructor for the annotated stderr renderer (default format).
 - `NewGitHubActions() *GitHubActionsRenderer` — constructor for the GitHub Actions `::error` workflow command renderer. Outputs to stdout. See `github_actions.go`.
-- `NewAgent(ruleList []rules.Rule) *AgentRenderer` — constructor for the Markdown agent renderer. Outputs to stdout. Looks up `rules.Explainer` on each rule for optional Why/Fix guidance. `PrintSummary` and `PrintHint` are no-ops. See `agent.go`.
+- `NewMarkdown(ruleList []rules.Rule) *MarkdownRenderer` — constructor for the Markdown renderer. Outputs to stdout. Looks up `rules.Explainer` on each rule for optional Why/Fix guidance. Includes a `**Ref**` link to the rule's README for each diagnostic. See `markdown.go`.
 - `PrintParseError(path string, err error) error` — render a YAML parse error (from `goccy/go-yaml`).
 - `PrintDiagnosticError(path string, e *diagnostic.Error) error` — render a diagnostic error with source annotation, ancestor breadcrumbs, and rule reference URL.
-- `PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error` — render a styled summary block with file counts, error counts, and optional online-rules warning. No-op for `GitHubActionsRenderer` and `AgentRenderer`.
-- `PrintHint(message string) error` — render a styled hint message. `DefaultRenderer` outputs yellow text with an info icon to stderr. `GitHubActionsRenderer` emits a `::warning` workflow command to stdout. No-op for `AgentRenderer`.
+- `PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error` — render a styled summary block with file counts, error counts, and optional online-rules warning. No-op for `GitHubActionsRenderer` and `MarkdownRenderer`.
+- `PrintHint(message string) error` — render a styled hint message. `DefaultRenderer` outputs yellow text with an info icon to stderr. `GitHubActionsRenderer` emits a `::warning` workflow command to stdout. No-op for `MarkdownRenderer`.

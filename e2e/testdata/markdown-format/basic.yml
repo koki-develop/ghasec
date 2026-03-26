@@ -1,29 +1,32 @@
-args: --format agent
-actions:
-  - name: action.yml
+args: --format markdown
+workflows:
+  - name: workflow.yml
     content: |
-      name: test
-      description: test
-      runs:
-        using: composite
-        steps:
-          - uses: actions/checkout@v6
-            with:
-              persist-credentials: false
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@v6
+              with:
+                persist-credentials: false
 
 expected:
   exit_code: 1
   stdout: |
-    ## {{.Dir}}/action.yml:6:30
+    ## {{.Dir}}/workflow.yml:8:32
 
     ```yaml
-        - uses: actions/checkout@v6
+          - uses: actions/checkout@v6
     ```
 
     - **Rule**: unpinned-action
     - **Message**: "actions/checkout@v6" must be pinned to a full length commit SHA
     - **Why**: Git tags and branches are mutable. A compromised upstream can move a tag to point to malicious code, executing it silently on the next run
     - **Fix**: Pin to the full 40-character commit SHA. Add the version as an inline comment to keep it human-readable
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
     ---
 

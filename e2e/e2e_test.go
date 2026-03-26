@@ -105,7 +105,7 @@ var extraEnvVars = map[string][]string{
 var suppressOfflineWarningExclude = map[string]bool{
 	"offline-warning":                          true,
 	"github-actions-format/no-offline-warning": true,
-	"agent-format/online-rules-skipped":        true,
+	"markdown-format/online-rules-skipped":     true,
 }
 
 // mockGitHubTags maps test case names to their mock GitHub API tag data.
@@ -472,7 +472,7 @@ func TestE2E_InvalidFormat(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, 1, exitErr.ExitCode())
 	assert.Empty(t, stdoutBuf.String())
-	assert.Equal(t, "error: unknown format \"invalid\"; must be \"default\", \"github-actions\", or \"agent\"\n", stderrBuf.String())
+	assert.Equal(t, "error: unknown format \"invalid\"; must be \"default\", \"github-actions\", or \"markdown\"\n", stderrBuf.String())
 }
 
 func expandTemplate(t *testing.T, text, tmpDir string) string {

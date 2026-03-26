@@ -1,4 +1,4 @@
-args: --format agent
+args: --format markdown
 workflows:
   - name: workflow.yml
     content: |
@@ -27,6 +27,7 @@ expected:
     - **Message**: "ref" must not reference pull request head in a "pull_request_target" workflow
     - **Why**: Workflows triggered by pull_request_target run with access to repository secrets. Checking out pull request head code allows an attacker to execute malicious code from a fork with those secrets
     - **Fix**: Remove the ref parameter from actions/checkout so it checks out the base branch code instead of the pull request head
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/dangerous-checkout/README.md
 
     ---
 
