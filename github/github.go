@@ -71,6 +71,10 @@ type gitRef struct {
 	} `json:"object"`
 }
 
+type release struct {
+	TagName string `json:"tag_name"`
+}
+
 type repoTag struct {
 	Name   string `json:"name"`
 	Commit struct {
@@ -179,6 +183,16 @@ func (c *Client) dereferenceTag(ctx context.Context, owner, repo, tagSHA string)
 		return "", fmt.Errorf("expected tag to point to commit, got %q", ref.Object.Type)
 	}
 	return ref.Object.SHA, nil
+}
+
+// LatestRelease fetches the latest release tag name for the given repository.
+func (c *Client) LatestRelease(ctx context.Context, owner, repo string) (string, error) {
+	path := fmt.Sprintf("/repos/%s/%s/releases/latest", owner, repo)
+	var rel release
+	if err := c.doGet(ctx, path, &rel, fmt.Sprintf("failed to fetch latest release for %s/%s", owner, repo)); err != nil {
+		return "", err
+	}
+	return rel.TagName, nil
 }
 
 func (c *Client) setHeaders(req *http.Request) {

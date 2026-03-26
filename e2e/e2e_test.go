@@ -295,6 +295,7 @@ func runTestCase(t *testing.T, name string) {
 	if _, excluded := lookupTestConfig(suppressOfflineWarningExclude, name); !excluded {
 		extraEnv = append(extraEnv, "GHASEC_DISABLE_OFFLINE_WARNING=")
 	}
+	extraEnv = append(extraEnv, "GHASEC_DISABLE_UPDATE_CHECK=")
 
 	stdout, stderr, exitCode := runGhasec(t, files, extraArgs, extraEnv...)
 

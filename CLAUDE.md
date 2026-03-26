@@ -42,6 +42,7 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 - `workflow/` — Typed AST wrappers for workflow/action navigation. See `workflow/CLAUDE.md`.
 - `expression/` — Lexer and parser for `${{ }}` expression syntax. See `expression/CLAUDE.md`.
 - `progress/` — Single-line progress bar for TTY output. Ticker-based spinner animation, ANSI color support, terminal width adaptation.
+- `update/` — Version update checker. Queries GitHub Releases API, caches results locally, displays notification after lint output. All errors silently ignored.
 - `rules/` — Pluggable validation rules. See `rules/CLAUDE.md`.
 - `e2e/` — E2E tests. See `e2e/CLAUDE.md`.
 

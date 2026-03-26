@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -8,7 +9,9 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
+	annotate "github.com/koki-develop/annotate-go"
 	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/discover"
@@ -33,6 +36,7 @@ import (
 	scriptinjection "github.com/koki-develop/ghasec/rules/script-injection"
 	secretsinherit "github.com/koki-develop/ghasec/rules/secrets-inherit"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
+	"github.com/koki-develop/ghasec/update"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -103,6 +107,17 @@ var rootCmd = &cobra.Command{
 		activeRules, skippedOnline, ghClient := buildRules(online)
 		if _, disabled := os.LookupEnv("GHASEC_DISABLE_OFFLINE_WARNING"); disabled {
 			skippedOnline = 0
+		}
+
+		var updateCh <-chan *update.Result
+		if _, disabled := os.LookupEnv("GHASEC_DISABLE_UPDATE_CHECK"); !disabled {
+			ch := make(chan *update.Result, 1)
+			updateCtx, updateCancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer updateCancel()
+			go func() {
+				ch <- update.Check(updateCtx, ghClient, cmd.Version)
+			}()
+			updateCh = ch
 		}
 
 		a := analyzer.New(concurrency, activeRules...)
@@ -214,6 +229,17 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
+		if updateCh != nil && format == "default" {
+			select {
+			case res := <-updateCh:
+				if res != nil && res.NewVersion != "" {
+					printUpdateNotification(res, disableColor)
+					update.MarkNotified(res.NewVersion)
+				}
+			case <-time.After(500 * time.Millisecond):
+			}
+		}
+
 		if errorCount > 0 {
 			return errValidationFailed
 		}
@@ -289,6 +315,28 @@ func newGitHubClient() *ghclient.Client {
 		opts = append(opts, ghclient.WithBaseURL(baseURL))
 	}
 	return ghclient.NewClient(opts...)
+}
+
+func printUpdateNotification(res *update.Result, noColor bool) {
+	styled := func(fn func(string) string) func(string) string {
+		if noColor {
+			return func(s string) string { return s }
+		}
+		return fn
+	}
+
+	cyan := styled(annotate.FgCyan)
+	bold := styled(annotate.Bold)
+	dim := styled(annotate.Dim)
+
+	fmt.Fprintf(os.Stderr, "\nA new version of ghasec is available: %s %s %s\n",
+		res.CurrentVersion,
+		cyan("→"),
+		bold(res.NewVersion),
+	)
+	fmt.Fprintf(os.Stderr, "%s\n",
+		dim(fmt.Sprintf("https://github.com/koki-develop/ghasec/releases/tag/v%s", res.NewVersion)),
+	)
 }
 
 func Execute() error {

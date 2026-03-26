@@ -765,6 +765,30 @@ func TestCompareCommit_PerPageParam(t *testing.T) {
 	assert.Equal(t, "behind", status)
 }
 
+func TestLatestRelease(t *testing.T) {
+	t.Parallel()
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/repos/koki-develop/ghasec/releases/latest", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"tag_name": "v0.6.0"})
+	})
+
+	tag, err := c.LatestRelease(context.Background(), "koki-develop", "ghasec")
+	require.NoError(t, err)
+	assert.Equal(t, "v0.6.0", tag)
+}
+
+func TestLatestReleaseNotFound(t *testing.T) {
+	t.Parallel()
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	})
+
+	_, err := c.LatestRelease(context.Background(), "koki-develop", "ghasec")
+	require.Error(t, err)
+}
+
 func TestParseLinkNext(t *testing.T) {
 	tests := []struct {
 		name    string
