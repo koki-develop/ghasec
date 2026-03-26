@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/koki-develop/ghasec/compare/v0.3.0...v0.4.0) (2026-03-26)
+
+
+### Features
+
+* rename --format agent to --format markdown and add Ref links ([fe325fd](https://github.com/koki-develop/ghasec/commit/fe325fdbfb34bd8b427ff1a21a0a95cbaa3548d1))
+
 ## [0.3.0](https://github.com/koki-develop/ghasec/compare/v0.2.0...v0.3.0) (2026-03-25)
 
 
