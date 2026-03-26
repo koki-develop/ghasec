@@ -1,4 +1,4 @@
-FROM alpine:3.23 AS download
+FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659 AS download
 
 ARG GHASEC_VERSION
 ARG TARGETARCH
@@ -15,7 +15,7 @@ RUN case "$TARGETARCH" in \
     tar xz -C /usr/local/bin ghasec -f /tmp/ghasec.tar.gz && \
     rm /tmp/ghasec.tar.gz
 
-FROM alpine:3.23
+FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
 
 COPY --from=download /usr/local/bin/ghasec /usr/local/bin/ghasec
 RUN ghasec --version
