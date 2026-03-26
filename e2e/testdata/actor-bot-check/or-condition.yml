@@ -1,0 +1,40 @@
+workflows:
+  - name: or-cond.yml
+    content: |
+      on: pull_request
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - if: "github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]'"
+              run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/or-cond.yml:8:14
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - if: "github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]'"
+      |              ^^^^^^^^^^^^ "if" must not use "github.actor" to check for bots in a "pull_request" workflow (actor-bot-check)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/actor-bot-check/README.md
+
+    --> {{.Dir}}/or-cond.yml:8:51
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - if: "github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]'"
+      |                                                   ^^^^^^^^^^^^ "if" must not use "github.actor" to check for bots in a "pull_request" workflow (actor-bot-check)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/actor-bot-check/README.md
+
+    ✗ 2 errors found in 1 of 1 file

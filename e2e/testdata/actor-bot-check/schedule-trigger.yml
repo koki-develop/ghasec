@@ -1,0 +1,20 @@
+workflows:
+  - name: schedule.yml
+    content: |
+      on:
+        schedule:
+          - cron: '0 0 * * *'
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - if: github.actor == 'dependabot[bot]'
+              run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

@@ -23,19 +23,23 @@ func (p *parser) addError(msg string) {
 	p.errors = append(p.errors, Error{Offset: p.cur.Offset, Message: msg})
 }
 
-func (p *parser) parse() []Error {
+func (p *parser) parse() (Node, []Error) {
 	if p.cur.Kind == TokenEOF && len(p.lexer.errors) > 0 {
-		return p.lexer.errors
+		return nil, p.lexer.errors
 	}
 	if p.cur.Kind == TokenEOF {
 		p.addError("expected expression, but got end of input")
-		return append(p.lexer.errors, p.errors...)
+		return nil, append(p.lexer.errors, p.errors...)
 	}
-	p.parseExpression()
+	node := p.parseExpression()
 	if p.cur.Kind != TokenEOF {
 		p.addError(fmt.Sprintf("unexpected token %s after expression", p.tokenDesc()))
 	}
-	return append(p.lexer.errors, p.errors...)
+	errs := append(p.lexer.errors, p.errors...)
+	if len(errs) > 0 {
+		return nil, errs
+	}
+	return node, nil
 }
 
 func (p *parser) tokenDesc() string {
@@ -51,98 +55,118 @@ func (p *parser) tokenDesc() string {
 	return p.cur.Kind.String()
 }
 
-func (p *parser) parseExpression() { p.parseOr() }
+func (p *parser) parseExpression() Node { return p.parseOr() }
 
-func (p *parser) parseOr() {
-	p.parseAnd()
+func (p *parser) parseOr() Node {
+	left := p.parseAnd()
 	for p.cur.Kind == TokenOr {
+		offset := p.cur.Offset
 		p.advance()
 		if !p.expectExpression("'||'") {
-			return
+			return nil
 		}
-		p.parseAnd()
+		right := p.parseAnd()
+		left = &BinaryNode{Op: TokenOr, Left: left, Right: right, Offset: offset}
 	}
+	return left
 }
 
-func (p *parser) parseAnd() {
-	p.parseEquality()
+func (p *parser) parseAnd() Node {
+	left := p.parseEquality()
 	for p.cur.Kind == TokenAnd {
+		offset := p.cur.Offset
 		p.advance()
 		if !p.expectExpression("'&&'") {
-			return
+			return nil
 		}
-		p.parseEquality()
+		right := p.parseEquality()
+		left = &BinaryNode{Op: TokenAnd, Left: left, Right: right, Offset: offset}
 	}
+	return left
 }
 
-func (p *parser) parseEquality() {
-	p.parseComparison()
+func (p *parser) parseEquality() Node {
+	left := p.parseComparison()
 	for p.cur.Kind == TokenEQ || p.cur.Kind == TokenNE {
-		op := p.cur.Kind.String()
+		op := p.cur.Kind
+		offset := p.cur.Offset
 		p.advance()
-		if !p.expectExpression(op) {
-			return
+		if !p.expectExpression(op.String()) {
+			return nil
 		}
-		p.parseComparison()
+		right := p.parseComparison()
+		left = &BinaryNode{Op: op, Left: left, Right: right, Offset: offset}
 	}
+	return left
 }
 
-func (p *parser) parseComparison() {
-	p.parseNot()
+func (p *parser) parseComparison() Node {
+	left := p.parseNot()
 	for p.cur.Kind == TokenLT || p.cur.Kind == TokenLE || p.cur.Kind == TokenGT || p.cur.Kind == TokenGE {
-		op := p.cur.Kind.String()
+		op := p.cur.Kind
+		offset := p.cur.Offset
 		p.advance()
-		if !p.expectExpression(op) {
-			return
+		if !p.expectExpression(op.String()) {
+			return nil
 		}
-		p.parseNot()
+		right := p.parseNot()
+		left = &BinaryNode{Op: op, Left: left, Right: right, Offset: offset}
 	}
+	return left
 }
 
-func (p *parser) parseNot() {
+func (p *parser) parseNot() Node {
 	if p.cur.Kind == TokenNot {
+		offset := p.cur.Offset
 		p.advance()
 		if !p.expectExpression("'!'") {
-			return
+			return nil
 		}
-		p.parseNot()
-		return
+		operand := p.parseNot()
+		return &UnaryNode{Op: TokenNot, Operand: operand, Offset: offset}
 	}
-	p.parsePrimary()
+	return p.parsePrimary()
 }
 
-func (p *parser) parsePrimary() {
+func (p *parser) parsePrimary() Node {
 	switch p.cur.Kind {
 	case TokenString, TokenInt, TokenFloat, TokenTrue, TokenFalse, TokenNull:
+		node := &LiteralNode{Kind: p.cur.Kind, Value: p.cur.Value, Offset: p.cur.Offset}
 		p.advance()
+		return node
 	case TokenIdent:
+		name := p.cur.Value
+		offset := p.cur.Offset
 		p.advance()
 		if p.cur.Kind == TokenLParen {
-			p.parseFunctionArgs()
-			p.parsePostfix()
-		} else {
-			p.parsePostfix()
+			node := p.parseFunctionArgs(name, offset)
+			return p.parsePostfix(node)
 		}
+		node := &IdentNode{Name: name, Offset: offset}
+		return p.parsePostfix(node)
 	case TokenLParen:
+		offset := p.cur.Offset
 		p.advance()
 		if p.cur.Kind == TokenEOF {
 			p.addError("expected expression after '('")
-			return
+			return nil
 		}
-		p.parseExpression()
+		inner := p.parseExpression()
 		if p.cur.Kind != TokenRParen {
 			p.addError(fmt.Sprintf("expected ')', but got %s", p.eofOr()))
-			return
+			return nil
 		}
 		p.advance()
-		p.parsePostfix()
+		node := &ParenNode{Inner: inner, Offset: offset}
+		return p.parsePostfix(node)
 	default:
 		p.addError(fmt.Sprintf("expected expression, but got %s", p.tokenDesc()))
 		p.advance() // consume the bad token to avoid duplicate errors from callers
+		return nil
 	}
 }
 
-func (p *parser) parsePostfix() {
+func (p *parser) parsePostfix(node Node) Node {
 	for {
 		switch p.cur.Kind {
 		case TokenDot:
@@ -150,54 +174,60 @@ func (p *parser) parsePostfix() {
 			switch p.cur.Kind {
 			case TokenStar:
 				p.advance()
+				node = &FilterNode{Object: node, Offset: node.NodeOffset()}
 			case TokenIdent:
+				prop := p.cur.Value
 				p.advance()
+				node = &PropertyAccessNode{Object: node, Property: prop, Offset: node.NodeOffset()}
 			default:
 				p.addError("expected property name after '.'")
-				return
+				return node
 			}
 		case TokenLBracket:
 			p.advance()
 			if p.cur.Kind == TokenEOF {
 				p.addError("expected expression after '['")
-				return
+				return node
 			}
-			p.parseExpression()
+			index := p.parseExpression()
 			if p.cur.Kind != TokenRBracket {
 				p.addError(fmt.Sprintf("expected ']', but got %s", p.eofOr()))
-				return
+				return node
 			}
 			p.advance()
+			node = &IndexAccessNode{Object: node, Index: index, Offset: node.NodeOffset()}
 		default:
-			return
+			return node
 		}
 	}
 }
 
-func (p *parser) parseFunctionArgs() {
+func (p *parser) parseFunctionArgs(name string, offset int) Node {
 	p.advance() // skip (
+	var args []Node
 	if p.cur.Kind == TokenRParen {
 		p.advance()
-		return
+		return &FunctionCallNode{Name: name, Args: args, Offset: offset}
 	}
 	if p.cur.Kind == TokenEOF {
 		p.addError("expected expression or ')' in function call, but got end of input")
-		return
+		return &FunctionCallNode{Name: name, Args: args, Offset: offset}
 	}
-	p.parseExpression()
+	args = append(args, p.parseExpression())
 	for p.cur.Kind == TokenComma {
 		p.advance()
 		if p.cur.Kind == TokenEOF {
 			p.addError("expected expression after ',' in function call, but got end of input")
-			return
+			return &FunctionCallNode{Name: name, Args: args, Offset: offset}
 		}
-		p.parseExpression()
+		args = append(args, p.parseExpression())
 	}
 	if p.cur.Kind != TokenRParen {
 		p.addError(fmt.Sprintf("expected ')' after function arguments, but got %s", p.eofOr()))
-		return
+		return &FunctionCallNode{Name: name, Args: args, Offset: offset}
 	}
 	p.advance()
+	return &FunctionCallNode{Name: name, Args: args, Offset: offset}
 }
 
 func (p *parser) expectExpression(after string) bool {

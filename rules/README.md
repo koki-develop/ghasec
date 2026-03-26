@@ -15,6 +15,7 @@ Rules marked as **Online** require network access (e.g., GitHub API) and are dis
 | [invalid-expression](./invalid-expression/README.md) | Validates `${{ }}` expression syntax in workflow and action files. | |
 | [missing-sha-ref-comment](./missing-sha-ref-comment/README.md) | Checks that actions pinned to a full-length commit SHA have an inline comment containing a valid git ref. | |
 | [script-injection](./script-injection/README.md) | Checks that `run:` steps and `actions/github-script`'s `script:` input do not contain `${{ }}` expressions. | |
+| [actor-bot-check](./actor-bot-check/README.md) | Checks that `if:` conditions in `pull_request` / `pull_request_target` workflows do not use `github.actor` to identify bots. | |
 | [unused-ignore](./unused-ignore/README.md) | Reports unused, unknown, or invalid `ghasec-ignore` directives. | |
 | [impostor-commit](./impostor-commit/README.md) | Checks that a commit SHA pinned in an action reference is reachable from a branch or tag in the referenced repository. | Yes |
 | [mismatched-sha-tag](./mismatched-sha-tag/README.md) | Checks that a commit SHA pinned in an action reference matches the tag in its inline comment. | Yes |

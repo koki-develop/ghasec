@@ -1,0 +1,29 @@
+workflows:
+  - name: seq-trigger.yml
+    content: |
+      on: [push, pull_request]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - if: github.actor == 'dependabot[bot]'
+              run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/seq-trigger.yml:8:13
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - if: github.actor == 'dependabot[bot]'
+      |             ^^^^^^^^^^^^ "if" must not use "github.actor" to check for bots in a "pull_request" workflow (actor-bot-check)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/actor-bot-check/README.md
+
+    ✗ 1 error found in 1 of 1 file

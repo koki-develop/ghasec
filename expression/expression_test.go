@@ -317,7 +317,7 @@ func TestParse(t *testing.T) {
 
 	for _, tt := range valid {
 		t.Run(tt.name, func(t *testing.T) {
-			errs := Parse(tt.input)
+			_, errs := Parse(tt.input)
 			assert.Empty(t, errs, "expected no errors for: %s", tt.input)
 		})
 	}
@@ -428,7 +428,7 @@ func TestParseErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			errs := Parse(tt.input)
+			_, errs := Parse(tt.input)
 			require.NotEmpty(t, errs, "expected errors for: %s", tt.input)
 			assert.Contains(t, errs[0].Message, tt.wantErrMsg)
 		})
@@ -446,7 +446,7 @@ func TestParse_NoDuplicateErrors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			errs := Parse(tt.input)
+			_, errs := Parse(tt.input)
 			require.NotEmpty(t, errs)
 			assert.Len(t, errs, 1, "expected exactly 1 error, got %d: %v", len(errs), errs)
 		})
@@ -528,4 +528,287 @@ func TestExtractExpressions(t *testing.T) {
 			assert.Len(t, errs, tt.wantErrs)
 		})
 	}
+}
+
+func TestParse_ASTNodes(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		check func(t *testing.T, node Node)
+	}{
+		{
+			name:  "identifier",
+			input: "github",
+			check: func(t *testing.T, node Node) {
+				id, ok := node.(*IdentNode)
+				require.True(t, ok, "expected IdentNode, got %T", node)
+				assert.Equal(t, "github", id.Name)
+				assert.Equal(t, 0, id.Offset)
+			},
+		},
+		{
+			name:  "property access",
+			input: "github.actor",
+			check: func(t *testing.T, node Node) {
+				prop, ok := node.(*PropertyAccessNode)
+				require.True(t, ok, "expected PropertyAccessNode, got %T", node)
+				assert.Equal(t, "actor", prop.Property)
+				id, ok := prop.Object.(*IdentNode)
+				require.True(t, ok)
+				assert.Equal(t, "github", id.Name)
+			},
+		},
+		{
+			name:  "deep property access",
+			input: "github.event.action",
+			check: func(t *testing.T, node Node) {
+				prop, ok := node.(*PropertyAccessNode)
+				require.True(t, ok)
+				assert.Equal(t, "action", prop.Property)
+				inner, ok := prop.Object.(*PropertyAccessNode)
+				require.True(t, ok)
+				assert.Equal(t, "event", inner.Property)
+			},
+		},
+		{
+			name:  "equality",
+			input: "a == b",
+			check: func(t *testing.T, node Node) {
+				bin, ok := node.(*BinaryNode)
+				require.True(t, ok, "expected BinaryNode, got %T", node)
+				assert.Equal(t, TokenEQ, bin.Op)
+			},
+		},
+		{
+			name:  "inequality",
+			input: "a != b",
+			check: func(t *testing.T, node Node) {
+				bin, ok := node.(*BinaryNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenNE, bin.Op)
+			},
+		},
+		{
+			name:  "and",
+			input: "a && b",
+			check: func(t *testing.T, node Node) {
+				bin, ok := node.(*BinaryNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenAnd, bin.Op)
+			},
+		},
+		{
+			name:  "or",
+			input: "a || b",
+			check: func(t *testing.T, node Node) {
+				bin, ok := node.(*BinaryNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenOr, bin.Op)
+			},
+		},
+		{
+			name:  "not",
+			input: "!a",
+			check: func(t *testing.T, node Node) {
+				un, ok := node.(*UnaryNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenNot, un.Op)
+				id, ok := un.Operand.(*IdentNode)
+				require.True(t, ok)
+				assert.Equal(t, "a", id.Name)
+			},
+		},
+		{
+			name:  "string literal",
+			input: "'hello'",
+			check: func(t *testing.T, node Node) {
+				lit, ok := node.(*LiteralNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenString, lit.Kind)
+				assert.Equal(t, "hello", lit.Value)
+			},
+		},
+		{
+			name:  "integer literal",
+			input: "42",
+			check: func(t *testing.T, node Node) {
+				lit, ok := node.(*LiteralNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenInt, lit.Kind)
+				assert.Equal(t, "42", lit.Value)
+			},
+		},
+		{
+			name:  "boolean literal",
+			input: "true",
+			check: func(t *testing.T, node Node) {
+				lit, ok := node.(*LiteralNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenTrue, lit.Kind)
+			},
+		},
+		{
+			name:  "null literal",
+			input: "null",
+			check: func(t *testing.T, node Node) {
+				lit, ok := node.(*LiteralNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenNull, lit.Kind)
+			},
+		},
+		{
+			name:  "function call no args",
+			input: "always()",
+			check: func(t *testing.T, node Node) {
+				fn, ok := node.(*FunctionCallNode)
+				require.True(t, ok)
+				assert.Equal(t, "always", fn.Name)
+				assert.Empty(t, fn.Args)
+			},
+		},
+		{
+			name:  "function call with args",
+			input: "contains(a, 'b')",
+			check: func(t *testing.T, node Node) {
+				fn, ok := node.(*FunctionCallNode)
+				require.True(t, ok)
+				assert.Equal(t, "contains", fn.Name)
+				assert.Len(t, fn.Args, 2)
+			},
+		},
+		{
+			name:  "parens",
+			input: "(a || b)",
+			check: func(t *testing.T, node Node) {
+				paren, ok := node.(*ParenNode)
+				require.True(t, ok)
+				bin, ok := paren.Inner.(*BinaryNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenOr, bin.Op)
+			},
+		},
+		{
+			name:  "bracket access",
+			input: "matrix['os']",
+			check: func(t *testing.T, node Node) {
+				idx, ok := node.(*IndexAccessNode)
+				require.True(t, ok)
+				id, ok := idx.Object.(*IdentNode)
+				require.True(t, ok)
+				assert.Equal(t, "matrix", id.Name)
+				lit, ok := idx.Index.(*LiteralNode)
+				require.True(t, ok)
+				assert.Equal(t, "os", lit.Value)
+			},
+		},
+		{
+			name:  "wildcard filter",
+			input: "steps.*.outcome",
+			check: func(t *testing.T, node Node) {
+				prop, ok := node.(*PropertyAccessNode)
+				require.True(t, ok)
+				assert.Equal(t, "outcome", prop.Property)
+				filter, ok := prop.Object.(*FilterNode)
+				require.True(t, ok)
+				id, ok := filter.Object.(*IdentNode)
+				require.True(t, ok)
+				assert.Equal(t, "steps", id.Name)
+			},
+		},
+		{
+			name:  "complex: github.actor == dependabot[bot]",
+			input: "github.actor == 'dependabot[bot]'",
+			check: func(t *testing.T, node Node) {
+				bin, ok := node.(*BinaryNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenEQ, bin.Op)
+
+				prop, ok := bin.Left.(*PropertyAccessNode)
+				require.True(t, ok)
+				assert.Equal(t, "actor", prop.Property)
+				id, ok := prop.Object.(*IdentNode)
+				require.True(t, ok)
+				assert.Equal(t, "github", id.Name)
+
+				lit, ok := bin.Right.(*LiteralNode)
+				require.True(t, ok)
+				assert.Equal(t, "dependabot[bot]", lit.Value)
+			},
+		},
+		{
+			name:  "compound condition",
+			input: "github.actor == 'dependabot[bot]' && github.event_name == 'pull_request'",
+			check: func(t *testing.T, node Node) {
+				bin, ok := node.(*BinaryNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenAnd, bin.Op)
+				left, ok := bin.Left.(*BinaryNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenEQ, left.Op)
+				right, ok := bin.Right.(*BinaryNode)
+				require.True(t, ok)
+				assert.Equal(t, TokenEQ, right.Op)
+			},
+		},
+		{
+			name:  "function then dot access",
+			input: "fromJSON(x).key",
+			check: func(t *testing.T, node Node) {
+				prop, ok := node.(*PropertyAccessNode)
+				require.True(t, ok)
+				assert.Equal(t, "key", prop.Property)
+				fn, ok := prop.Object.(*FunctionCallNode)
+				require.True(t, ok)
+				assert.Equal(t, "fromJSON", fn.Name)
+			},
+		},
+		{
+			name:  "paren then dot access",
+			input: "(a).key",
+			check: func(t *testing.T, node Node) {
+				prop, ok := node.(*PropertyAccessNode)
+				require.True(t, ok)
+				assert.Equal(t, "key", prop.Property)
+				paren, ok := prop.Object.(*ParenNode)
+				require.True(t, ok)
+				_, ok = paren.Inner.(*IdentNode)
+				require.True(t, ok)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node, errs := Parse(tt.input)
+			require.Empty(t, errs, "expected no errors for: %s", tt.input)
+			require.NotNil(t, node)
+			tt.check(t, node)
+		})
+	}
+}
+
+func TestParse_ASTOffset(t *testing.T) {
+	node, errs := Parse("github.actor == 'bot'")
+	require.Empty(t, errs)
+
+	bin, ok := node.(*BinaryNode)
+	require.True(t, ok)
+
+	prop, ok := bin.Left.(*PropertyAccessNode)
+	require.True(t, ok)
+	assert.Equal(t, 0, prop.Offset)
+
+	id, ok := prop.Object.(*IdentNode)
+	require.True(t, ok)
+	assert.Equal(t, 0, id.Offset)
+
+	lit, ok := bin.Right.(*LiteralNode)
+	require.True(t, ok)
+	assert.Equal(t, 16, lit.Offset)
+}
+
+func TestParse_ErrorReturnsNilNode(t *testing.T) {
+	node, errs := Parse("")
+	assert.NotEmpty(t, errs)
+	assert.Nil(t, node)
 }

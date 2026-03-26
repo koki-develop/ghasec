@@ -1,0 +1,19 @@
+workflows:
+  - name: ignore-prev.yml
+    content: |
+      on: pull_request
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            # ghasec-ignore:actor-bot-check
+            - if: github.actor == 'dependabot[bot]'
+              run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

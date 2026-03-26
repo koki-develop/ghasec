@@ -1,0 +1,57 @@
+workflows:
+  - name: multi.yml
+    content: |
+      on: pull_request
+      permissions: {}
+      jobs:
+        build:
+          if: github.actor == 'dependabot[bot]'
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - if: "github.actor != 'renovate[bot]'"
+              run: echo hi
+        test:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - if: github.actor == 'github-actions[bot]'
+              run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/multi.yml:5:9
+    ...
+    3 | jobs:
+    4 |   build:
+    5 |     if: github.actor == 'dependabot[bot]'
+      |         ^^^^^^^^^^^^ "if" must not use "github.actor" to check for bots in a "pull_request" workflow (actor-bot-check)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/actor-bot-check/README.md
+
+    --> {{.Dir}}/multi.yml:9:14
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    8 |     steps:
+    9 |       - if: "github.actor != 'renovate[bot]'"
+      |              ^^^^^^^^^^^^ "if" must not use "github.actor" to check for bots in a "pull_request" workflow (actor-bot-check)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/actor-bot-check/README.md
+
+    --> {{.Dir}}/multi.yml:15:13
+    ...
+     3 | jobs:
+    ...
+    11 |   test:
+    ...
+    14 |     steps:
+    15 |       - if: github.actor == 'github-actions[bot]'
+       |             ^^^^^^^^^^^^ "if" must not use "github.actor" to check for bots in a "pull_request" workflow (actor-bot-check)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/actor-bot-check/README.md
+
+    ✗ 3 errors found in 1 of 1 file

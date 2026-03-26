@@ -76,12 +76,7 @@ func findClosingBraces(value string, from int) int {
 }
 
 // Parse parses a GitHub Actions expression (the content between ${{ and }}).
-// It returns any syntax errors found. A nil return means the expression is valid.
-func Parse(input string) []Error {
-	p := newParser(input)
-	errs := p.parse()
-	if len(errs) == 0 {
-		return nil
-	}
-	return errs
+// It returns the AST and any syntax errors found. On error, node is nil.
+func Parse(input string) (Node, []Error) {
+	return newParser(input).parse()
 }

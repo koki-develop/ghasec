@@ -10,6 +10,7 @@ Each rule lives in its own subdirectory under `rules/`. Run `ls rules/` to see a
 
 - `invalid-workflow` and `invalid-action` are **required** rules (structural validation). All others are non-required (lint checks).
 - `invalid-expression` is a **non-required** rule that validates `${{ }}` expression syntax (Phase 1: syntax only, no semantic checks). It also detects bare `if:` expressions without `${{ }}` wrappers. Expression-position checks (forbidding `${{ }}` in static fields like `steps[].id`, `permissions`, `on.*` config) live in the required rules (`invalid-workflow`/`invalid-action`), not in `invalid-expression`.
+- `actor-bot-check` is a **non-required** rule that detects unreliable `github.actor` bot comparisons in `if:` conditions of `pull_request`/`pull_request_target` workflows. It uses the expression parser's AST to identify `github.actor == '*[bot]'` patterns.
 - `mismatched-sha-tag` and `impostor-commit` are **online** rules (require `--online` flag).
 
 ## Ignore Directives

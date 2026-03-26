@@ -1,0 +1,18 @@
+workflows:
+  - name: non-bot.yml
+    content: |
+      on: pull_request
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - if: github.actor == 'octocat'
+              run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

@@ -1,0 +1,29 @@
+workflows:
+  - name: reversed.yml
+    content: |
+      on: pull_request
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - if: "'renovate[bot]' == github.actor"
+              run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reversed.yml:8:33
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - if: "'renovate[bot]' == github.actor"
+      |                                 ^^^^^^^^^^^^ "if" must not use "github.actor" to check for bots in a "pull_request" workflow (actor-bot-check)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/actor-bot-check/README.md
+
+    ✗ 1 error found in 1 of 1 file

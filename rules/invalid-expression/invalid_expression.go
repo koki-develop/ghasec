@@ -74,7 +74,7 @@ func (r *Rule) walkNode(node ast.Node, errs *[]*diagnostic.Error, currentKey str
 			})
 		}
 		for _, span := range spans {
-			parseErrs := expression.Parse(span.Inner)
+			_, parseErrs := expression.Parse(span.Inner)
 			if len(parseErrs) > 0 {
 				// Report only the first error per expression span to avoid
 				// noisy duplicate diagnostics (e.g., two '"' in ${{ "hello" }}).
@@ -88,7 +88,7 @@ func (r *Rule) walkNode(node ast.Node, errs *[]*diagnostic.Error, currentKey str
 
 		// For if: values without ${{ }}, parse the whole value as an expression
 		if currentKey == "if" && len(spans) == 0 && !strings.Contains(value, "${{") {
-			parseErrs := expression.Parse(value)
+			_, parseErrs := expression.Parse(value)
 			if len(parseErrs) > 0 {
 				e := parseErrs[0]
 				trimmedLen := len(strings.TrimRight(value, "\n"))
