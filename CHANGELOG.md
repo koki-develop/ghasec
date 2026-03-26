@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/koki-develop/ghasec/compare/v0.4.0...v0.5.0) (2026-03-26)
+
+
+### Features
+
+* add actor-bot-check rule and expression AST support ([204d9ed](https://github.com/koki-develop/ghasec/commit/204d9ed2e7b0f49969ab77319e0c0e1f2f434ae6))
+* add secrets-inherit rule ([01786a6](https://github.com/koki-develop/ghasec/commit/01786a60ca23ee02e73ac75ff05221644f8fc262))
+
 ## [0.4.0](https://github.com/koki-develop/ghasec/compare/v0.3.0...v0.4.0) (2026-03-26)
 
 
