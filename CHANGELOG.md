@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/koki-develop/ghasec/compare/v0.5.0...v0.6.0) (2026-03-26)
+
+
+### Features
+
+* add update notification for new releases ([51f5b43](https://github.com/koki-develop/ghasec/commit/51f5b437e3699c0405d62c27b927fb8e9a5ba426))
+
 ## [0.5.0](https://github.com/koki-develop/ghasec/compare/v0.4.0...v0.5.0) (2026-03-26)
 
 
