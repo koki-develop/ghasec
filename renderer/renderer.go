@@ -133,6 +133,7 @@ func computeAncestors(tk *token.Token) []*token.Token {
 // It derives the byte offset from Line and Column rather than relying on
 // Token.Offset, which can be incorrect in files containing YAML comments
 // (a known goccy/go-yaml bug where each comment shifts subsequent Offsets by -1).
+// See: https://github.com/goccy/go-yaml/issues/856
 // The span is clamped to a single line and guaranteed to have non-zero length.
 func tokenSpan(src []byte, tk *token.Token) annotate.Span {
 	start := min(lineColumnOffset(src, tk.Position.Line, tk.Position.Column), len(src))
@@ -179,6 +180,7 @@ func tokenSpan(src []byte, tk *token.Token) annotate.Span {
 // and 1-based column in src. This is used instead of Token.Offset to work
 // around a goccy/go-yaml bug where comment tokens cause subsequent tokens'
 // Offsets to drift by -1 per comment.
+// See: https://github.com/goccy/go-yaml/issues/856
 func lineColumnOffset(src []byte, line, column int) int {
 	currentLine := 1
 	for i, b := range src {
