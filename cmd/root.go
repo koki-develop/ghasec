@@ -31,6 +31,7 @@ import (
 	mismatchedshatag "github.com/koki-develop/ghasec/rules/mismatched-sha-tag"
 	missingsharefcomment "github.com/koki-develop/ghasec/rules/missing-sha-ref-comment"
 	scriptinjection "github.com/koki-develop/ghasec/rules/script-injection"
+	secretsinherit "github.com/koki-develop/ghasec/rules/secrets-inherit"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -232,6 +233,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&defaultpermissions.Rule{},
 		&joballpermissions.Rule{},
 		&jobtimeoutminutes.Rule{},
+		&secretsinherit.Rule{},
 		&scriptinjection.Rule{},
 		&deprecatedcommands.Rule{},
 		&missingsharefcomment.Rule{},

@@ -1,0 +1,30 @@
+args: --format markdown
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: org/repo/.github/workflows/ci.yml@main
+          secrets: inherit
+
+expected:
+  exit_code: 1
+  stdout: |
+    ## {{.Dir}}/workflow.yml:6:14
+
+    ```yaml
+        secrets: inherit
+    ```
+
+    - **Rule**: secrets-inherit
+    - **Message**: job "call" must not use `secrets: inherit`
+    - **Why**: `secrets: inherit` passes all of the caller's secrets to the reusable workflow, violating the principle of least privilege. If the called workflow is compromised or contains a vulnerability, every secret is exposed — not just the ones the workflow actually needs
+    - **Fix**: Replace `secrets: inherit` with an explicit `secrets` mapping that passes only the specific secrets the reusable workflow requires
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/secrets-inherit/README.md
+
+    ---
+
+    1 error found in 1 of 1 file.
+  stderr: ""

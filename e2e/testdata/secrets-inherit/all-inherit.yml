@@ -1,0 +1,38 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        ci:
+          uses: org/repo/.github/workflows/ci.yml@main
+          secrets: inherit
+        deploy:
+          uses: org/repo/.github/workflows/deploy.yml@main
+          secrets: inherit
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:6:14
+    ...
+    3 | jobs:
+    4 |   ci:
+    ...
+    6 |     secrets: inherit
+      |              ^^^^^^^ job "ci" must not use `secrets: inherit` (secrets-inherit)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/secrets-inherit/README.md
+
+    --> {{.Dir}}/workflow.yml:9:14
+    ...
+    3 | jobs:
+    ...
+    7 |   deploy:
+    ...
+    9 |     secrets: inherit
+      |              ^^^^^^^ job "deploy" must not use `secrets: inherit` (secrets-inherit)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/secrets-inherit/README.md
+
+    ✗ 2 errors found in 1 of 1 file

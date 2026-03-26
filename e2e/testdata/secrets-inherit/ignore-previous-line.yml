@@ -1,0 +1,16 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: org/repo/.github/workflows/ci.yml@main
+          # ghasec-ignore:secrets-inherit
+          secrets: inherit
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

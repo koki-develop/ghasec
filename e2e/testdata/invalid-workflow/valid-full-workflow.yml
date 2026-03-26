@@ -119,4 +119,15 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
-    ✗ 3 errors found in 1 of 1 file
+    --> {{.Dir}}/valid-full-workflow.yml:71:14
+    ...
+    28 | jobs:
+    ...
+    65 |   call:
+    ...
+    71 |     secrets: inherit
+       |              ^^^^^^^ job "call" must not use `secrets: inherit` (secrets-inherit)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/secrets-inherit/README.md
+
+    ✗ 4 errors found in 1 of 1 file
