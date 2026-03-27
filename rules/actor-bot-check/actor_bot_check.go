@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/expression"
 	"github.com/koki-develop/ghasec/rules"
@@ -37,37 +38,22 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 		return nil
 	}
 
-	var errs []*diagnostic.Error
-
-	jobsKV := mapping.FindKey("jobs")
-	if jobsKV == nil {
-		return nil
-	}
-	jobsMapping, ok := rules.UnwrapNode(jobsKV.Value).(*ast.MappingNode)
-	if !ok {
-		return nil
-	}
-
-	for _, jobEntry := range jobsMapping.Values {
-		jobNode, ok := rules.UnwrapNode(jobEntry.Value).(*ast.MappingNode)
-		if !ok {
-			continue
-		}
-		jm := workflow.Mapping{MappingNode: jobNode}
+	return rules.CollectJobErrors(mapping.EachJob, func(_ *token.Token, job workflow.JobMapping) []*diagnostic.Error {
+		var errs []*diagnostic.Error
 
 		// Check job-level if:
-		if ifKV := jm.FindKey("if"); ifKV != nil {
+		if ifKV := job.FindKey("if"); ifKV != nil {
 			errs = append(errs, checkIfNode(ifKV.Value, trigger)...)
 		}
 
 		// Check step-level if:
-		stepsKV := jm.FindKey("steps")
+		stepsKV := job.FindKey("steps")
 		if stepsKV == nil {
-			continue
+			return errs
 		}
 		stepsSeq, ok := rules.UnwrapNode(stepsKV.Value).(*ast.SequenceNode)
 		if !ok {
-			continue
+			return errs
 		}
 		for _, stepNode := range stepsSeq.Values {
 			stepMapping, ok := rules.UnwrapNode(stepNode).(*ast.MappingNode)
@@ -79,9 +65,9 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 				errs = append(errs, checkIfNode(ifKV.Value, trigger)...)
 			}
 		}
-	}
 
-	return errs
+		return errs
+	})
 }
 
 func matchedTrigger(mapping workflow.WorkflowMapping) string {

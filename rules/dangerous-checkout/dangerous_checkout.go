@@ -42,14 +42,7 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 	if !hasPullRequestTarget(mapping) {
 		return nil
 	}
-
-	var errs []*diagnostic.Error
-	mapping.EachStep(func(step workflow.StepMapping) {
-		if err := checkStep(step); err != nil {
-			errs = append(errs, err)
-		}
-	})
-	return errs
+	return rules.CollectStepError(mapping.EachStep, checkStep)
 }
 
 func hasPullRequestTarget(mapping workflow.WorkflowMapping) bool {

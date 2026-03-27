@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
 )
 
@@ -33,19 +34,11 @@ func (r *Rule) Fix() string {
 }
 
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
-	var errs []*diagnostic.Error
-	mapping.EachStep(func(step workflow.StepMapping) {
-		errs = append(errs, r.checkStep(step)...)
-	})
-	return errs
+	return rules.CollectStepErrors(mapping.EachStep, r.checkStep)
 }
 
 func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
-	var errs []*diagnostic.Error
-	mapping.EachStep(func(step workflow.StepMapping) {
-		errs = append(errs, r.checkStep(step)...)
-	})
-	return errs
+	return rules.CollectStepErrors(mapping.EachStep, r.checkStep)
 }
 
 func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {

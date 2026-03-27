@@ -7,7 +7,7 @@
 ## Type Hierarchy
 
 - `Mapping` — wraps `*ast.MappingNode`. Provides `FindKey(key)` for key lookup and `FirstToken()` to get the first non-comment token in the file.
-- `WorkflowMapping` — embeds `Mapping`. Represents the top-level workflow document. Provides `EachStep(fn)` to iterate over all steps across all jobs.
+- `WorkflowMapping` — embeds `Mapping`. Represents the top-level workflow document. Provides `EachJob(fn)` to iterate over all jobs and `EachStep(fn)` to iterate over all steps across all jobs. `EachStep` delegates to `EachJob` internally.
 - `ActionMapping` — embeds `Mapping`. Represents the top-level action metadata document. Provides `EachStep(fn)` to iterate over steps in a composite action's `runs.steps`.
 - `JobMapping` — embeds `Mapping`. Represents a job-level mapping.
 - `StepMapping` — embeds `Mapping`. Represents a step-level mapping. Provides `Uses()` to extract `ActionRef` and `With()` to access the `with` mapping.

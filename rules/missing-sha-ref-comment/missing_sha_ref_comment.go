@@ -7,6 +7,7 @@ import (
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/git"
+	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
 )
 
@@ -27,23 +28,11 @@ func (r *Rule) Fix() string {
 }
 
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
-	var errs []*diagnostic.Error
-	mapping.EachStep(func(step workflow.StepMapping) {
-		if err := checkStepAction(step); err != nil {
-			errs = append(errs, err)
-		}
-	})
-	return errs
+	return rules.CollectStepError(mapping.EachStep, checkStepAction)
 }
 
 func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
-	var errs []*diagnostic.Error
-	mapping.EachStep(func(step workflow.StepMapping) {
-		if err := checkStepAction(step); err != nil {
-			errs = append(errs, err)
-		}
-	})
-	return errs
+	return rules.CollectStepError(mapping.EachStep, checkStepAction)
 }
 
 func checkStepAction(step workflow.StepMapping) *diagnostic.Error {

@@ -100,19 +100,11 @@ func (m ActionMapping) EachStep(fn func(step StepMapping)) {
 	}
 }
 
-// JobMapping represents a job-level mapping.
-type JobMapping struct{ Mapping }
-
-// StepMapping represents a step-level mapping.
-type StepMapping struct {
-	Mapping
-}
-
-// EachStep iterates over all steps across all jobs in the workflow.
-// It silently skips malformed sections (missing jobs, non-mapping jobs, etc.)
+// EachJob iterates over all jobs in the workflow.
+// It silently skips malformed sections (missing jobs key, non-mapping values, etc.)
 // because structural validation is handled by the required invalid-workflow rule,
 // which gates all non-required rules.
-func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
+func (w WorkflowMapping) EachJob(fn func(jobKeyToken *token.Token, job JobMapping)) {
 	jobsKV := w.FindKey("jobs")
 	if jobsKV == nil {
 		return
@@ -126,13 +118,31 @@ func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
 		if !ok {
 			continue
 		}
-		stepsKV := Mapping{jobMapping}.FindKey("steps")
+		fn(jobEntry.Key.GetToken(), JobMapping{Mapping{jobMapping}})
+	}
+}
+
+// JobMapping represents a job-level mapping.
+type JobMapping struct{ Mapping }
+
+// StepMapping represents a step-level mapping.
+type StepMapping struct {
+	Mapping
+}
+
+// EachStep iterates over all steps across all jobs in the workflow.
+// It silently skips malformed sections (missing jobs, non-mapping jobs, etc.)
+// because structural validation is handled by the required invalid-workflow rule,
+// which gates all non-required rules.
+func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
+	w.EachJob(func(_ *token.Token, job JobMapping) {
+		stepsKV := job.FindKey("steps")
 		if stepsKV == nil {
-			continue
+			return
 		}
 		stepsSeq, ok := unwrapNode(stepsKV.Value).(*ast.SequenceNode)
 		if !ok {
-			continue
+			return
 		}
 		for _, stepNode := range stepsSeq.Values {
 			stepMapping, ok := unwrapNode(stepNode).(*ast.MappingNode)
@@ -141,7 +151,7 @@ func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
 			}
 			fn(StepMapping{Mapping: Mapping{stepMapping}})
 		}
-	}
+	})
 }
 
 // With returns the "with" mapping from the step.

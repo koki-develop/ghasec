@@ -27,19 +27,11 @@ func (r *Rule) Fix() string {
 }
 
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
-	var errs []*diagnostic.Error
-	mapping.EachStep(func(step workflow.StepMapping) {
-		errs = append(errs, checkStep(step)...)
-	})
-	return errs
+	return rules.CollectStepErrors(mapping.EachStep, checkStep)
 }
 
 func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
-	var errs []*diagnostic.Error
-	mapping.EachStep(func(step workflow.StepMapping) {
-		errs = append(errs, checkStep(step)...)
-	})
-	return errs
+	return rules.CollectStepErrors(mapping.EachStep, checkStep)
 }
 
 func checkStep(step workflow.StepMapping) []*diagnostic.Error {

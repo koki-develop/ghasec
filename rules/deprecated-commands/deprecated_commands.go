@@ -46,35 +46,19 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 	// Check env at workflow level.
 	errs = append(errs, checkEnvMapping(mapping.Mapping)...)
 
-	// Check env at job level and step-level env via manual job iteration.
-	jobsKV := mapping.FindKey("jobs")
-	if jobsKV != nil {
-		jobsMapping, ok := rules.UnwrapNode(jobsKV.Value).(*ast.MappingNode)
-		if ok {
-			for _, jobEntry := range jobsMapping.Values {
-				jobMapping, ok := rules.UnwrapNode(jobEntry.Value).(*ast.MappingNode)
-				if !ok {
-					continue
-				}
-				errs = append(errs, checkEnvMapping(workflow.Mapping{MappingNode: jobMapping})...)
-			}
-		}
-	}
+	// Check env at job level.
+	mapping.EachJob(func(_ *token.Token, job workflow.JobMapping) {
+		errs = append(errs, checkEnvMapping(job.Mapping)...)
+	})
 
 	// Check deprecated commands in run steps and step-level env.
-	mapping.EachStep(func(step workflow.StepMapping) {
-		errs = append(errs, checkStep(step)...)
-	})
+	errs = append(errs, rules.CollectStepErrors(mapping.EachStep, checkStep)...)
 
 	return errs
 }
 
 func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
-	var errs []*diagnostic.Error
-	mapping.EachStep(func(step workflow.StepMapping) {
-		errs = append(errs, checkStep(step)...)
-	})
-	return errs
+	return rules.CollectStepErrors(mapping.EachStep, checkStep)
 }
 
 func checkStep(step workflow.StepMapping) []*diagnostic.Error {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
@@ -26,30 +27,15 @@ func (r *Rule) Fix() string {
 }
 
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
-	jobsKV := mapping.FindKey("jobs")
-	if jobsKV == nil {
-		return nil
-	}
-	jobsMapping, ok := rules.UnwrapNode(jobsKV.Value).(*ast.MappingNode)
-	if !ok {
-		return nil
-	}
+	return rules.CollectJobError(mapping.EachJob, checkJob)
+}
 
-	var errs []*diagnostic.Error
-	for _, jobEntry := range jobsMapping.Values {
-		jobMapping, ok := rules.UnwrapNode(jobEntry.Value).(*ast.MappingNode)
-		if !ok {
-			continue
-		}
-		permKV := workflow.Mapping{MappingNode: jobMapping}.FindKey("permissions")
-		if permKV == nil {
-			continue
-		}
-		if err := checkPermissionsValue(permKV.Value); err != nil {
-			errs = append(errs, err)
-		}
+func checkJob(_ *token.Token, job workflow.JobMapping) *diagnostic.Error {
+	permKV := job.FindKey("permissions")
+	if permKV == nil {
+		return nil
 	}
-	return errs
+	return checkPermissionsValue(permKV.Value)
 }
 
 func checkPermissionsValue(node ast.Node) *diagnostic.Error {

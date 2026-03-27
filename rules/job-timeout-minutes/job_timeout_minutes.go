@@ -1,7 +1,7 @@
 package jobtimeoutminutes
 
 import (
-	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
@@ -24,31 +24,18 @@ func (r *Rule) Fix() string {
 }
 
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
-	jobsKV := mapping.FindKey("jobs")
-	if jobsKV == nil {
-		return nil
-	}
-	jobsMapping, ok := rules.UnwrapNode(jobsKV.Value).(*ast.MappingNode)
-	if !ok {
-		return nil
-	}
+	return rules.CollectJobError(mapping.EachJob, checkJob)
+}
 
-	var errs []*diagnostic.Error
-	for _, jobEntry := range jobsMapping.Values {
-		jobMapping, ok := rules.UnwrapNode(jobEntry.Value).(*ast.MappingNode)
-		if !ok {
-			continue
-		}
-		m := workflow.Mapping{MappingNode: jobMapping}
-		if m.FindKey("uses") != nil {
-			continue
-		}
-		if m.FindKey("timeout-minutes") == nil {
-			errs = append(errs, &diagnostic.Error{
-				Token:   jobEntry.Key.GetToken(),
-				Message: `"timeout-minutes" must be set`,
-			})
+func checkJob(jobKeyToken *token.Token, job workflow.JobMapping) *diagnostic.Error {
+	if job.FindKey("uses") != nil {
+		return nil
+	}
+	if job.FindKey("timeout-minutes") == nil {
+		return &diagnostic.Error{
+			Token:   jobKeyToken,
+			Message: `"timeout-minutes" must be set`,
 		}
 	}
-	return errs
+	return nil
 }

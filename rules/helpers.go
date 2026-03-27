@@ -5,7 +5,9 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
+	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/expression"
+	"github.com/koki-develop/ghasec/workflow"
 )
 
 // UnwrapNode unwraps AnchorNode wrappers to get the actual value node.
@@ -272,4 +274,44 @@ func JoinPlural(items []string) string {
 		plural[i] = a + "s"
 	}
 	return JoinOr(plural)
+}
+
+// CollectStepErrors collects errors from a step check that returns a slice.
+func CollectStepErrors(eachStep func(func(workflow.StepMapping)), check func(workflow.StepMapping) []*diagnostic.Error) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	eachStep(func(step workflow.StepMapping) {
+		errs = append(errs, check(step)...)
+	})
+	return errs
+}
+
+// CollectStepError collects errors from a step check that returns a single error.
+func CollectStepError(eachStep func(func(workflow.StepMapping)), check func(workflow.StepMapping) *diagnostic.Error) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	eachStep(func(step workflow.StepMapping) {
+		if err := check(step); err != nil {
+			errs = append(errs, err)
+		}
+	})
+	return errs
+}
+
+// CollectJobErrors collects errors from a job check that returns a slice.
+func CollectJobErrors(eachJob func(func(*token.Token, workflow.JobMapping)), check func(*token.Token, workflow.JobMapping) []*diagnostic.Error) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	eachJob(func(jobKeyToken *token.Token, job workflow.JobMapping) {
+		errs = append(errs, check(jobKeyToken, job)...)
+	})
+	return errs
+}
+
+// CollectJobError collects errors from a job check that returns a single error.
+func CollectJobError(eachJob func(func(*token.Token, workflow.JobMapping)), check func(*token.Token, workflow.JobMapping) *diagnostic.Error) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	eachJob(func(jobKeyToken *token.Token, job workflow.JobMapping) {
+		if err := check(jobKeyToken, job); err != nil {
+			errs = append(errs, err)
+		}
+	})
+	return errs
 }

@@ -3,7 +3,7 @@ package secretsinherit
 import (
 	"fmt"
 
-	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
@@ -26,32 +26,19 @@ func (r *Rule) Fix() string {
 }
 
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
-	jobsKV := mapping.FindKey("jobs")
-	if jobsKV == nil {
-		return nil
-	}
-	jobsMapping, ok := rules.UnwrapNode(jobsKV.Value).(*ast.MappingNode)
-	if !ok {
-		return nil
-	}
+	return rules.CollectJobError(mapping.EachJob, checkJob)
+}
 
-	var errs []*diagnostic.Error
-	for _, jobEntry := range jobsMapping.Values {
-		jobMapping, ok := rules.UnwrapNode(jobEntry.Value).(*ast.MappingNode)
-		if !ok {
-			continue
-		}
-		m := workflow.Mapping{MappingNode: jobMapping}
-		secretsKV := m.FindKey("secrets")
-		if secretsKV == nil {
-			continue
-		}
-		if rules.IsString(secretsKV.Value) && rules.StringValue(secretsKV.Value) == "inherit" {
-			errs = append(errs, &diagnostic.Error{
-				Token:   secretsKV.Value.GetToken(),
-				Message: fmt.Sprintf("job %q must not use `secrets: inherit`", jobEntry.Key.GetToken().Value),
-			})
+func checkJob(jobKeyToken *token.Token, job workflow.JobMapping) *diagnostic.Error {
+	secretsKV := job.FindKey("secrets")
+	if secretsKV == nil {
+		return nil
+	}
+	if rules.IsString(secretsKV.Value) && rules.StringValue(secretsKV.Value) == "inherit" {
+		return &diagnostic.Error{
+			Token:   secretsKV.Value.GetToken(),
+			Message: fmt.Sprintf("job %q must not use `secrets: inherit`", jobKeyToken.Value),
 		}
 	}
-	return errs
+	return nil
 }
