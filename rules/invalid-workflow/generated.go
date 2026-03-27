@@ -903,8 +903,9 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 														if _oneOfM8, _ok := rules.UnwrapNode(_kvenvironment.Value).(*ast.MappingNode); _ok {
 															// Unknown key detection
 															_knownKeysjobs___environment := map[string]bool{
-																"name": true,
-																"url":  true,
+																"deployment": true,
+																"name":       true,
+																"url":        true,
 															}
 															for _, _entry := range _oneOfM8.Values {
 																_key := _entry.Key.GetToken().Value
@@ -928,6 +929,22 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																	Key:   "name",
 																	Token: _kvenvironment.Key.GetToken(),
 																})
+															}
+
+															// Property: "deployment"
+															if _kvdeployment := (workflow.Mapping{MappingNode: _oneOfM8}).FindKey("deployment"); _kvdeployment != nil {
+																if !rules.IsExpressionNode(_kvdeployment.Value) {
+																	if !rules.IsString(_kvdeployment.Value) && !rules.IsBoolean(_kvdeployment.Value) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "jobs.*.environment.deployment",
+																			Key:     "deployment",
+																			Got:     rules.NodeTypeName(_kvdeployment.Value),
+																			Allowed: []string{"string", "boolean"},
+																			Token:   _kvdeployment.Value.GetToken(),
+																		})
+																	}
+																}
 															}
 
 															// Property: "name"
@@ -6497,7 +6514,8 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 												if _subMschedule__, _okschedule__ := rules.UnwrapNode(_item).(*ast.MappingNode); _okschedule__ {
 													// Unknown key detection
 													_knownKeyson_schedule__ := map[string]bool{
-														"cron": true,
+														"cron":     true,
+														"timezone": true,
 													}
 													for _, _entry := range _subMschedule__.Values {
 														_key := _entry.Key.GetToken().Value
@@ -6511,6 +6529,17 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 														}
 													}
 
+													// Required key checks
+													_mWrapon_schedule__ := workflow.Mapping{MappingNode: _subMschedule__}
+													if _mWrapon_schedule__.FindKey("cron") == nil {
+														errs = append(errs, rules.ValidationError{
+															Kind:  rules.KindRequiredKey,
+															Path:  "on.schedule.*",
+															Key:   "cron",
+															Token: _subMschedule__.GetToken(),
+														})
+													}
+
 													// Property: "cron"
 													if _kvcron := (workflow.Mapping{MappingNode: _subMschedule__}).FindKey("cron"); _kvcron != nil {
 														if !rules.IsExpressionNode(_kvcron.Value) {
@@ -6522,6 +6551,22 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																	Got:     rules.NodeTypeName(_kvcron.Value),
 																	Allowed: []string{"string"},
 																	Token:   _kvcron.Value.GetToken(),
+																})
+															}
+														}
+													}
+
+													// Property: "timezone"
+													if _kvtimezone := (workflow.Mapping{MappingNode: _subMschedule__}).FindKey("timezone"); _kvtimezone != nil {
+														if !rules.IsExpressionNode(_kvtimezone.Value) {
+															if !rules.IsString(_kvtimezone.Value) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.schedule.*.timezone",
+																	Key:     "timezone",
+																	Got:     rules.NodeTypeName(_kvtimezone.Value),
+																	Allowed: []string{"string"},
+																	Token:   _kvtimezone.Value.GetToken(),
 																})
 															}
 														}
@@ -8856,8 +8901,9 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 												if _oneOfM69, _ok := rules.UnwrapNode(_kvenvironment.Value).(*ast.MappingNode); _ok {
 													// Unknown key detection
 													_knownKeysjobs___environment := map[string]bool{
-														"name": true,
-														"url":  true,
+														"deployment": true,
+														"name":       true,
+														"url":        true,
 													}
 													for _, _entry := range _oneOfM69.Values {
 														_key := _entry.Key.GetToken().Value
@@ -8881,6 +8927,22 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 															Key:   "name",
 															Token: _kvenvironment.Key.GetToken(),
 														})
+													}
+
+													// Property: "deployment"
+													if _kvdeployment := (workflow.Mapping{MappingNode: _oneOfM69}).FindKey("deployment"); _kvdeployment != nil {
+														if !rules.IsExpressionNode(_kvdeployment.Value) {
+															if !rules.IsString(_kvdeployment.Value) && !rules.IsBoolean(_kvdeployment.Value) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "jobs.*.environment.deployment",
+																	Key:     "deployment",
+																	Got:     rules.NodeTypeName(_kvdeployment.Value),
+																	Allowed: []string{"string", "boolean"},
+																	Token:   _kvdeployment.Value.GetToken(),
+																})
+															}
+														}
 													}
 
 													// Property: "name"
@@ -14450,7 +14512,8 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 										if _subMschedule__, _okschedule__ := rules.UnwrapNode(_item).(*ast.MappingNode); _okschedule__ {
 											// Unknown key detection
 											_knownKeyson_schedule__ := map[string]bool{
-												"cron": true,
+												"cron":     true,
+												"timezone": true,
 											}
 											for _, _entry := range _subMschedule__.Values {
 												_key := _entry.Key.GetToken().Value
@@ -14464,6 +14527,17 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 												}
 											}
 
+											// Required key checks
+											_mWrapon_schedule__ := workflow.Mapping{MappingNode: _subMschedule__}
+											if _mWrapon_schedule__.FindKey("cron") == nil {
+												errs = append(errs, rules.ValidationError{
+													Kind:  rules.KindRequiredKey,
+													Path:  "on.schedule.*",
+													Key:   "cron",
+													Token: _subMschedule__.GetToken(),
+												})
+											}
+
 											// Property: "cron"
 											if _kvcron := (workflow.Mapping{MappingNode: _subMschedule__}).FindKey("cron"); _kvcron != nil {
 												if !rules.IsExpressionNode(_kvcron.Value) {
@@ -14475,6 +14549,22 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 															Got:     rules.NodeTypeName(_kvcron.Value),
 															Allowed: []string{"string"},
 															Token:   _kvcron.Value.GetToken(),
+														})
+													}
+												}
+											}
+
+											// Property: "timezone"
+											if _kvtimezone := (workflow.Mapping{MappingNode: _subMschedule__}).FindKey("timezone"); _kvtimezone != nil {
+												if !rules.IsExpressionNode(_kvtimezone.Value) {
+													if !rules.IsString(_kvtimezone.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "on.schedule.*.timezone",
+															Key:     "timezone",
+															Got:     rules.NodeTypeName(_kvtimezone.Value),
+															Allowed: []string{"string"},
+															Token:   _kvtimezone.Value.GetToken(),
 														})
 													}
 												}
