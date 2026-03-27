@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.1](https://github.com/koki-develop/ghasec/compare/v0.6.0...v0.6.1) (2026-03-27)
+
+
+### Patches
+
+* update E2E expectation for schedule cron required validation ([63aace4](https://github.com/koki-develop/ghasec/commit/63aace41e59e408606f79580ac803703a81e09a2))
+* update SchemaStore submodule and regenerate workflow validation ([8c26252](https://github.com/koki-develop/ghasec/commit/8c262525744d6ef6e2ac7cef1b98db8cfa9b1ff4))
+
 ## [0.6.0](https://github.com/koki-develop/ghasec/compare/v0.5.0...v0.6.0) (2026-03-26)
 
 
