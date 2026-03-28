@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"strings"
@@ -743,7 +744,7 @@ func findEnumDiscriminator(branches []*Node) (string, map[string]int) {
 		}
 	}
 
-	for key := range candidates {
+	for _, key := range slices.Sorted(maps.Keys(candidates)) {
 		// Check if each branch has enum or const on this key with no overlap.
 		valueMap := map[string]int{}
 		valid := true
@@ -1468,7 +1469,8 @@ func extractIfCondition(ifNode *Node) (string, string) {
 	}
 
 	// Find a property with a const value (possibly nested).
-	for key, prop := range ifNode.Properties {
+	for _, key := range slices.Sorted(maps.Keys(ifNode.Properties)) {
+		prop := ifNode.Properties[key]
 		if prop == nil {
 			continue
 		}

@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"slices"
+	"strings"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
 )
@@ -126,10 +128,12 @@ func convert(s *jsonschema.Schema, path string) *Node {
 		node.Const = &str
 	}
 
-	// Properties
+	// Properties (sorted for deterministic traversal order, which matters for
+	// apSchemaCache path assignment and nextID() counter ordering).
 	if len(s.Properties) > 0 {
 		node.Properties = make(map[string]*Node, len(s.Properties))
-		for k, v := range s.Properties {
+		for _, k := range slices.Sorted(maps.Keys(s.Properties)) {
+			v := s.Properties[k]
 			childPath := k
 			if path != "" {
 				childPath = path + "." + k
@@ -138,17 +142,25 @@ func convert(s *jsonschema.Schema, path string) *Node {
 		}
 	}
 
-	// PatternProperties
+	// PatternProperties (sorted for deterministic traversal order)
 	if len(s.PatternProperties) > 0 {
 		node.PatternProps = make(map[string]*Node, len(s.PatternProperties))
+		type ppEntry struct {
+			pattern string
+			schema  *jsonschema.Schema
+		}
+		ppEntries := make([]ppEntry, 0, len(s.PatternProperties))
 		for re, v := range s.PatternProperties {
-			pattern := re.String()
+			ppEntries = append(ppEntries, ppEntry{pattern: re.String(), schema: v})
+		}
+		slices.SortFunc(ppEntries, func(a, b ppEntry) int { return strings.Compare(a.pattern, b.pattern) })
+		for _, entry := range ppEntries {
 			// Use "*" as the path segment for pattern properties (not the raw regex)
 			childPath := "*"
 			if path != "" {
 				childPath = path + ".*"
 			}
-			node.PatternProps[pattern] = convert(v, childPath)
+			node.PatternProps[entry.pattern] = convert(entry.schema, childPath)
 		}
 	}
 
@@ -200,9 +212,10 @@ func convert(s *jsonschema.Schema, path string) *Node {
 		node.Pattern = s.Pattern.String()
 	}
 
-	// V3: Property dependencies
+	// V3: Property dependencies (sorted for deterministic output)
 	if s.Dependencies != nil {
-		for prop, dep := range s.Dependencies {
+		for _, prop := range slices.Sorted(maps.Keys(s.Dependencies)) {
+			dep := s.Dependencies[prop]
 			if reqd, ok := dep.([]string); ok {
 				if node.Dependencies == nil {
 					node.Dependencies = make(map[string][]string)
