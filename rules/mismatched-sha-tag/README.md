@@ -15,7 +15,7 @@ This mismatch undermines the security value of SHA pinning. A reviewer who sees 
 ```yaml
 steps:
   # The SHA does not belong to v6.0.2 — it may be outdated or incorrect.
-  - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v6.0.2
+  - uses: actions/checkout@a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 # v6.0.2
 ```
 
 **Good** :white_check_mark:

@@ -17,7 +17,7 @@ on: push
 permissions: {}
 jobs:
   ci:
-    uses: org/repo/.github/workflows/ci.yml@main
+    uses: ./.github/workflows/ci.yml
     secrets: inherit
 ```
 
@@ -28,7 +28,7 @@ on: push
 permissions: {}
 jobs:
   ci:
-    uses: org/repo/.github/workflows/ci.yml@main
+    uses: ./.github/workflows/ci.yml
     secrets:
       npm-token: ${{ secrets.NPM_TOKEN }}
 ```

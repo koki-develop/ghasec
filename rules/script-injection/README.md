@@ -17,7 +17,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: actions/github-script@v7
+  - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
     with:
       script: |
         const title = '${{ github.event.issue.title }}';
@@ -34,7 +34,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: actions/github-script@v7
+  - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
     with:
       script: |
         const title = process.env.TITLE;
