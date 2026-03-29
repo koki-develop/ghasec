@@ -1,0 +1,31 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      env:
+        SCRIPT: |
+          echo hello
+          echo ${{ secrets.TOKEN }}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:6:14
+    ...
+    3 | env:
+    4 |   SCRIPT: |
+    ...
+    6 |     echo {{"${{ secrets.TOKEN }}"}}
+      |              ^^^^^^^^^^^^^ secrets must not be set in workflow-level environment variables; set them in step-level environment variables instead (broad-secret-env)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/broad-secret-env/README.md
+
+    ✗ 1 error found in 1 of 1 file

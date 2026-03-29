@@ -1,0 +1,34 @@
+args: --format markdown
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      env:
+        TOKEN: ${{ secrets.TOKEN }}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: |
+    ## {{.Dir}}/workflow.yml:4:14
+
+    ```yaml
+      TOKEN: {{"${{ secrets.TOKEN }}"}}
+    ```
+
+    - **Rule**: broad-secret-env
+    - **Message**: secrets must not be set in workflow-level environment variables; set them in step-level environment variables instead
+    - **Why**: Setting secrets or github.token in workflow-level or job-level environment variables exposes them to all steps in the scope, including third-party actions that do not need access. This violates the principle of least privilege and increases the risk of secret exfiltration
+    - **Fix**: Move the secret to a step-level environment variable so that only the step that needs it has access
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/broad-secret-env/README.md
+
+    ---
+
+    1 error found in 1 of 1 file.
+  stderr: ""

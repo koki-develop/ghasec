@@ -1,0 +1,20 @@
+args: --format github-actions
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      env:
+        TOKEN: ${{ secrets.TOKEN }}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=broad-secret-env,file={{.Dir}}/workflow.yml,line=4::{{.Dir}}/workflow.yml:4:14: secrets must not be set in workflow-level environment variables; set them in step-level environment variables instead
+  stderr: ""

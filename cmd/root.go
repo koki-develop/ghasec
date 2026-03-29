@@ -21,6 +21,7 @@ import (
 	"github.com/koki-develop/ghasec/renderer"
 	"github.com/koki-develop/ghasec/rules"
 	actorbotcheck "github.com/koki-develop/ghasec/rules/actor-bot-check"
+	broadsecretenv "github.com/koki-develop/ghasec/rules/broad-secret-env"
 	checkoutpersistcredentials "github.com/koki-develop/ghasec/rules/checkout-persist-credentials"
 	dangerouscheckout "github.com/koki-develop/ghasec/rules/dangerous-checkout"
 	defaultpermissions "github.com/koki-develop/ghasec/rules/default-permissions"
@@ -267,6 +268,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&deprecatedcommands.Rule{},
 		&missingsharefcomment.Rule{},
 		&actorbotcheck.Rule{},
+		&broadsecretenv.Rule{},
 		&missingapptokenpermissions.Rule{},
 		&impostorcommit.Rule{Verifier: client},
 		&mismatchedshatag.Rule{Resolver: client},

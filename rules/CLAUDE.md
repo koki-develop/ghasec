@@ -11,6 +11,7 @@ Each rule lives in its own subdirectory under `rules/`. Run `ls rules/` to see a
 - `invalid-workflow` and `invalid-action` are **required** rules (structural validation). All others are non-required (lint checks).
 - `invalid-expression` is a **non-required** rule that validates `${{ }}` expression syntax (Phase 1: syntax only, no semantic checks). It also detects bare `if:` expressions without `${{ }}` wrappers. Expression-position checks (forbidding `${{ }}` in static fields like `steps[].id`, `permissions`, `on.*` config) live in the required rules (`invalid-workflow`/`invalid-action`), not in `invalid-expression`.
 - `actor-bot-check` is a **non-required** rule that detects unreliable `github.actor` bot comparisons in `if:` conditions of `pull_request`/`pull_request_target` workflows. It uses the expression parser's AST to identify `github.actor == '*[bot]'` patterns.
+- `broad-secret-env` is a **non-required** rule that detects `secrets.*` and `github.token` in workflow-level and job-level `env` blocks (step-level is allowed). Uses the expression parser's AST to walk values and match `PropertyAccessNode`/`IndexAccessNode` on `secrets` and `github.token`. Points markers at the specific sub-expression (e.g., `secrets.TOKEN`) rather than the whole `${{ }}` span.
 - `missing-app-token-permissions` is a **non-required** rule that requires at least one `permission-*` input when using `actions/create-github-app-token`. Implements both `WorkflowRule` and `ActionRule`.
 - `mismatched-sha-tag` and `impostor-commit` are **online** rules (require `--online` flag).
 
@@ -39,7 +40,7 @@ The renderer automatically computes ancestor breadcrumb lines from the error tok
 
 Rules only need to set `Token` and `Message` on `diagnostic.Error`. Use `ExtraContexts` only for non-ancestor tokens that provide important context (e.g., `default-permissions` uses it to show the last permission entry, `checkout-persist-credentials` uses it to show the `uses` value when the error is on `persist-credentials`).
 
-For diagnostics pointing to a `${{ }}` span within a larger string, use `rules.ExpressionSpanToken` to create a synthetic token covering only the expression span (not the entire YAML string value). It takes the `ast.Node` (not a raw token) so it can detect block scalars (`|` / `>`) and compute correct line/column positions for multiline values. For inline/quoted strings, it adjusts the column with quote offset correction.
+For diagnostics pointing to a `${{ }}` span within a larger string, use `rules.ExpressionSpanToken` to create a synthetic token covering only the expression span (not the entire YAML string value). It takes the `ast.Node` (not a raw token) so it can detect block scalars (`|` / `>`) and compute correct line/column positions for multiline values. For inline/quoted strings, it adjusts the column with quote offset correction. `ExpressionSpanToken` accepts arbitrary `(spanStart, spanEnd)` byte offsets within the value — pass the full `${{ }}` span to highlight the whole expression, or a sub-range (computed from AST node offsets via `span.Start + 3 + node.Offset`) to highlight a specific sub-expression like `secrets.TOKEN` within a larger expression.
 
 ## Diagnostic Message Format
 

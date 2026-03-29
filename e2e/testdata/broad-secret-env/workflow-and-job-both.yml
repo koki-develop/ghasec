@@ -1,0 +1,40 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      env:
+        A: ${{ secrets.A }}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          env:
+            B: ${{ secrets.B }}
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:4:10
+    ...
+    3 | env:
+    4 |   A: {{"${{ secrets.A }}"}}
+      |          ^^^^^^^^^ secrets must not be set in workflow-level environment variables; set them in step-level environment variables instead (broad-secret-env)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/broad-secret-env/README.md
+
+    --> {{.Dir}}/workflow.yml:10:14
+    ...
+     5 | jobs:
+     6 |   build:
+    ...
+     9 |     env:
+    10 |       B: {{"${{ secrets.B }}"}}
+       |              ^^^^^^^^^ secrets must not be set in job-level environment variables; set them in step-level environment variables instead (broad-secret-env)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/broad-secret-env/README.md
+
+    ✗ 2 errors found in 1 of 1 file
