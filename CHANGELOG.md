@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.0](https://github.com/koki-develop/ghasec/compare/v0.7.0...v0.8.0) (2026-03-29)
+
+
+### Features
+
+* add broad-secret-env rule to detect secrets in workflow/job-level env ([56dcca0](https://github.com/koki-develop/ghasec/commit/56dcca0ffc33527a96fd1702f2fdd173d2126ac3))
+* add missing-app-token-permissions rule to require explicit permission-* inputs ([d558cd8](https://github.com/koki-develop/ghasec/commit/d558cd886c96b99cd0a2d028d2449451a5019738))
+* prioritize GHASEC_GITHUB_TOKEN over GITHUB_TOKEN for API authentication ([18c0886](https://github.com/koki-develop/ghasec/commit/18c0886681af7ab0097c6997d4d4ac579acb490e))
+
 ## [0.7.0](https://github.com/koki-develop/ghasec/compare/v0.6.1...v0.7.0) (2026-03-29)
 
 
