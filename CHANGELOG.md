@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0](https://github.com/koki-develop/ghasec/compare/v0.6.1...v0.7.0) (2026-03-29)
+
+
+### Features
+
+* add unpinned-container rule to enforce digest-pinned container images ([7ad6d50](https://github.com/koki-develop/ghasec/commit/7ad6d5020e035a72d3eb8b6d93834290c64bff06))
+* enforce digest pinning for docker actions in unpinned-action rule ([10f8a8f](https://github.com/koki-develop/ghasec/commit/10f8a8fd33814c921d918298532eea38fc0fdf9b))
+
+
+### Patches
+
+* sort map iterations in code generator for deterministic output ([517d2fc](https://github.com/koki-develop/ghasec/commit/517d2fcfae0701a6bb3710b7afb365687cbd69c2))
+* validate sha256 digest format in unpinned-container rule ([2ff2495](https://github.com/koki-develop/ghasec/commit/2ff24953c8068d7f1e92362167246c4a823b0453))
+
 ## [0.6.1](https://github.com/koki-develop/ghasec/compare/v0.6.0...v0.6.1) (2026-03-27)
 
 
