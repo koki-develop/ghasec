@@ -1,0 +1,30 @@
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          services:
+            redis:
+              image: redis@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+              credentials:
+                username: user
+                password: ${{ secrets.TOKEN }}
+              env:
+                REDIS_PASSWORD: secret
+              ports:
+                - "6379"
+              volumes:
+                - /data:/data
+              options: --health-cmd "redis-cli ping"
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found
