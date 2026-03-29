@@ -71,13 +71,22 @@ func TestRule_NotPinned(t *testing.T) {
 	}
 }
 
-func TestRule_LocalAndDockerActions(t *testing.T) {
+func TestRule_LocalAction(t *testing.T) {
+	r := &unpinnedaction.Rule{}
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: ./local-action\n"
+	m := parseMapping(t, src)
+	errs := r.CheckWorkflow(m)
+	assert.Empty(t, errs)
+}
+
+func TestRule_DockerActionDigestPinned(t *testing.T) {
 	tests := []struct {
 		name string
 		uses string
 	}{
-		{"local action", "./path/to/action"},
-		{"docker action", "docker://alpine:3.8"},
+		{"tag and digest", "docker://alpine:3.8@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
+		{"digest only", "docker://alpine@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
+		{"registry with digest", "docker://ghcr.io/owner/repo:latest@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
 	}
 	r := &unpinnedaction.Rule{}
 	for _, tt := range tests {
@@ -86,6 +95,33 @@ func TestRule_LocalAndDockerActions(t *testing.T) {
 			m := parseMapping(t, src)
 			errs := r.CheckWorkflow(m)
 			assert.Empty(t, errs)
+		})
+	}
+}
+
+func TestRule_DockerActionUnpinned(t *testing.T) {
+	tests := []struct {
+		name string
+		uses string
+	}{
+		{"tag only", "docker://alpine:3.8"},
+		{"no tag", "docker://alpine"},
+		{"registry with tag", "docker://ghcr.io/owner/repo:latest"},
+		{"registry no tag", "docker://ghcr.io/owner/repo"},
+		{"short digest", "docker://alpine@sha256:abcdef"},
+		{"invalid hex in digest", "docker://alpine@sha256:ZZZZZZ1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
+		{"uppercase hex", "docker://alpine@sha256:ABCDEF1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
+		{"truncated digest", "docker://alpine@sha256:abcdef1234567890abcdef1234567890"},
+		{"digest too long", "docker://alpine@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890aa"},
+	}
+	r := &unpinnedaction.Rule{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			src := fmt.Sprintf("on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.uses)
+			m := parseMapping(t, src)
+			errs := r.CheckWorkflow(m)
+			require.Len(t, errs, 1)
+			assert.Contains(t, errs[0].Message, "pinned to a digest")
 		})
 	}
 }

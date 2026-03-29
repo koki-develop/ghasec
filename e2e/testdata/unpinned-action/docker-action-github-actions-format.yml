@@ -1,0 +1,18 @@
+args: --format github-actions
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: docker://alpine:3.8
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=unpinned-action,file={{.Dir}}/workflow.yml,line=8::{{.Dir}}/workflow.yml:8:15: "docker://alpine:3.8" must be pinned to a digest
+  stderr: ""

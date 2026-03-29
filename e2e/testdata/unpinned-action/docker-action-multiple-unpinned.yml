@@ -1,0 +1,42 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: docker://alpine:3.8
+            - uses: docker://ubuntu
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:8:15
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - uses: docker://alpine:3.8
+      |               ^^^^^^^^^^^^^^^^^^^ "docker://alpine:3.8" must be pinned to a digest (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/workflow.yml:9:15
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    ...
+    9 |       - uses: docker://ubuntu
+      |               ^^^^^^^^^^^^^^^ "docker://ubuntu" must be pinned to a digest (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    ✗ 2 errors found in 1 of 1 file

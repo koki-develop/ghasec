@@ -8,8 +8,7 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - uses: ./local-action
-            - run: echo hi
+            - uses: docker://alpine:3.8@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
 
 expected:
   exit_code: 0

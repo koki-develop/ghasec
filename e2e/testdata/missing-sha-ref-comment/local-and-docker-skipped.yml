@@ -9,7 +9,7 @@ workflows:
           timeout-minutes: 10
           steps:
             - uses: ./local-action
-            - uses: docker://alpine:3.8
+            - uses: docker://alpine:3.8@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
             - run: echo hi
 
 expected:

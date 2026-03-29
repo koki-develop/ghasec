@@ -2,6 +2,7 @@ package unpinnedaction
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/rules"
@@ -32,14 +33,28 @@ func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 	return rules.CollectStepError(mapping.EachStep, checkStepAction)
 }
 
+var sha256DigestRe = regexp.MustCompile(`@sha256:[0-9a-f]{64}$`)
+
 func checkStepAction(step workflow.StepMapping) *diagnostic.Error {
 	ref, ok := step.Uses()
 	if !ok {
 		return nil
 	}
 
-	if ref.IsLocal() || ref.IsDocker() {
+	if ref.IsLocal() {
 		return nil
+	}
+
+	if ref.IsDocker() {
+		if sha256DigestRe.MatchString(ref.String()) {
+			return nil
+		}
+		return &diagnostic.Error{
+			Token:   ref.Token(),
+			Message: fmt.Sprintf("%q must be pinned to a digest", ref.String()),
+			Why:     "Docker image tags are mutable. A compromised or updated registry image can change the contents behind a tag, executing different code silently on the next run",
+			Fix:     "Pin to the image digest using the @sha256:... suffix. Keep the tag for human readability",
+		}
 	}
 
 	if ref.Ref() == "" {

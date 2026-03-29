@@ -82,15 +82,22 @@ func (r *MarkdownRenderer) PrintDiagnosticError(path string, e *diagnostic.Error
 		fmt.Fprintf(sb, "- **Rule**: %s\n", e.RuleID)
 		fmt.Fprintf(sb, "- **Message**: %s\n", e.Message)
 
+		why, fix := e.Why, e.Fix
 		if rule, ok := r.rules[e.RuleID]; ok {
 			if ex, ok := rule.(rules.Explainer); ok {
-				if w := ex.Why(); w != "" {
-					fmt.Fprintf(sb, "- **Why**: %s\n", w)
+				if why == "" {
+					why = ex.Why()
 				}
-				if f := ex.Fix(); f != "" {
-					fmt.Fprintf(sb, "- **Fix**: %s\n", f)
+				if fix == "" {
+					fix = ex.Fix()
 				}
 			}
+		}
+		if why != "" {
+			fmt.Fprintf(sb, "- **Why**: %s\n", why)
+		}
+		if fix != "" {
+			fmt.Fprintf(sb, "- **Fix**: %s\n", fix)
 		}
 
 		fmt.Fprintf(sb, "- **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/%s/README.md\n", e.RuleID)
