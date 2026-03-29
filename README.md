@@ -85,10 +85,10 @@ Some rules require network access to the GitHub API. Use the `--online` flag to 
 $ ghasec --online
 ```
 
-The GitHub API is subject to [rate limiting](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api). Set the `GITHUB_TOKEN` environment variable to use a higher rate limit:
+The GitHub API is subject to [rate limiting](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api). Set the `GHASEC_GITHUB_TOKEN` or `GITHUB_TOKEN` environment variable to use a higher rate limit:
 
 ```console
-$ GITHUB_TOKEN=ghp_... ghasec --online
+$ GHASEC_GITHUB_TOKEN=ghp_... ghasec --online
 ```
 
 ### Markdown Format

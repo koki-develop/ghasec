@@ -225,7 +225,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if ghClient.RateLimitHit() && !ghClient.HasToken() {
-			if err := rdr.PrintHint("set the GITHUB_TOKEN environment variable to increase the GitHub API rate limit"); err != nil {
+			if err := rdr.PrintHint("set the GHASEC_GITHUB_TOKEN or GITHUB_TOKEN environment variable to increase the GitHub API rate limit"); err != nil {
 				return err
 			}
 		}

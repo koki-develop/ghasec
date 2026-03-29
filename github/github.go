@@ -1,6 +1,7 @@
 package github
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -53,7 +54,7 @@ func NewClient(opts ...Option) *Client {
 	c := &Client{
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 		baseURL:    defaultBaseURL,
-		token:      os.Getenv("GITHUB_TOKEN"),
+		token:      cmp.Or(os.Getenv("GHASEC_GITHUB_TOKEN"), os.Getenv("GITHUB_TOKEN")),
 	}
 	for _, o := range opts {
 		o(c)
