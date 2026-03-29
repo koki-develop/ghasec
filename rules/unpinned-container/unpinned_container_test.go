@@ -52,6 +52,11 @@ func TestRule_ContainerStringUnpinned(t *testing.T) {
 		{"no tag", "ubuntu"},
 		{"registry with tag", "ghcr.io/owner/repo:latest"},
 		{"registry no tag", "ghcr.io/owner/repo"},
+		{"short digest", "ubuntu@sha256:abcdef"},
+		{"invalid hex in digest", "ubuntu@sha256:ZZZZZZ1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
+		{"truncated digest", "ubuntu@sha256:abcdef1234567890abcdef1234567890"},
+		{"uppercase hex", "ubuntu@sha256:ABCDEF1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
+		{"trailing chars after digest", "ubuntu@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890extra"},
 	}
 	r := &unpinnedcontainer.Rule{}
 	for _, tt := range tests {

@@ -2,7 +2,7 @@ package unpinnedcontainer
 
 import (
 	"fmt"
-	"strings"
+	"regexp"
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
@@ -109,11 +109,13 @@ func checkServices(job workflow.JobMapping) []*diagnostic.Error {
 	return errs
 }
 
+var sha256DigestRe = regexp.MustCompile(`@sha256:[0-9a-f]{64}$`)
+
 func checkImage(subject, value string, tok *token.Token) *diagnostic.Error {
 	if value == "" {
 		return nil
 	}
-	if strings.Contains(value, "@sha256:") {
+	if sha256DigestRe.MatchString(value) {
 		return nil
 	}
 	return &diagnostic.Error{
