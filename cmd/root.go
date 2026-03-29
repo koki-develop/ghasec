@@ -32,6 +32,7 @@ import (
 	joballpermissions "github.com/koki-develop/ghasec/rules/job-all-permissions"
 	jobtimeoutminutes "github.com/koki-develop/ghasec/rules/job-timeout-minutes"
 	mismatchedshatag "github.com/koki-develop/ghasec/rules/mismatched-sha-tag"
+	missingapptokenpermissions "github.com/koki-develop/ghasec/rules/missing-app-token-permissions"
 	missingsharefcomment "github.com/koki-develop/ghasec/rules/missing-sha-ref-comment"
 	scriptinjection "github.com/koki-develop/ghasec/rules/script-injection"
 	secretsinherit "github.com/koki-develop/ghasec/rules/secrets-inherit"
@@ -266,6 +267,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&deprecatedcommands.Rule{},
 		&missingsharefcomment.Rule{},
 		&actorbotcheck.Rule{},
+		&missingapptokenpermissions.Rule{},
 		&impostorcommit.Rule{Verifier: client},
 		&mismatchedshatag.Rule{Resolver: client},
 	}

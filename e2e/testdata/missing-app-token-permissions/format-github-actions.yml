@@ -1,0 +1,20 @@
+args: --format github-actions
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+              with:
+                app-id: id
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=missing-app-token-permissions,file={{.Dir}}/workflow.yml,line=8::{{.Dir}}/workflow.yml:8:15: "permission-*" input must be set in "with"
+  stderr: ""
