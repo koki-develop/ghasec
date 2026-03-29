@@ -36,6 +36,7 @@ import (
 	scriptinjection "github.com/koki-develop/ghasec/rules/script-injection"
 	secretsinherit "github.com/koki-develop/ghasec/rules/secrets-inherit"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
+	unpinnedcontainer "github.com/koki-develop/ghasec/rules/unpinned-container"
 	"github.com/koki-develop/ghasec/update"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -254,6 +255,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&invalidaction.Rule{},
 		&invalidexpression.Rule{},
 		&unpinnedaction.Rule{},
+		&unpinnedcontainer.Rule{},
 		&checkoutpersistcredentials.Rule{},
 		&dangerouscheckout.Rule{},
 		&defaultpermissions.Rule{},

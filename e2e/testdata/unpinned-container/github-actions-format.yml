@@ -1,0 +1,19 @@
+args: --format github-actions
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          container: ubuntu:22.04
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=unpinned-container,file={{.Dir}}/ci.yml,line=7::{{.Dir}}/ci.yml:7:16: "container" must be pinned to a digest
+  stderr: ""

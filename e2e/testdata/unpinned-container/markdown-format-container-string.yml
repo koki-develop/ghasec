@@ -1,0 +1,33 @@
+args: --format markdown
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          container: ubuntu:22.04
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: |
+    ## {{.Dir}}/ci.yml:7:16
+
+    ```yaml
+        container: ubuntu:22.04
+    ```
+
+    - **Rule**: unpinned-container
+    - **Message**: "container" must be pinned to a digest
+    - **Why**: Container image tags are mutable. A compromised or updated registry image can change the contents behind a tag, executing different code silently on the next run
+    - **Fix**: Pin to the image digest using the @sha256:... suffix
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-container/README.md
+
+    ---
+
+    1 error found in 1 of 1 file.
+  stderr: ""

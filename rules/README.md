@@ -20,4 +20,5 @@ Rules marked as **Online** require network access (e.g., GitHub API) and are dis
 | [script-injection](./script-injection/README.md) | Checks that `run:` steps and `actions/github-script`'s `script:` input do not contain `${{ }}` expressions. | |
 | [secrets-inherit](./secrets-inherit/README.md) | Checks that jobs do not use `secrets: inherit`. | |
 | [unpinned-action](./unpinned-action/README.md) | Checks that third-party action references are pinned to a full-length commit SHA. | |
+| [unpinned-container](./unpinned-container/README.md) | Checks that container images in job `container` and `services` definitions are pinned to a digest. | |
 | [unused-ignore](./unused-ignore/README.md) | Reports unused, unknown, or invalid `ghasec-ignore` directives. | |

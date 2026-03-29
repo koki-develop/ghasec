@@ -1,0 +1,47 @@
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          services:
+            redis:
+              image: redis:7
+            postgres:
+              image: postgres:16
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/ci.yml:9:16
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     services:
+    8 |       redis:
+    9 |         image: redis:7
+      |                ^^^^^^^ "image" must be pinned to a digest (unpinned-container)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-container/README.md
+
+    --> {{.Dir}}/ci.yml:11:16
+    ...
+     3 | jobs:
+     4 |   build:
+    ...
+     7 |     services:
+    ...
+    10 |       postgres:
+    11 |         image: postgres:16
+       |                ^^^^^^^^^^^ "image" must be pinned to a digest (unpinned-container)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-container/README.md
+
+    ✗ 2 errors found in 1 of 1 file
