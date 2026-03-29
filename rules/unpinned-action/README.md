@@ -14,9 +14,9 @@ Even without malicious intent, a tag or branch can receive breaking changes at a
 
 ```yaml
 steps:
-  - uses: actions/checkout@v6        # tag — mutable
-  - uses: actions/checkout@main      # branch — mutable
-  - uses: actions/checkout@de0fac    # short SHA — ambiguous
+  - uses: actions/checkout@v6     # tag — mutable
+  - uses: actions/checkout@main   # branch — mutable
+  - uses: actions/checkout@de0fac # short SHA — ambiguous
 ```
 
 **Good** :white_check_mark:
