@@ -33,5 +33,5 @@
 - `NewMarkdown(ruleList []rules.Rule) *MarkdownRenderer` — constructor for the Markdown renderer. Outputs to stdout. Looks up `rules.Explainer` on each rule for optional Why/Fix guidance. Includes a `**Ref**` link to the rule's README for each diagnostic. See `markdown.go`.
 - `PrintParseError(path string, err error) error` — render a YAML parse error (from `goccy/go-yaml`).
 - `PrintDiagnosticError(path string, e *diagnostic.Error) error` — render a diagnostic error with source annotation, ancestor breadcrumbs, and rule reference URL.
-- `PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error` — render a styled summary block with file counts, error counts, and optional online-rules warning. No-op for `GitHubActionsRenderer` and `MarkdownRenderer`.
-- `PrintHint(message string) error` — render a styled hint message. `DefaultRenderer` outputs yellow text with an info icon to stderr. `GitHubActionsRenderer` emits a `::warning` workflow command to stdout. No-op for `MarkdownRenderer`.
+- `PrintSummary(totalFiles, errorCount, errorFileCount, skippedOnline int) error` — render a styled summary block with file counts, error counts, and optional online-rules warning. No-op for `GitHubActionsRenderer`. `MarkdownRenderer` outputs a plain-text summary to stdout.
+- `PrintHint(message string) error` — render a styled hint message. `DefaultRenderer` outputs yellow text with an info icon to stderr. `GitHubActionsRenderer` emits a `::warning` workflow command to stdout. `MarkdownRenderer` outputs a blockquote hint to stdout.
