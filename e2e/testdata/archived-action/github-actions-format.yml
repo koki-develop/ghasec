@@ -1,0 +1,19 @@
+args: --online --format github-actions
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            # ghasec-ignore:unpinned-action
+            - uses: archived-org/archived-repo@v1
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=archived-action,file={{.Dir}}/workflow.yml,line=9::{{.Dir}}/workflow.yml:9:15: "archived-org/archived-repo" is archived and must not be used
+  stderr: ""

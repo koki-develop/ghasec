@@ -8,6 +8,7 @@ Rules marked as **Online** require network access (e.g., GitHub API) and are dis
 | [invalid-action](./invalid-action/README.md) | Validates that a GitHub Actions action metadata file has the required structure. | |
 | [invalid-expression](./invalid-expression/README.md) | Validates `${{ }}` expression syntax in workflow and action files. | |
 | [actor-bot-check](./actor-bot-check/README.md) | Checks that `if:` conditions in `pull_request` / `pull_request_target` workflows do not use `github.actor` to identify bots. | |
+| [archived-action](./archived-action/README.md) | Checks that third-party action references do not point to archived GitHub repositories. | Yes |
 | [checkout-persist-credentials](./checkout-persist-credentials/README.md) | Checks that `actions/checkout` is configured with `persist-credentials: false`. | |
 | [dangerous-checkout](./dangerous-checkout/README.md) | Checks that `actions/checkout` in `pull_request_target` workflows does not check out pull request head code. | |
 | [default-permissions](./default-permissions/README.md) | Checks that workflow-level `permissions` is set to `{}`. | |

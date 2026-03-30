@@ -19,16 +19,18 @@ import (
 const defaultBaseURL = "https://api.github.com"
 
 type Client struct {
-	httpClient   *http.Client
-	baseURL      string
-	token        string
-	rateLimitHit atomic.Bool
-	cache        sync.Map // key: "owner/repo@tag", value: cacheEntry
-	flight       singleflight.Group
-	verifyCache  sync.Map // key: "verify:owner/repo@sha", value: verifyCacheEntry
-	verifyFlight singleflight.Group
-	branchCache  sync.Map // key: "owner/repo", value: branchCacheEntry
-	branchFlight singleflight.Group
+	httpClient    *http.Client
+	baseURL       string
+	token         string
+	rateLimitHit  atomic.Bool
+	cache         sync.Map // key: "owner/repo@tag", value: cacheEntry
+	flight        singleflight.Group
+	verifyCache   sync.Map // key: "verify:owner/repo@sha", value: verifyCacheEntry
+	verifyFlight  singleflight.Group
+	branchCache   sync.Map // key: "owner/repo", value: branchCacheEntry
+	branchFlight  singleflight.Group
+	archiveCache  sync.Map // key: "owner/repo", value: archiveCacheEntry
+	archiveFlight singleflight.Group
 }
 
 type cacheEntry struct {
@@ -99,6 +101,15 @@ type verifyCacheEntry struct {
 type branchCacheEntry struct {
 	branches []branch
 	err      error
+}
+
+type archiveCacheEntry struct {
+	archived bool
+	err      error
+}
+
+type repoResponse struct {
+	Archived bool `json:"archived"`
 }
 
 // ResolveTagSHA resolves a git tag to its underlying commit SHA.
@@ -247,6 +258,34 @@ func (c *Client) RateLimitHit() bool {
 // HasToken reports whether the client was configured with a GitHub token.
 func (c *Client) HasToken() bool {
 	return c.token != ""
+}
+
+// IsArchived checks whether a repository is archived. Results are cached.
+func (c *Client) IsArchived(ctx context.Context, owner, repo string) (bool, error) {
+	key := fmt.Sprintf("%s/%s", owner, repo)
+	if v, ok := c.archiveCache.Load(key); ok {
+		entry := v.(archiveCacheEntry)
+		return entry.archived, entry.err
+	}
+
+	v, err, _ := c.archiveFlight.Do(key, func() (any, error) {
+		archived, err := c.isArchived(ctx, owner, repo)
+		c.archiveCache.Store(key, archiveCacheEntry{archived: archived, err: err})
+		return archived, err
+	})
+	if err != nil {
+		return false, err
+	}
+	return v.(bool), nil
+}
+
+func (c *Client) isArchived(ctx context.Context, owner, repo string) (bool, error) {
+	path := fmt.Sprintf("/repos/%s/%s", owner, repo)
+	var r repoResponse
+	if err := c.doGet(ctx, path, &r, fmt.Sprintf("failed to fetch repository metadata for %s/%s", owner, repo)); err != nil {
+		return false, err
+	}
+	return r.Archived, nil
 }
 
 // VerifyCommit checks whether a commit SHA is reachable from any branch or tag

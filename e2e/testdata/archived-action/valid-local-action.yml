@@ -1,3 +1,4 @@
+args: --online
 workflows:
   - name: workflow.yml
     content: |
@@ -8,13 +9,10 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-              with:
-                persist-credentials: false
+            - uses: ./local-action
 
 expected:
   exit_code: 0
   stdout: ""
   stderr: |
     ✓ 1 file checked, no errors found
-    ⚠ 3 online rules skipped; use --online to enable them

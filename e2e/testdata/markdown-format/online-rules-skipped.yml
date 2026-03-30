@@ -20,5 +20,5 @@ expected:
   stdout: |
     No errors found in 1 file.
 
-    > **Note**: 2 online rules skipped. Use `--online` to enable them.
+    > **Note**: 3 online rules skipped. Use `--online` to enable them.
   stderr: ""

@@ -1,0 +1,44 @@
+args: --online
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            # ghasec-ignore:unpinned-action
+            - uses: archived-org/archived-repo@v1
+            # ghasec-ignore:unpinned-action
+            - uses: archived-org/archived-repo@v2
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:9:15
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    ...
+    9 |       - uses: archived-org/archived-repo@v1
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "archived-org/archived-repo" is archived and must not be used (archived-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/archived-action/README.md
+
+    --> {{.Dir}}/workflow.yml:11:15
+    ...
+     3 | jobs:
+     4 |   build:
+    ...
+     7 |     steps:
+    ...
+    11 |       - uses: archived-org/archived-repo@v2
+       |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "archived-org/archived-repo" is archived and must not be used (archived-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/archived-action/README.md
+
+    ✗ 2 errors found in 1 of 1 file

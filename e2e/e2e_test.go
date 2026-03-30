@@ -134,8 +134,26 @@ type mockRepoTag struct {
 // (tag listing, branch listing, compare, etc.) beyond simple tag resolution.
 // Takes precedence over mockGitHubTags when both match.
 var mockGitHubHandler = map[string]http.HandlerFunc{
+	"archived-action":    archivedActionHandler,
 	"mismatched-sha-tag": mismatchedSHATagHandler,
 	"impostor-commit":    impostorCommitHandler,
+}
+
+func archivedActionHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	switch r.URL.Path {
+	case "/repos/archived-org/archived-repo":
+		_ = json.NewEncoder(w).Encode(map[string]any{"archived": true})
+	case "/repos/active-org/active-repo":
+		_ = json.NewEncoder(w).Encode(map[string]any{"archived": false})
+	case "/repos/evil/action":
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+	default:
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	}
 }
 
 func mismatchedSHATagHandler(w http.ResponseWriter, r *http.Request) {
@@ -157,6 +175,9 @@ func mismatchedSHATagHandler(w http.ResponseWriter, r *http.Request) {
 				SHA string `json:"sha"`
 			}{SHA: validSHA}},
 		})
+	// Repo metadata — needed because archived-action rule also runs during mismatched-sha-tag tests
+	case "/repos/actions/checkout":
+		_ = json.NewEncoder(w).Encode(map[string]any{"archived": false})
 	default:
 		w.WriteHeader(http.StatusNotFound)
 		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
@@ -246,6 +267,14 @@ func impostorCommitHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
 		return
+
+	// Repo metadata — needed because archived-action rule also runs during impostor-commit tests
+	case "/repos/actions/checkout",
+		"/repos/actions/setup-go",
+		"/repos/actions/setup-node",
+		"/repos/actions/cache",
+		"/repos/evil/action":
+		_ = json.NewEncoder(w).Encode(map[string]any{"archived": false})
 
 	default:
 		w.WriteHeader(http.StatusNotFound)
