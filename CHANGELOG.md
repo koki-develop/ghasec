@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/koki-develop/ghasec/compare/v0.9.0...v0.10.0) (2026-03-30)
+
+
+### Features
+
+* add SARIF 2.1.0 output format and refactor format flag into defined type ([ad206eb](https://github.com/koki-develop/ghasec/commit/ad206ebeac48f6a2c78a067daf007912ec83edab))
+
 ## [0.9.0](https://github.com/koki-develop/ghasec/compare/v0.8.0...v0.9.0) (2026-03-30)
 
 
