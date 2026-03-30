@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/koki-develop/ghasec/compare/v0.8.0...v0.9.0) (2026-03-30)
+
+
+### Features
+
+* add archived-action rule to detect usage of archived GitHub repositories ([3441f0c](https://github.com/koki-develop/ghasec/commit/3441f0ccbb386f8bca0bdc188b4962726b565d18))
+
 ## [0.8.0](https://github.com/koki-develop/ghasec/compare/v0.7.0...v0.8.0) (2026-03-29)
 
 
