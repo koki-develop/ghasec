@@ -58,7 +58,7 @@ Usage:
   ghasec [files...] [flags]
 
 Flags:
-      --format string   output format ("default", "github-actions", or "markdown") (default "default")
+      --format string   output format ("default", "github-actions", "markdown", or "sarif") (default "default")
   -h, --help            help for ghasec
       --no-color        disable colored output
       --online          enable rules that require network access
@@ -100,6 +100,10 @@ $ ghasec --format markdown
 ```
 
 This format is useful for AI agents like Claude Code or Cursor — pass the output directly and let the agent fix the issues autonomously.
+
+### SARIF Format
+
+Use `--format sarif` to produce [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) output. This enables integration with [reviewdog](https://github.com/reviewdog/reviewdog), GitHub Code Scanning, and other SARIF-consuming tools.
 
 ### Ignoring Rules
 

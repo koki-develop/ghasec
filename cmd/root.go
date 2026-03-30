@@ -52,14 +52,14 @@ const concurrency = 4
 var (
 	online  bool
 	noColor bool
-	format  string
+	format  Format = FormatDefault
 )
 
 func init() {
 	rootCmd.Version = resolveVersion()
 	rootCmd.Flags().BoolVar(&online, "online", false, "enable rules that require network access")
 	rootCmd.Flags().BoolVar(&noColor, "no-color", false, "disable colored output")
-	rootCmd.Flags().StringVar(&format, "format", "default", `output format ("default", "github-actions", or "markdown")`)
+	rootCmd.Flags().Var(&format, "format", `output format ("default", "github-actions", "markdown", or "sarif")`)
 }
 
 type classifiedFiles struct {
@@ -96,10 +96,6 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if format != "default" && format != "github-actions" && format != "markdown" {
-			return fmt.Errorf("unknown format %q; must be \"default\", \"github-actions\", or \"markdown\"", format)
-		}
-
 		files, err := resolveFiles(args)
 		if err != nil {
 			return err
@@ -130,12 +126,14 @@ var rootCmd = &cobra.Command{
 
 		var rdr renderer.Renderer
 		switch format {
-		case "github-actions":
-			rdr = renderer.NewGitHubActions()
-		case "markdown":
-			rdr = renderer.NewMarkdown(activeRules)
-		default:
+		case FormatDefault:
 			rdr = renderer.NewDefault(disableColor)
+		case FormatGitHubActions:
+			rdr = renderer.NewGitHubActions()
+		case FormatMarkdown:
+			rdr = renderer.NewMarkdown(activeRules)
+		case FormatSARIF:
+			rdr = renderer.NewSARIF(activeRules, cmd.Version)
 		}
 
 		var tasks []fileTask
@@ -153,7 +151,7 @@ var rootCmd = &cobra.Command{
 		// Progress bar setup (only when stderr is a TTY and default format)
 		var prog *progress.Progress
 		stderrFd := int(os.Stderr.Fd())
-		if format == "default" && term.IsTerminal(stderrFd) {
+		if format == FormatDefault && term.IsTerminal(stderrFd) {
 			prog = progress.New(os.Stderr, stderrFd, disableColor)
 			defer prog.Clear()
 			a.SetProgressCallback(func(s progress.Status) {
@@ -233,7 +231,7 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		if updateCh != nil && format == "default" {
+		if updateCh != nil && format == FormatDefault {
 			select {
 			case res := <-updateCh:
 				if res != nil && res.NewVersion != "" {

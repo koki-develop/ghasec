@@ -43,6 +43,14 @@ func TestMain(m *testing.M) {
 	}
 	binaryPath = bin
 
+	// Capture binary version for template expansion in SARIF tests.
+	verCmd := exec.Command(bin, "--version")
+	verOut, err := verCmd.Output()
+	if err == nil {
+		// Output is "ghasec version <ver>\n"
+		binaryVersion = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(verOut)), "ghasec version "))
+	}
+
 	code := m.Run()
 	_ = os.RemoveAll(tmp)
 	os.Exit(code)
@@ -72,8 +80,11 @@ type testWorkflow struct {
 }
 
 type templateData struct {
-	Dir string
+	Dir     string
+	Version string
 }
+
+var binaryVersion string
 
 func TestE2E(t *testing.T) {
 	err := fs.WalkDir(testdata, "testdata", func(path string, d fs.DirEntry, err error) error {
@@ -502,7 +513,7 @@ func TestE2E_InvalidFormat(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, 1, exitErr.ExitCode())
 	assert.Empty(t, stdoutBuf.String())
-	assert.Equal(t, "error: unknown format \"invalid\"; must be \"default\", \"github-actions\", or \"markdown\"\n", stderrBuf.String())
+	assert.Equal(t, "error: invalid argument \"invalid\" for \"--format\" flag: unknown format \"invalid\"; must be \"default\", \"github-actions\", \"markdown\", or \"sarif\"\n", stderrBuf.String())
 }
 
 func expandTemplate(t *testing.T, text, tmpDir string) string {
@@ -516,6 +527,6 @@ func expandTemplate(t *testing.T, text, tmpDir string) string {
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
-	require.NoError(t, tmpl.Execute(&buf, templateData{Dir: tmpDir}))
+	require.NoError(t, tmpl.Execute(&buf, templateData{Dir: tmpDir, Version: binaryVersion}))
 	return buf.String()
 }

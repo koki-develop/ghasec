@@ -50,6 +50,7 @@ expected:
 - `actions`: list of objects with `name` (filename, e.g. `action.yml`) and `content` (action YAML as block scalar). Files are written to the temp directory root (`{{.Dir}}/`), not `.github/workflows/`.
 - `expected`: exit_code, stdout, stderr.
 - `{{.Dir}}` is a Go template variable replaced with the temp directory path at test time.
+- `{{.Version}}` is replaced with the binary's version string (captured from `ghasec --version` in `TestMain`). Used by SARIF format tests where the version appears in JSON output.
 - The test runner sorts all file paths (workflows and actions combined) alphabetically before passing them to ghasec. Errors in `stderr` must follow that alphabetical file order.
 - The test runner sets `NO_COLOR=` to disable ANSI codes. All expected output is plain text.
 - Valid workflow files (no errors) produce no output entries.

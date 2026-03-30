@@ -1,0 +1,154 @@
+args: --format sarif
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 0
+  stdout: |
+    {
+      "version": "2.1.0",
+      "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+      "runs": [
+        {
+          "tool": {
+            "driver": {
+              "name": "ghasec",
+              "informationUri": "https://github.com/koki-develop/ghasec",
+              "version": "{{.Version}}",
+              "rules": [
+                {
+                  "id": "parse-error"
+                },
+                {
+                  "id": "unused-ignore",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md"
+                },
+                {
+                  "id": "invalid-workflow",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md"
+                },
+                {
+                  "id": "invalid-action",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/invalid-action/README.md"
+                },
+                {
+                  "id": "invalid-expression",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/invalid-expression/README.md"
+                },
+                {
+                  "id": "unpinned-action",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md",
+                  "shortDescription": {
+                    "text": "Git tags and branches are mutable. A compromised upstream can move a tag to point to malicious code, executing it silently on the next run"
+                  }
+                },
+                {
+                  "id": "unpinned-container",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-container/README.md",
+                  "shortDescription": {
+                    "text": "Container image tags are mutable. A compromised or updated registry image can change the contents behind a tag, executing different code silently on the next run"
+                  }
+                },
+                {
+                  "id": "checkout-persist-credentials",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md",
+                  "shortDescription": {
+                    "text": "By default, actions/checkout persists the GITHUB_TOKEN in the local git config. Subsequent steps — including third-party actions — can extract and misuse this token"
+                  }
+                },
+                {
+                  "id": "dangerous-checkout",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/dangerous-checkout/README.md",
+                  "shortDescription": {
+                    "text": "Workflows triggered by pull_request_target run with access to repository secrets. Checking out pull request head code allows an attacker to execute malicious code from a fork with those secrets"
+                  }
+                },
+                {
+                  "id": "default-permissions",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md",
+                  "shortDescription": {
+                    "text": "GitHub Actions grants broad default permissions to GITHUB_TOKEN. Without explicit restriction, every job inherits these broad defaults, increasing the blast radius if a step is compromised"
+                  }
+                },
+                {
+                  "id": "job-all-permissions",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/job-all-permissions/README.md",
+                  "shortDescription": {
+                    "text": "read-all or write-all at the job level grants broad permissions, undoing the protection of a locked-down workflow-level permissions: {}"
+                  }
+                },
+                {
+                  "id": "job-timeout-minutes",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/job-timeout-minutes/README.md",
+                  "shortDescription": {
+                    "text": "Jobs default to a 360-minute timeout. Without an explicit timeout, a compromised step has a large window to exfiltrate data or pivot into the internal network, especially on self-hosted runners"
+                  }
+                },
+                {
+                  "id": "secrets-inherit",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/secrets-inherit/README.md",
+                  "shortDescription": {
+                    "text": "`secrets: inherit` passes all of the caller's secrets to the reusable workflow, violating the principle of least privilege. If the called workflow is compromised or contains a vulnerability, every secret is exposed — not just the ones the workflow actually needs"
+                  }
+                },
+                {
+                  "id": "script-injection",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/script-injection/README.md",
+                  "shortDescription": {
+                    "text": "${{"{{" }} }} expressions interpolated into shell scripts or JavaScript can be manipulated by untrusted input (e.g., PR titles, issue bodies), enabling arbitrary code execution"
+                  }
+                },
+                {
+                  "id": "deprecated-commands",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/deprecated-commands/README.md",
+                  "shortDescription": {
+                    "text": "Deprecated workflow commands (set-env, add-path, set-output, save-state) are superseded by environment files. set-env and add-path have known security vulnerabilities that allow environment variable injection"
+                  }
+                },
+                {
+                  "id": "missing-sha-ref-comment",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/missing-sha-ref-comment/README.md",
+                  "shortDescription": {
+                    "text": "A 40-character SHA is opaque to human reviewers. Without an inline comment indicating the tag or branch, reviewers cannot tell whether the pinned version is current or suspicious"
+                  }
+                },
+                {
+                  "id": "actor-bot-check",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/actor-bot-check/README.md",
+                  "shortDescription": {
+                    "text": "github.actor in pull request workflows can be manipulated. If someone force-pushes to a bot's branch, the actor changes to the pusher, bypassing bot-identity checks. This makes github.actor-based gates unreliable for security decisions"
+                  }
+                },
+                {
+                  "id": "broad-secret-env",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/broad-secret-env/README.md",
+                  "shortDescription": {
+                    "text": "Setting secrets or github.token in workflow-level or job-level environment variables exposes them to all steps in the scope, including third-party actions that do not need access. This violates the principle of least privilege and increases the risk of secret exfiltration"
+                  }
+                },
+                {
+                  "id": "missing-app-token-permissions",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/missing-app-token-permissions/README.md",
+                  "shortDescription": {
+                    "text": "Without explicit permission-* inputs, the token inherits every permission the GitHub App installation has. A compromised downstream step can exploit this over-privileged token"
+                  }
+                }
+              ]
+            }
+          },
+          "results": []
+        }
+      ]
+    }
+  stderr: ""
