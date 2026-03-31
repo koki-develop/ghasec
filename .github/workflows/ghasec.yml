@@ -21,7 +21,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run ghasec
-        uses: koki-develop/ghasec-action@fd1b41a92f110e3832fed139d1cec6d84dab84b9 # v1.0.1
+        uses: koki-develop/ghasec-action@16864d583b1146b22219d2e41b44e2d1f3f1357f # v1.0.2
         with:
           github-token: ${{ github.token }}
           online: true
