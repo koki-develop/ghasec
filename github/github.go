@@ -314,16 +314,21 @@ func (c *Client) isArchived(ctx context.Context, owner, repo string) (bool, erro
 }
 
 // FetchActionFile fetches and parses the action.yml (or action.yaml) for a
-// remote action at the given ref. Results are cached.
-func (c *Client) FetchActionFile(ctx context.Context, owner, repo, ref string) (*ast.File, error) {
+// remote action at the given ref. subPath is the subdirectory within the repo
+// (e.g., "ec2/deploy" for "actions/aws/ec2/deploy@ref"); pass "" for root-level
+// actions. Results are cached.
+func (c *Client) FetchActionFile(ctx context.Context, owner, repo, subPath, ref string) (*ast.File, error) {
 	key := fmt.Sprintf("%s/%s@%s", owner, repo, ref)
+	if subPath != "" {
+		key = fmt.Sprintf("%s/%s/%s@%s", owner, repo, subPath, ref)
+	}
 	if v, ok := c.actionFileCache.Load(key); ok {
 		entry := v.(actionFileCacheEntry)
 		return entry.file, entry.err
 	}
 
 	v, err, _ := c.actionFileFlight.Do(key, func() (any, error) {
-		f, err := c.fetchActionFile(ctx, owner, repo, ref)
+		f, err := c.fetchActionFile(ctx, owner, repo, subPath, ref)
 		c.actionFileCache.Store(key, actionFileCacheEntry{file: f, err: err})
 		return f, err
 	})
@@ -333,8 +338,8 @@ func (c *Client) FetchActionFile(ctx context.Context, owner, repo, ref string) (
 	return v.(*ast.File), nil
 }
 
-func (c *Client) fetchActionFile(ctx context.Context, owner, repo, ref string) (*ast.File, error) {
-	f, err := c.fetchContent(ctx, owner, repo, ref, "action.yml")
+func (c *Client) fetchActionFile(ctx context.Context, owner, repo, subPath, ref string) (*ast.File, error) {
+	f, err := c.fetchContent(ctx, owner, repo, subPath, ref, "action.yml")
 	if err == nil {
 		return f, nil
 	}
@@ -344,24 +349,28 @@ func (c *Client) fetchActionFile(ctx context.Context, owner, repo, ref string) (
 	if !errors.As(err, &ae) || ae.StatusCode != http.StatusNotFound {
 		return nil, err
 	}
-	return c.fetchContent(ctx, owner, repo, ref, "action.yaml")
+	return c.fetchContent(ctx, owner, repo, subPath, ref, "action.yaml")
 }
 
-func (c *Client) fetchContent(ctx context.Context, owner, repo, ref, filename string) (*ast.File, error) {
-	path := fmt.Sprintf("/repos/%s/%s/contents/%s?ref=%s", owner, repo, filename, ref)
+func (c *Client) fetchContent(ctx context.Context, owner, repo, subPath, ref, filename string) (*ast.File, error) {
+	contentPath := filename
+	if subPath != "" {
+		contentPath = subPath + "/" + filename
+	}
+	apiPath := fmt.Sprintf("/repos/%s/%s/contents/%s?ref=%s", owner, repo, contentPath, ref)
 	var resp contentResponse
-	if err := c.doGet(ctx, path, &resp, fmt.Sprintf("failed to fetch %s for %s/%s@%s", filename, owner, repo, ref)); err != nil {
+	if err := c.doGet(ctx, apiPath, &resp, fmt.Sprintf("failed to fetch %s for %s/%s@%s", contentPath, owner, repo, ref)); err != nil {
 		return nil, err
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(resp.Content)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode %s for %s/%s@%s: %w", filename, owner, repo, ref, err)
+		return nil, fmt.Errorf("failed to decode %s for %s/%s@%s: %w", contentPath, owner, repo, ref, err)
 	}
 
 	f, err := yamlparser.ParseBytes(decoded, 0)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse %s for %s/%s@%s: %w", filename, owner, repo, ref, err)
+		return nil, fmt.Errorf("failed to parse %s for %s/%s@%s: %w", contentPath, owner, repo, ref, err)
 	}
 	return f, nil
 }

@@ -263,3 +263,21 @@ func (a ActionRef) OwnerRepo() (string, string) {
 	}
 	return parts[0], parts[1]
 }
+
+// SubPath returns the subdirectory path within the repo for actions that use
+// the owner/repo/path@ref format (e.g., "actions/aws/ec2@v1" returns "ec2").
+// Returns an empty string if there is no subdirectory component.
+func (a ActionRef) SubPath() string {
+	if a.IsLocal() || a.IsDocker() {
+		return ""
+	}
+	v := a.value
+	if idx := strings.LastIndex(v, "@"); idx != -1 {
+		v = v[:idx]
+	}
+	parts := strings.SplitN(v, "/", 3)
+	if len(parts) < 3 {
+		return ""
+	}
+	return parts[2]
+}

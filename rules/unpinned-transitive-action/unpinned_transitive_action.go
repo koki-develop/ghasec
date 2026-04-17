@@ -17,8 +17,10 @@ const id = "unpinned-transitive-action"
 var sha256DigestRe = regexp.MustCompile(`@sha256:[0-9a-f]{64}$`)
 
 // ActionFileFetcher fetches a remote action's parsed action.yml/action.yaml file.
+// subPath is the subdirectory within the repo (e.g., "ec2/deploy" for
+// "actions/aws/ec2/deploy@ref"). It is empty for root-level actions.
 type ActionFileFetcher interface {
-	FetchActionFile(ctx context.Context, owner, repo, ref string) (*ast.File, error)
+	FetchActionFile(ctx context.Context, owner, repo, subPath, ref string) (*ast.File, error)
 }
 
 // Rule checks whether SHA-pinned remote actions transitively use unpinned dependencies.
@@ -64,7 +66,7 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	}
 
 	visited := map[string]bool{}
-	return r.checkTransitive(ref, owner, repo, string(ref.Ref()), visited, nil)
+	return r.checkTransitive(ref, owner, repo, ref.SubPath(), string(ref.Ref()), visited, nil)
 }
 
 // checkTransitive recursively inspects a remote action's transitive dependencies.
@@ -72,7 +74,7 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 // The distinction ensures the root action is excluded from the "via" chain.
 func (r *Rule) checkTransitive(
 	rootRef workflow.ActionRef,
-	owner, repo, ref string,
+	owner, repo, subPath, ref string,
 	visited map[string]bool,
 	path []string,
 ) []*diagnostic.Error {
@@ -92,7 +94,7 @@ func (r *Rule) checkTransitive(
 		via[len(path)] = key
 	}
 
-	f, err := r.Fetcher.FetchActionFile(context.Background(), owner, repo, ref)
+	f, err := r.Fetcher.FetchActionFile(context.Background(), owner, repo, subPath, ref)
 	if err != nil {
 		return []*diagnostic.Error{{
 			Token:   rootRef.Token(),
@@ -149,7 +151,7 @@ func (r *Rule) checkTransitive(
 			return
 		}
 		errs = append(errs, r.checkTransitive(
-			rootRef, innerOwner, innerRepo, string(innerRef.Ref()), visited, childPath,
+			rootRef, innerOwner, innerRepo, innerRef.SubPath(), string(innerRef.Ref()), visited, childPath,
 		)...)
 	})
 

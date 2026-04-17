@@ -333,7 +333,7 @@ func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Contents API (action.yml files)
-	if strings.Contains(r.URL.Path, "/contents/action.y") {
+	if strings.Contains(r.URL.Path, "/contents/") && (strings.HasSuffix(r.URL.Path, "/action.yml") || strings.HasSuffix(r.URL.Path, "/action.yaml")) {
 		// evil/action returns 500 for all endpoints including contents
 		if strings.Contains(r.URL.Path, "evil/") {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -341,10 +341,19 @@ func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		ref := r.URL.Query().Get("ref")
-		// Extract repo: /repos/{owner}/{repo}/contents/...
+		// Extract owner/repo and optional subpath from:
+		// /repos/{owner}/{repo}/contents/{subpath}/action.yml
+		// /repos/{owner}/{repo}/contents/action.yml
 		parts := strings.Split(r.URL.Path, "/")
-		if len(parts) >= 5 {
+		if len(parts) >= 6 {
 			repoPath := parts[2] + "/" + parts[3]
+			// parts[4] is "contents", parts[5:] is subpath + action.yml
+			// For /repos/o/r/contents/action.yml -> subParts = ["action.yml"]
+			// For /repos/o/r/contents/sub/action.yml -> subParts = ["sub", "action.yml"]
+			subParts := parts[5 : len(parts)-1] // everything between "contents/" and "action.y*"
+			if len(subParts) > 0 {
+				repoPath += "/" + strings.Join(subParts, "/")
+			}
 			key := repoPath + "@" + ref
 
 			actions := map[string]string{
@@ -397,6 +406,9 @@ func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
 
 				// stop-at-unpinned
 				"owner/stop-at-unpinned@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v2\n",
+
+				// subdirectory-action: owner/repo/sub/dir -> has unpinned dep
+				"owner/repo/sub/dir@" + shaA: "name: SubDir\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v2\n",
 			}
 
 			if content, ok := actions[key]; ok {
@@ -447,6 +459,7 @@ func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
 				"owner/circular-a":           shaA,
 				"owner/circular-b":           shaB,
 				"owner/stop-at-unpinned":     shaA,
+				"owner/repo":                 shaA, // for subdirectory-action test
 			}
 			if sha, ok := knownRepoSHAs[repoKey]; ok {
 				_ = json.NewEncoder(w).Encode([]mockRepoTag{{Name: "v1", Commit: struct {

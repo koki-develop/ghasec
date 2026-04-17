@@ -13,15 +13,18 @@ import (
 )
 
 type mockFetcher struct {
-	files map[string]*ast.File // key: "owner/repo@ref"
+	files map[string]*ast.File // key: "owner/repo@ref" or "owner/repo/subpath@ref"
 	err   error
 }
 
-func (m *mockFetcher) FetchActionFile(_ context.Context, owner, repo, ref string) (*ast.File, error) {
+func (m *mockFetcher) FetchActionFile(_ context.Context, owner, repo, subPath, ref string) (*ast.File, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
 	key := fmt.Sprintf("%s/%s@%s", owner, repo, ref)
+	if subPath != "" {
+		key = fmt.Sprintf("%s/%s/%s@%s", owner, repo, subPath, ref)
+	}
 	f, ok := m.files[key]
 	if !ok {
 		return nil, fmt.Errorf("not found: %s", key)
@@ -243,4 +246,17 @@ func TestRule_NonMappingDocumentInFetchedAction(t *testing.T) {
 	m := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: owner/action-a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
 	errs := r.CheckWorkflow(m)
 	assert.Empty(t, errs)
+}
+
+func TestRule_SubdirectoryAction(t *testing.T) {
+	fetcher := &mockFetcher{files: map[string]*ast.File{
+		// key includes subpath: owner/repo/subpath@ref
+		"owner/repo/sub/dir@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": parseActionFile(t, "name: A\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v2\n"),
+	}}
+	r := &Rule{Fetcher: fetcher}
+	m := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: owner/repo/sub/dir@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "uses unpinned action")
+	assert.Contains(t, errs[0].Message, "other/action-b@v2")
 }
