@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/koki-develop/ghasec/compare/v0.10.1...v0.11.0) (2026-04-17)
+
+
+### Features
+
+* add unpinned-transitive-action rule to detect unpinned transitive dependencies ([cdd6a16](https://github.com/koki-develop/ghasec/commit/cdd6a1641338db94f625a2d3f14cd808e0020f64))
+
 ## [0.10.1](https://github.com/koki-develop/ghasec/compare/v0.10.0...v0.10.1) (2026-04-17)
 
 
