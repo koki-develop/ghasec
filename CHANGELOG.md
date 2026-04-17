@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/koki-develop/ghasec/compare/v0.10.0...v0.10.1) (2026-04-17)
+
+
+### Patches
+
+* **deps:** update module golang.org/x/term to v0.42.0 ([#17](https://github.com/koki-develop/ghasec/issues/17)) ([3c064c6](https://github.com/koki-develop/ghasec/commit/3c064c6143c45132fbf334d2f146a95b16f242d8))
+
 ## [0.10.0](https://github.com/koki-develop/ghasec/compare/v0.9.0...v0.10.0) (2026-03-30)
 
 
