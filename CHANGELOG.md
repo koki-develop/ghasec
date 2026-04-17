@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/koki-develop/ghasec/compare/v0.11.0...v0.11.1) (2026-04-17)
+
+
+### Patches
+
+* handle subdirectory actions in unpinned-transitive-action rule ([7bb1049](https://github.com/koki-develop/ghasec/commit/7bb1049c126ca0b5def1eac72e117cef7cb59cfe))
+
 ## [0.11.0](https://github.com/koki-develop/ghasec/compare/v0.10.1...v0.11.0) (2026-04-17)
 
 
