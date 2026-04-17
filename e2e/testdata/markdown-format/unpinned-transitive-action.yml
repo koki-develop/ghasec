@@ -1,0 +1,33 @@
+args: --online --format markdown
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            # ghasec-ignore:missing-sha-ref-comment
+            - uses: owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+expected:
+  exit_code: 1
+  stdout: |
+    ## {{.Dir}}/workflow.yml:9:15
+
+    ```yaml
+          - uses: owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    ```
+
+    - **Rule**: unpinned-transitive-action
+    - **Message**: "owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" uses unpinned action "other/action-b@v2"
+    - **Why**: Even when your workflow pins an action to a commit SHA, that action may internally reference other actions using mutable tags or branches. A compromised transitive dependency undermines the security of your entire pinning strategy
+    - **Fix**: Replace the action with an alternative that pins all of its own transitive dependencies to full commit SHAs, or open an issue/PR on the action's repository requesting SHA pinning
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-transitive-action/README.md
+
+    ---
+
+    1 error found in 1 of 1 file.
+  stderr: ""

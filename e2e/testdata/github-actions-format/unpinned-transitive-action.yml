@@ -1,0 +1,19 @@
+args: --online --format github-actions
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            # ghasec-ignore:missing-sha-ref-comment
+            - uses: owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=unpinned-transitive-action,file={{.Dir}}/workflow.yml,line=9::{{.Dir}}/workflow.yml:9:15: "owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" uses unpinned action "other/action-b@v2"
+  stderr: ""

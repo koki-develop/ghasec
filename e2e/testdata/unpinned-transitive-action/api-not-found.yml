@@ -1,0 +1,41 @@
+args: --online
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            # ghasec-ignore:missing-sha-ref-comment
+            - uses: owner/nonexistent@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:9:15
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    ...
+    9 |       - uses: owner/nonexistent@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ failed to fetch action.yml for "owner/nonexistent@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": failed to fetch action.yaml for owner/nonexistent@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: HTTP 404: Not Found (unpinned-transitive-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-transitive-action/README.md
+
+    --> {{.Dir}}/workflow.yml:9:33
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    ...
+    9 |       - uses: owner/nonexistent@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ commit must belong to owner/nonexistent (impostor-commit)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/impostor-commit/README.md
+
+    ✗ 2 errors found in 1 of 1 file

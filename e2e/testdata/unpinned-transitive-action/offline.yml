@@ -8,13 +8,11 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-              with:
-                persist-credentials: false
+            # ghasec-ignore:missing-sha-ref-comment
+            - uses: owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 expected:
   exit_code: 0
   stdout: ""
   stderr: |
     ✓ 1 file checked, no errors found
-    ⚠ 4 online rules skipped; use --online to enable them

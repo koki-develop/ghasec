@@ -40,6 +40,7 @@ import (
 	secretsinherit "github.com/koki-develop/ghasec/rules/secrets-inherit"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	unpinnedcontainer "github.com/koki-develop/ghasec/rules/unpinned-container"
+	unpinnedtransitiveaction "github.com/koki-develop/ghasec/rules/unpinned-transitive-action"
 	"github.com/koki-develop/ghasec/update"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -272,6 +273,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&archivedaction.Rule{Checker: client},
 		&impostorcommit.Rule{Verifier: client},
 		&mismatchedshatag.Rule{Resolver: client},
+		&unpinnedtransitiveaction.Rule{Fetcher: client},
 	}
 	for _, r := range all {
 		if r.Online() && !onlineEnabled {

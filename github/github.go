@@ -3,6 +3,7 @@ package github
 import (
 	"cmp"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,24 +14,28 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/goccy/go-yaml/ast"
+	yamlparser "github.com/goccy/go-yaml/parser"
 	"golang.org/x/sync/singleflight"
 )
 
 const defaultBaseURL = "https://api.github.com"
 
 type Client struct {
-	httpClient    *http.Client
-	baseURL       string
-	token         string
-	rateLimitHit  atomic.Bool
-	cache         sync.Map // key: "owner/repo@tag", value: cacheEntry
-	flight        singleflight.Group
-	verifyCache   sync.Map // key: "verify:owner/repo@sha", value: verifyCacheEntry
-	verifyFlight  singleflight.Group
-	branchCache   sync.Map // key: "owner/repo", value: branchCacheEntry
-	branchFlight  singleflight.Group
-	archiveCache  sync.Map // key: "owner/repo", value: archiveCacheEntry
-	archiveFlight singleflight.Group
+	httpClient       *http.Client
+	baseURL          string
+	token            string
+	rateLimitHit     atomic.Bool
+	cache            sync.Map // key: "owner/repo@tag", value: cacheEntry
+	flight           singleflight.Group
+	verifyCache      sync.Map // key: "verify:owner/repo@sha", value: verifyCacheEntry
+	verifyFlight     singleflight.Group
+	branchCache      sync.Map // key: "owner/repo", value: branchCacheEntry
+	branchFlight     singleflight.Group
+	archiveCache     sync.Map // key: "owner/repo", value: archiveCacheEntry
+	archiveFlight    singleflight.Group
+	actionFileCache  sync.Map // key: "owner/repo@ref", value: actionFileCacheEntry
+	actionFileFlight singleflight.Group
 }
 
 type cacheEntry struct {
@@ -110,6 +115,15 @@ type archiveCacheEntry struct {
 
 type repoResponse struct {
 	Archived bool `json:"archived"`
+}
+
+type contentResponse struct {
+	Content string `json:"content"`
+}
+
+type actionFileCacheEntry struct {
+	file *ast.File
+	err  error
 }
 
 // ResolveTagSHA resolves a git tag to its underlying commit SHA.
@@ -214,6 +228,14 @@ func (c *Client) setHeaders(req *http.Request) {
 	}
 }
 
+// APIError represents an error from a GitHub API response with the HTTP status code.
+type APIError struct {
+	StatusCode int
+	msg        string
+}
+
+func (e *APIError) Error() string { return e.msg }
+
 // apiError builds an error from a non-200 GitHub API response,
 // including the error message from the response body when available.
 // It also detects rate limit errors (HTTP 429, or HTTP 403 with
@@ -229,10 +251,13 @@ func (c *Client) apiError(resp *http.Response, errContext string) error {
 		c.rateLimitHit.Store(true)
 	}
 
+	ae := &APIError{StatusCode: resp.StatusCode}
 	if body.Message != "" {
-		return fmt.Errorf("%s: HTTP %d: %s", errContext, resp.StatusCode, body.Message)
+		ae.msg = fmt.Sprintf("%s: HTTP %d: %s", errContext, resp.StatusCode, body.Message)
+	} else {
+		ae.msg = fmt.Sprintf("%s: HTTP %d", errContext, resp.StatusCode)
 	}
-	return fmt.Errorf("%s: HTTP %d", errContext, resp.StatusCode)
+	return ae
 }
 
 func (c *Client) isRateLimited(resp *http.Response, message string) bool {
@@ -286,6 +311,59 @@ func (c *Client) isArchived(ctx context.Context, owner, repo string) (bool, erro
 		return false, err
 	}
 	return r.Archived, nil
+}
+
+// FetchActionFile fetches and parses the action.yml (or action.yaml) for a
+// remote action at the given ref. Results are cached.
+func (c *Client) FetchActionFile(ctx context.Context, owner, repo, ref string) (*ast.File, error) {
+	key := fmt.Sprintf("%s/%s@%s", owner, repo, ref)
+	if v, ok := c.actionFileCache.Load(key); ok {
+		entry := v.(actionFileCacheEntry)
+		return entry.file, entry.err
+	}
+
+	v, err, _ := c.actionFileFlight.Do(key, func() (any, error) {
+		f, err := c.fetchActionFile(ctx, owner, repo, ref)
+		c.actionFileCache.Store(key, actionFileCacheEntry{file: f, err: err})
+		return f, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.(*ast.File), nil
+}
+
+func (c *Client) fetchActionFile(ctx context.Context, owner, repo, ref string) (*ast.File, error) {
+	f, err := c.fetchContent(ctx, owner, repo, ref, "action.yml")
+	if err == nil {
+		return f, nil
+	}
+	// Only fall back to action.yaml when action.yml does not exist (404).
+	// Other errors (500, 429, network, etc.) should propagate immediately.
+	var ae *APIError
+	if !errors.As(err, &ae) || ae.StatusCode != http.StatusNotFound {
+		return nil, err
+	}
+	return c.fetchContent(ctx, owner, repo, ref, "action.yaml")
+}
+
+func (c *Client) fetchContent(ctx context.Context, owner, repo, ref, filename string) (*ast.File, error) {
+	path := fmt.Sprintf("/repos/%s/%s/contents/%s?ref=%s", owner, repo, filename, ref)
+	var resp contentResponse
+	if err := c.doGet(ctx, path, &resp, fmt.Sprintf("failed to fetch %s for %s/%s@%s", filename, owner, repo, ref)); err != nil {
+		return nil, err
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(resp.Content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode %s for %s/%s@%s: %w", filename, owner, repo, ref, err)
+	}
+
+	f, err := yamlparser.ParseBytes(decoded, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse %s for %s/%s@%s: %w", filename, owner, repo, ref, err)
+	}
+	return f, nil
 }
 
 // VerifyCommit checks whether a commit SHA is reachable from any branch or tag

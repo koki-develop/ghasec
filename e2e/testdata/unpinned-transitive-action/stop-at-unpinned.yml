@@ -1,0 +1,30 @@
+args: --online
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            # ghasec-ignore:missing-sha-ref-comment
+            - uses: owner/stop-at-unpinned@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:9:15
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    ...
+    9 |       - uses: owner/stop-at-unpinned@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "owner/stop-at-unpinned@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" uses unpinned action "other/action-b@v2" (unpinned-transitive-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-transitive-action/README.md
+
+    ✗ 1 error found in 1 of 1 file

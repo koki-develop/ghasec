@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"bytes"
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -145,10 +146,19 @@ type mockRepoTag struct {
 // (tag listing, branch listing, compare, etc.) beyond simple tag resolution.
 // Takes precedence over mockGitHubTags when both match.
 var mockGitHubHandler = map[string]http.HandlerFunc{
-	"archived-action":    archivedActionHandler,
-	"mismatched-sha-tag": mismatchedSHATagHandler,
-	"impostor-commit":    impostorCommitHandler,
+	"archived-action":                                  archivedActionHandler,
+	"mismatched-sha-tag":                               mismatchedSHATagHandler,
+	"impostor-commit":                                  impostorCommitHandler,
+	"unpinned-transitive-action":                       unpinnedTransitiveActionHandler,
+	"github-actions-format/unpinned-transitive-action": unpinnedTransitiveActionHandler,
+	"markdown-format/unpinned-transitive-action":       unpinnedTransitiveActionHandler,
+	"sarif-format/unpinned-transitive-action":          unpinnedTransitiveActionHandler,
 }
+
+// nodeActionContent is a base64-encoded action.yml for a non-composite (node20)
+// action. Used by mock handlers to satisfy unpinned-transitive-action API calls
+// without producing errors.
+var nodeActionContent = base64.StdEncoding.EncodeToString([]byte("name: mock\nruns:\n  using: node20\n  main: index.js\n"))
 
 func archivedActionHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -190,6 +200,11 @@ func mismatchedSHATagHandler(w http.ResponseWriter, r *http.Request) {
 	case "/repos/actions/checkout":
 		_ = json.NewEncoder(w).Encode(map[string]any{"archived": false})
 	default:
+		// Contents API — needed because unpinned-transitive-action rule also runs
+		if strings.Contains(r.URL.Path, "/contents/action.y") {
+			_ = json.NewEncoder(w).Encode(map[string]string{"content": nodeActionContent})
+			return
+		}
 		w.WriteHeader(http.StatusNotFound)
 		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
 	}
@@ -288,9 +303,182 @@ func impostorCommitHandler(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"archived": false})
 
 	default:
+		// Contents API — needed because unpinned-transitive-action rule also runs
+		if strings.Contains(r.URL.Path, "/contents/action.y") {
+			// evil/action returns 500 for all endpoints
+			if strings.Contains(r.URL.Path, "evil/action") {
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]string{"content": nodeActionContent})
+			return
+		}
 		w.WriteHeader(http.StatusNotFound)
 		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
 	}
+}
+
+func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	const (
+		shaA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+		shaB = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+		shaC = "cccccccccccccccccccccccccccccccccccccccc"
+	)
+
+	encodeAction := func(content string) map[string]string {
+		return map[string]string{"content": base64.StdEncoding.EncodeToString([]byte(content))}
+	}
+
+	// Contents API (action.yml files)
+	if strings.Contains(r.URL.Path, "/contents/action.y") {
+		// evil/action returns 500 for all endpoints including contents
+		if strings.Contains(r.URL.Path, "evil/") {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+			return
+		}
+		ref := r.URL.Query().Get("ref")
+		// Extract repo: /repos/{owner}/{repo}/contents/...
+		parts := strings.Split(r.URL.Path, "/")
+		if len(parts) >= 5 {
+			repoPath := parts[2] + "/" + parts[3]
+			key := repoPath + "@" + ref
+
+			actions := map[string]string{
+				// valid-all-pinned: A(sha) -> B(sha) -> C(node20)
+				"owner/action-a@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: owner/action-b@" + shaB + "\n",
+				"owner/action-b@" + shaB: "name: B\nruns:\n  using: composite\n  steps:\n    - uses: owner/action-c@" + shaC + "\n",
+				"owner/action-c@" + shaC: "name: C\nruns:\n  using: node20\n  main: index.js\n",
+
+				// valid-no-steps
+				"owner/node-action@" + shaA: "name: Node\nruns:\n  using: node20\n  main: index.js\n",
+
+				// valid-local-action
+				"owner/local-ref-action@" + shaA: "name: Local\nruns:\n  using: composite\n  steps:\n    - uses: ./local\n",
+
+				// valid-docker-digest
+				"owner/docker-digest-action@" + shaA: "name: Docker\nruns:\n  using: composite\n  steps:\n    - uses: docker://alpine@sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789\n",
+
+				// unpinned-depth-1
+				"owner/unpinned-depth1@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v2\n",
+
+				// unpinned-depth-2: A -> B(sha) -> C@v1
+				"owner/unpinned-depth2@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: owner/depth2-b@" + shaB + "\n",
+				"owner/depth2-b@" + shaB:        "name: B\nruns:\n  using: composite\n  steps:\n    - uses: other/action-c@v1\n",
+
+				// unpinned-depth-3: A -> B(sha) -> C(sha) -> D@main
+				"owner/unpinned-depth3@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: owner/depth3-b@" + shaB + "\n",
+				"owner/depth3-b@" + shaB:        "name: B\nruns:\n  using: composite\n  steps:\n    - uses: owner/depth3-c@" + shaC + "\n",
+				"owner/depth3-c@" + shaC:        "name: C\nruns:\n  using: composite\n  steps:\n    - uses: other/action-d@main\n",
+
+				// unpinned-docker-no-digest
+				"owner/docker-unpinned@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: docker://alpine:latest\n",
+
+				// unpinned-multiple-steps
+				"owner/multi-unpinned@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v1\n    - uses: other/action-c@v2\n",
+
+				// unpinned-mixed-steps
+				"owner/mixed-steps@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: owner/action-b@" + shaB + "\n    - uses: other/action-c@v1\n",
+				// action-b used by mixed-steps is node20 (no further transitive deps)
+
+				// unpinned-ref-empty
+				"owner/ref-empty@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: other/no-ref-action\n",
+
+				// unpinned-multiple-workflow-steps
+				"owner/multi-wf-a@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v1\n",
+				"owner/multi-wf-c@" + shaC: "name: C\nruns:\n  using: composite\n  steps:\n    - uses: other/action-d@v2\n",
+
+				// circular-reference
+				"owner/circular-a@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: owner/circular-b@" + shaB + "\n",
+				"owner/circular-b@" + shaB: "name: B\nruns:\n  using: composite\n  steps:\n    - uses: owner/circular-a@" + shaA + "\n",
+
+				// stop-at-unpinned
+				"owner/stop-at-unpinned@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v2\n",
+			}
+
+			if content, ok := actions[key]; ok {
+				_ = json.NewEncoder(w).Encode(encodeAction(content))
+				return
+			}
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+		return
+	}
+
+	// Repo metadata (for archived-action rule)
+	if strings.Count(r.URL.Path, "/") == 3 && strings.HasPrefix(r.URL.Path, "/repos/") && !strings.HasSuffix(r.URL.Path, "/tags") && !strings.HasSuffix(r.URL.Path, "/branches") {
+		if strings.Contains(r.URL.Path, "evil/") {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"archived": false})
+		return
+	}
+
+	// Tags listing (for impostor-commit rule) — return tag matching each known SHA
+	if strings.HasSuffix(r.URL.Path, "/tags") {
+		parts := strings.Split(r.URL.Path, "/")
+		if len(parts) >= 4 {
+			repoKey := parts[2] + "/" + parts[3]
+			knownRepoSHAs := map[string]string{
+				"owner/action-a":             shaA,
+				"owner/action-b":             shaB,
+				"owner/action-c":             shaC,
+				"owner/node-action":          shaA,
+				"owner/local-ref-action":     shaA,
+				"owner/docker-digest-action": shaA,
+				"owner/unpinned-depth1":      shaA,
+				"owner/unpinned-depth2":      shaA,
+				"owner/depth2-b":             shaB,
+				"owner/unpinned-depth3":      shaA,
+				"owner/depth3-b":             shaB,
+				"owner/depth3-c":             shaC,
+				"owner/docker-unpinned":      shaA,
+				"owner/multi-unpinned":       shaA,
+				"owner/mixed-steps":          shaA,
+				"owner/ref-empty":            shaA,
+				"owner/multi-wf-a":           shaA,
+				"owner/multi-wf-c":           shaC,
+				"owner/circular-a":           shaA,
+				"owner/circular-b":           shaB,
+				"owner/stop-at-unpinned":     shaA,
+			}
+			if sha, ok := knownRepoSHAs[repoKey]; ok {
+				_ = json.NewEncoder(w).Encode([]mockRepoTag{{Name: "v1", Commit: struct {
+					SHA string `json:"sha"`
+				}{SHA: sha}}})
+				return
+			}
+		}
+		if strings.Contains(r.URL.Path, "evil/") {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+			return
+		}
+		_ = json.NewEncoder(w).Encode([]mockRepoTag{})
+		return
+	}
+
+	// Branches (for impostor-commit rule)
+	if strings.HasSuffix(r.URL.Path, "/branches") {
+		_ = json.NewEncoder(w).Encode([]map[string]string{})
+		return
+	}
+
+	// API failure for evil/action
+	if strings.Contains(r.URL.Path, "evil/") {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNotFound)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
 }
 
 func runTestCase(t *testing.T, name string) {
