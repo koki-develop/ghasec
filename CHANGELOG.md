@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.2](https://github.com/koki-develop/ghasec/compare/v0.11.1...v0.11.2) (2026-04-25)
+
+
+### Patches
+
+* detect missing [@ref](https://github.com/ref) in reusable workflow job uses ([ec38970](https://github.com/koki-develop/ghasec/commit/ec38970d7b75da0a5307edd21a7fa47cd76643bf))
+
 ## [0.11.1](https://github.com/koki-develop/ghasec/compare/v0.11.0...v0.11.1) (2026-04-17)
 
 
