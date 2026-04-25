@@ -72,6 +72,9 @@ func checkJobExtensions(jobs *ast.MappingNode) []*diagnostic.Error {
 		// B2: Job-level mutual exclusion
 		errs = append(errs, checkJobMutualExclusion(jobEntry.Key.GetToken(), m)...)
 
+		// C2: Reusable workflow ref format
+		errs = append(errs, checkJobUsesRef(m)...)
+
 		// Step validation
 		if stepsKV := m.FindKey("steps"); stepsKV != nil {
 			if seq, ok := rules.UnwrapNode(stepsKV.Value).(*ast.SequenceNode); ok {
@@ -81,6 +84,29 @@ func checkJobExtensions(jobs *ast.MappingNode) []*diagnostic.Error {
 		}
 	}
 	return errs
+}
+
+// C2: Reusable workflow ref format — external reusable workflow calls must include @<ref>.
+func checkJobUsesRef(job workflow.Mapping) []*diagnostic.Error {
+	usesKV := job.FindKey("uses")
+	if usesKV == nil {
+		return nil
+	}
+	if rules.IsExpressionNode(usesKV.Value) {
+		return nil
+	}
+	sv := rules.StringValue(usesKV.Value)
+	if sv == "" {
+		return nil
+	}
+	ref := workflow.NewActionRef(sv, usesKV.Value.GetToken())
+	if !ref.IsLocal() && ref.Ref() == "" {
+		return []*diagnostic.Error{{
+			Token:   usesKV.Value.GetToken(),
+			Message: fmt.Sprintf("%q must have a ref", sv),
+		}}
+	}
+	return nil
 }
 
 // B2: Job mutual exclusion — runs-on/uses, uses/steps.

@@ -1,0 +1,21 @@
+workflows:
+  - name: reusable-workflow-job-missing-ref.yml
+    content: |
+      on: push
+      jobs:
+        call:
+          uses: org/repo/.github/workflows/ci.yml
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reusable-workflow-job-missing-ref.yml:4:11
+    ...
+    2 | jobs:
+    3 |   call:
+    4 |     uses: org/repo/.github/workflows/ci.yml
+      |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "org/repo/.github/workflows/ci.yml" must have a ref (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 1 error found in 1 of 1 file

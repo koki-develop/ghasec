@@ -88,6 +88,21 @@ func TestRule_ValidReusableWorkflowJob(t *testing.T) {
 	assert.Empty(t, errs)
 }
 
+func TestRule_ValidLocalReusableWorkflowJob(t *testing.T) {
+	r := &invalidworkflow.Rule{}
+	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: ./.github/workflows/ci.yml\n")
+	errs := r.CheckWorkflow(m)
+	assert.Empty(t, errs)
+}
+
+func TestRule_ReusableWorkflowJobMissingRef(t *testing.T) {
+	r := &invalidworkflow.Rule{}
+	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml\n")
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "must have a ref")
+}
+
 func TestRule_MultipleErrors(t *testing.T) {
 	r := &invalidworkflow.Rule{}
 	m := parseMapping(t, "name: test\n")
