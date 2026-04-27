@@ -1,6 +1,6 @@
 [tools]
 go = "1.26.2"
 "aqua:golangci/golangci-lint" = "2.11.4"
-"aqua:evilmartians/lefthook" = "2.1.5"
+"aqua:evilmartians/lefthook" = "2.1.6"
 "aqua:goreleaser/goreleaser" = "2.15.2"
 "aqua:hadolint/hadolint" = "2.14.0"
