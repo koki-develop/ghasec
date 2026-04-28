@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.3](https://github.com/koki-develop/ghasec/compare/v0.11.2...v0.11.3) (2026-04-28)
+
+
+### Patches
+
+* **deps:** update module mvdan.cc/sh/v3 to v3.13.1 ([#36](https://github.com/koki-develop/ghasec/issues/36)) ([8c8d076](https://github.com/koki-develop/ghasec/commit/8c8d076ccdef42f6c48cf137d2459c782c9b77eb))
+
 ## [0.11.2](https://github.com/koki-develop/ghasec/compare/v0.11.1...v0.11.2) (2026-04-25)
 
 
