@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/koki-develop/ghasec/compare/v0.11.3...v0.12.0) (2026-05-02)
+
+
+### Features
+
+* add unpinned-reusable-workflow rule to detect unpinned reusable workflow refs ([2ca2fbb](https://github.com/koki-develop/ghasec/commit/2ca2fbbedaee486d31e4d2d600a3b32e389f5673))
+
 ## [0.11.3](https://github.com/koki-develop/ghasec/compare/v0.11.2...v0.11.3) (2026-04-28)
 
 
