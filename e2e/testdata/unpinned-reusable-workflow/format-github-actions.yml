@@ -1,0 +1,15 @@
+args: --format github-actions
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: org/repo/.github/workflows/ci.yml@v1.0.0
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=unpinned-reusable-workflow,file={{.Dir}}/workflow.yml,line=5::{{.Dir}}/workflow.yml:5:45: "org/repo/.github/workflows/ci.yml@v1.0.0" must be pinned to a full length commit SHA
+  stderr: ""

@@ -1,0 +1,53 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call1:
+          uses: org/repo/.github/workflows/ci.yml@v1
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              with:
+                persist-credentials: false
+        call2:
+          uses: org/repo/.github/workflows/deploy.yml@main
+        call3:
+          uses: org/repo/.github/workflows/release.yml@beta
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:5:45
+    ...
+    3 | jobs:
+    4 |   call1:
+    5 |     uses: org/repo/.github/workflows/ci.yml@v1
+      |                                             ^^ "org/repo/.github/workflows/ci.yml@v1" must be pinned to a full length commit SHA (unpinned-reusable-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-reusable-workflow/README.md
+    
+    --> {{.Dir}}/workflow.yml:14:49
+    ...
+     3 | jobs:
+    ...
+    13 |   call2:
+    14 |     uses: org/repo/.github/workflows/deploy.yml@main
+       |                                                 ^^^^ "org/repo/.github/workflows/deploy.yml@main" must be pinned to a full length commit SHA (unpinned-reusable-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-reusable-workflow/README.md
+    
+    --> {{.Dir}}/workflow.yml:16:50
+    ...
+     3 | jobs:
+    ...
+    15 |   call3:
+    16 |     uses: org/repo/.github/workflows/release.yml@beta
+       |                                                  ^^^^ "org/repo/.github/workflows/release.yml@beta" must be pinned to a full length commit SHA (unpinned-reusable-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-reusable-workflow/README.md
+    
+    ✗ 3 errors found in 1 of 1 file

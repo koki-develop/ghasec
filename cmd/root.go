@@ -40,6 +40,7 @@ import (
 	secretsinherit "github.com/koki-develop/ghasec/rules/secrets-inherit"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	unpinnedcontainer "github.com/koki-develop/ghasec/rules/unpinned-container"
+	unpinnedreusableworkflow "github.com/koki-develop/ghasec/rules/unpinned-reusable-workflow"
 	unpinnedtransitiveaction "github.com/koki-develop/ghasec/rules/unpinned-transitive-action"
 	"github.com/koki-develop/ghasec/update"
 	"github.com/spf13/cobra"
@@ -258,6 +259,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&invalidexpression.Rule{},
 		&unpinnedaction.Rule{},
 		&unpinnedcontainer.Rule{},
+		&unpinnedreusableworkflow.Rule{},
 		&checkoutpersistcredentials.Rule{},
 		&dangerouscheckout.Rule{},
 		&defaultpermissions.Rule{},

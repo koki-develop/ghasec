@@ -1,0 +1,41 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@v6
+              with:
+                persist-credentials: false
+        call:
+          uses: org/repo/.github/workflows/ci.yml@v1
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:8:32
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - uses: actions/checkout@v6
+      |                                ^^ "actions/checkout@v6" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+    
+    --> {{.Dir}}/workflow.yml:12:45
+    ...
+     3 | jobs:
+    ...
+    11 |   call:
+    12 |     uses: org/repo/.github/workflows/ci.yml@v1
+       |                                             ^^ "org/repo/.github/workflows/ci.yml@v1" must be pinned to a full length commit SHA (unpinned-reusable-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-reusable-workflow/README.md
+    
+    ✗ 2 errors found in 1 of 1 file

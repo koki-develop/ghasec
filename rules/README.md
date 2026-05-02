@@ -23,5 +23,6 @@ Rules marked as **Online** require network access (e.g., GitHub API) and are dis
 | [secrets-inherit](./secrets-inherit/README.md) | Checks that jobs do not use `secrets: inherit`. | |
 | [unpinned-action](./unpinned-action/README.md) | Checks that third-party action references are pinned to a full-length commit SHA. | |
 | [unpinned-container](./unpinned-container/README.md) | Checks that container images in job `container` and `services` definitions are pinned to a digest. | |
+| [unpinned-reusable-workflow](./unpinned-reusable-workflow/README.md) | Checks that reusable workflow references are pinned to a full-length commit SHA. | |
 | [unpinned-transitive-action](./unpinned-transitive-action/README.md) | Checks that SHA-pinned remote actions do not transitively use unpinned actions or Docker images. | Yes |
 | [unused-ignore](./unused-ignore/README.md) | Reports unused, unknown, or invalid `ghasec-ignore` directives. | |

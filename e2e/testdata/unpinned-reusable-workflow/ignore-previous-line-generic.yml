@@ -5,8 +5,8 @@ workflows:
       permissions: {}
       jobs:
         call:
-          uses: org/repo/.github/workflows/ci.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-          secrets: inherit # ghasec-ignore:secrets-inherit
+          # ghasec-ignore
+          uses: org/repo/.github/workflows/ci.yml@v1
 
 expected:
   exit_code: 0

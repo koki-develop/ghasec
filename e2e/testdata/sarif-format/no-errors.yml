@@ -61,6 +61,13 @@ expected:
                   }
                 },
                 {
+                  "id": "unpinned-reusable-workflow",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-reusable-workflow/README.md",
+                  "shortDescription": {
+                    "text": "Git tags and branches are mutable. Reusable workflows execute with secrets the caller passes in, so a compromised upstream that moves a tag can run malicious code with access to those secrets on the next run"
+                  }
+                },
+                {
                   "id": "checkout-persist-credentials",
                   "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md",
                   "shortDescription": {

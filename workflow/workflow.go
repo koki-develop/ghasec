@@ -125,6 +125,23 @@ func (w WorkflowMapping) EachJob(fn func(jobKeyToken *token.Token, job JobMappin
 // JobMapping represents a job-level mapping.
 type JobMapping struct{ Mapping }
 
+// Uses extracts the ActionRef from the job's "uses" key (used for reusable
+// workflow references). Returns (ActionRef, false) if the job has no "uses"
+// key or the value is not a string/literal node.
+func (j JobMapping) Uses() (ActionRef, bool) {
+	usesKV := j.FindKey("uses")
+	if usesKV == nil {
+		return ActionRef{}, false
+	}
+	switch v := unwrapNode(usesKV.Value).(type) {
+	case *ast.StringNode:
+		return NewActionRef(v.Value, v.GetToken()), true
+	case *ast.LiteralNode:
+		return NewActionRef(v.Value.Value, v.GetToken()), true
+	}
+	return ActionRef{}, false
+}
+
 // StepMapping represents a step-level mapping.
 type StepMapping struct {
 	Mapping

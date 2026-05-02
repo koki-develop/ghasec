@@ -1,16 +1,12 @@
-args: --online --format sarif
+args: --format sarif
 workflows:
   - name: workflow.yml
     content: |
       on: push
       permissions: {}
       jobs:
-        build:
-          runs-on: ubuntu-latest
-          timeout-minutes: 10
-          steps:
-            # ghasec-ignore:missing-sha-ref-comment
-            - uses: owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        call:
+          uses: org/repo/.github/workflows/ci.yml@v1.0.0
 
 expected:
   exit_code: 1
@@ -149,45 +145,17 @@ expected:
                   "shortDescription": {
                     "text": "Without explicit permission-* inputs, the token inherits every permission the GitHub App installation has. A compromised downstream step can exploit this over-privileged token"
                   }
-                },
-                {
-                  "id": "archived-action",
-                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/archived-action/README.md",
-                  "shortDescription": {
-                    "text": "Archived repositories no longer receive security patches, bug fixes, or dependency updates. Using them exposes workflows to known and future vulnerabilities that will never be addressed"
-                  }
-                },
-                {
-                  "id": "impostor-commit",
-                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/impostor-commit/README.md",
-                  "shortDescription": {
-                    "text": "GitHub shares object storage across forks. An attacker can reference a malicious fork commit using the original repository's namespace, and the SHA resolves successfully"
-                  }
-                },
-                {
-                  "id": "mismatched-sha-tag",
-                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md",
-                  "shortDescription": {
-                    "text": "If the SHA and tag comment drift apart, the comment becomes a false assertion. A reviewer may approve the workflow believing a vetted release is in use while a different commit runs"
-                  }
-                },
-                {
-                  "id": "unpinned-transitive-action",
-                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-transitive-action/README.md",
-                  "shortDescription": {
-                    "text": "Even when your workflow pins an action to a commit SHA, that action may internally reference other actions using mutable tags or branches. A compromised transitive dependency undermines the security of your entire pinning strategy"
-                  }
                 }
               ]
             }
           },
           "results": [
             {
-              "ruleId": "unpinned-transitive-action",
-              "ruleIndex": 23,
+              "ruleId": "unpinned-reusable-workflow",
+              "ruleIndex": 7,
               "level": "error",
               "message": {
-                "text": "\"owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" uses unpinned action \"other/action-b@v2\""
+                "text": "\"org/repo/.github/workflows/ci.yml@v1.0.0\" must be pinned to a full length commit SHA"
               },
               "locations": [
                 {
@@ -196,8 +164,8 @@ expected:
                       "uri": "{{.Dir}}/workflow.yml"
                     },
                     "region": {
-                      "startLine": 9,
-                      "startColumn": 15
+                      "startLine": 5,
+                      "startColumn": 45
                     }
                   }
                 }

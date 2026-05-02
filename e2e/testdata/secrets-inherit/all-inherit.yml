@@ -5,10 +5,10 @@ workflows:
       permissions: {}
       jobs:
         ci:
-          uses: org/repo/.github/workflows/ci.yml@main
+          uses: org/repo/.github/workflows/ci.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd
           secrets: inherit
         deploy:
-          uses: org/repo/.github/workflows/deploy.yml@main
+          uses: org/repo/.github/workflows/deploy.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd
           secrets: inherit
 
 expected:

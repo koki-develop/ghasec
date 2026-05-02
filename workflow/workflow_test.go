@@ -5,6 +5,7 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	yamlparser "github.com/goccy/go-yaml/parser"
+	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/git"
 	"github.com/koki-develop/ghasec/workflow"
 	"github.com/stretchr/testify/assert"
@@ -413,4 +414,56 @@ func TestStepMapping_Uses_Anchored(t *testing.T) {
 	})
 	assert.True(t, found)
 	assert.Equal(t, "actions/checkout@v4", ref.String())
+}
+
+func TestJobMapping_Uses_StringValue(t *testing.T) {
+	w := parseWorkflow(t, "on: push\njobs:\n  call:\n    uses: org/repo/.github/workflows/ci.yml@abcdef\n")
+	var ref workflow.ActionRef
+	var found bool
+	w.EachJob(func(_ *token.Token, job workflow.JobMapping) {
+		ref, found = job.Uses()
+	})
+	require.True(t, found)
+	assert.Equal(t, "org/repo/.github/workflows/ci.yml@abcdef", ref.String())
+	assert.NotNil(t, ref.Token())
+}
+
+func TestJobMapping_Uses_NoUsesKey(t *testing.T) {
+	w := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo\n")
+	var found bool
+	w.EachJob(func(_ *token.Token, job workflow.JobMapping) {
+		_, found = job.Uses()
+	})
+	assert.False(t, found)
+}
+
+func TestJobMapping_Uses_NonString(t *testing.T) {
+	w := parseWorkflow(t, "on: push\njobs:\n  call:\n    uses: 123\n")
+	var found bool
+	w.EachJob(func(_ *token.Token, job workflow.JobMapping) {
+		_, found = job.Uses()
+	})
+	assert.False(t, found)
+}
+
+func TestJobMapping_Uses_AnchoredValue(t *testing.T) {
+	w := parseWorkflow(t, "on: push\njobs:\n  call:\n    uses: &u org/repo/.github/workflows/ci.yml@deadbeef\n")
+	var ref workflow.ActionRef
+	var found bool
+	w.EachJob(func(_ *token.Token, job workflow.JobMapping) {
+		ref, found = job.Uses()
+	})
+	require.True(t, found)
+	assert.Equal(t, "org/repo/.github/workflows/ci.yml@deadbeef", ref.String())
+}
+
+func TestJobMapping_Uses_LiteralBlockScalar(t *testing.T) {
+	w := parseWorkflow(t, "on: push\njobs:\n  call:\n    uses: |\n      org/repo/.github/workflows/ci.yml@v1\n")
+	var ref workflow.ActionRef
+	var found bool
+	w.EachJob(func(_ *token.Token, job workflow.JobMapping) {
+		ref, found = job.Uses()
+	})
+	require.True(t, found)
+	assert.Equal(t, "org/repo/.github/workflows/ci.yml@v1\n", ref.String())
 }
