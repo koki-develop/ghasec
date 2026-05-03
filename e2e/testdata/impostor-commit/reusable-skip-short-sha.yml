@@ -1,0 +1,16 @@
+args: --online
+workflows:
+  - name: reusable-skip-short-sha.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          # ghasec-ignore:unpinned-reusable-workflow
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@de0fac2
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

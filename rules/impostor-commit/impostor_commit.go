@@ -3,7 +3,9 @@ package impostorcommit
 import (
 	"context"
 	"fmt"
+	"slices"
 
+	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
@@ -34,11 +36,22 @@ func (r *Rule) Fix() string {
 }
 
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
-	return rules.CollectStepErrors(mapping.EachStep, r.checkStep)
+	return slices.Concat(
+		rules.CollectJobErrors(mapping.EachJob, r.checkJob),
+		rules.CollectStepErrors(mapping.EachStep, r.checkStep),
+	)
 }
 
 func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 	return rules.CollectStepErrors(mapping.EachStep, r.checkStep)
+}
+
+func (r *Rule) checkJob(_ *token.Token, job workflow.JobMapping) []*diagnostic.Error {
+	ref, ok := job.Uses()
+	if !ok {
+		return nil
+	}
+	return r.check(ref)
 }
 
 func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
@@ -46,7 +59,10 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	if !ok {
 		return nil
 	}
+	return r.check(ref)
+}
 
+func (r *Rule) check(ref workflow.ActionRef) []*diagnostic.Error {
 	if ref.IsLocal() || ref.IsDocker() {
 		return nil
 	}

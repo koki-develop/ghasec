@@ -1,0 +1,16 @@
+args: --online
+workflows:
+  - name: reusable-ignore-multi-rule-list.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          # ghasec-ignore:impostor-commit,mismatched-sha-tag
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222 # v1
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

@@ -3,6 +3,7 @@ package mismatchedshatag
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/goccy/go-yaml/token"
@@ -37,11 +38,22 @@ func (r *Rule) Fix() string {
 }
 
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
-	return rules.CollectStepErrors(mapping.EachStep, r.checkStep)
+	return slices.Concat(
+		rules.CollectJobErrors(mapping.EachJob, r.checkJob),
+		rules.CollectStepErrors(mapping.EachStep, r.checkStep),
+	)
 }
 
 func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 	return rules.CollectStepErrors(mapping.EachStep, r.checkStep)
+}
+
+func (r *Rule) checkJob(_ *token.Token, job workflow.JobMapping) []*diagnostic.Error {
+	ref, ok := job.Uses()
+	if !ok {
+		return nil
+	}
+	return r.check(ref)
 }
 
 func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
@@ -49,7 +61,10 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	if !ok {
 		return nil
 	}
+	return r.check(ref)
+}
 
+func (r *Rule) check(ref workflow.ActionRef) []*diagnostic.Error {
 	if ref.IsLocal() || ref.IsDocker() {
 		return nil
 	}
@@ -58,7 +73,6 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 		return nil
 	}
 
-	// Extract the comment from the next token.
 	tk := ref.Token()
 	if tk.Next == nil || tk.Next.Type != token.CommentType {
 		return nil
@@ -73,20 +87,18 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 		return nil
 	}
 
-	// Parse owner/repo from the action reference.
 	owner, repo := ref.OwnerRepo()
 	if owner == "" {
 		return nil
 	}
 
-	// Build a token pointing at just the tag text.
 	rawComment := tk.Next
 	leading := len(rawComment.Value) - len(tag)
-	skip := 1 + leading // 1 for '#', then leading whitespace
+	skip := 1 + leading
 	tagTk := &token.Token{
 		Type:  rawComment.Type,
 		Value: tag,
-		Prev:  rawComment, // connect to real chain for computeAncestors (Prev-walk only; do NOT set rawComment.Next)
+		Prev:  rawComment,
 		Position: &token.Position{
 			Line:   rawComment.Position.Line,
 			Column: rawComment.Position.Column + skip,

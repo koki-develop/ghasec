@@ -1,0 +1,16 @@
+args: --online
+workflows:
+  - name: reusable-skip-41-char.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          # ghasec-ignore:unpinned-reusable-workflow
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@11111111111111111111111111111111111111111
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

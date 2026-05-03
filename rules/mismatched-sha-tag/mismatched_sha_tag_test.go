@@ -156,7 +156,7 @@ func TestRule_LocalAndDockerActions(t *testing.T) {
 	}
 }
 
-func TestRule_NoSteps(t *testing.T) {
+func TestRule_Reusable_NonSHARefSkipped(t *testing.T) {
 	r := &mismatchedshatag.Rule{
 		Resolver: &mockResolver{},
 	}
@@ -247,4 +247,103 @@ func TestRule_CheckAction_NonComposite(t *testing.T) {
 	m := parseActionMapping(t, src)
 	errs := r.CheckAction(m)
 	assert.Empty(t, errs)
+}
+
+func TestRule_Reusable_TagMatch(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{
+			shas: map[string]string{
+				"octo-org/reusable-repo@v1": "de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+			},
+		},
+	}
+	src := "on: push\njobs:\n  call:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v1\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	assert.Empty(t, errs)
+}
+
+func TestRule_Reusable_TagMismatch(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{
+			shas: map[string]string{
+				"octo-org/reusable-repo@v1": "de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+			},
+		},
+	}
+	src := "on: push\njobs:\n  call:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v1\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, `"v1" points to commit "de0fac2e4500dabe0009e67214ff5f5447ce83dd", not the pinned commit`)
+}
+
+func TestRule_Reusable_NoComment(t *testing.T) {
+	r := &mismatchedshatag.Rule{Resolver: &mockResolver{}}
+	src := "on: push\njobs:\n  call:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	assert.Empty(t, errs)
+}
+
+func TestRule_Reusable_ResolverError(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{err: fmt.Errorf("network error")},
+	}
+	src := "on: push\njobs:\n  call:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v1\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "failed to resolve tag")
+	assert.Contains(t, errs[0].Message, "network error")
+}
+
+func TestRule_Reusable_LocalSkipped(t *testing.T) {
+	r := &mismatchedshatag.Rule{Resolver: &mockResolver{}}
+	src := "on: push\njobs:\n  call:\n    uses: ./.github/workflows/ci.yml\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	assert.Empty(t, errs)
+}
+
+func TestRule_Reusable_TokenPosition(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{
+			shas: map[string]string{
+				"octo-org/reusable-repo@v1": "de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+			},
+		},
+	}
+	src := "on: push\njobs:\n  call:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v1\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 1)
+	assert.Equal(t, "v1", errs[0].Token.Value)
+}
+
+func TestRule_Reusable_MultipleJobs(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{
+			shas: map[string]string{
+				"octo-org/reusable-repo@v1": "de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+				"octo-org/reusable-repo@v2": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			},
+		},
+	}
+	src := "on: push\njobs:\n" +
+		"  good:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v1\n" +
+		"  bad:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v2\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, `"v2"`)
+}
+
+func TestRule_Reusable_StepsAndReusableCoexist(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{
+			shas: map[string]string{
+				"actions/checkout@v4":       "de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+				"octo-org/reusable-repo@v1": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			},
+		},
+	}
+	src := "on: push\njobs:\n" +
+		"  call:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v1\n" +
+		"  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@cccccccccccccccccccccccccccccccccccccccc # v4\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 2)
 }

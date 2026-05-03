@@ -1,0 +1,40 @@
+args: --online
+workflows:
+  - name: reusable-and-step-impostor.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/setup-node@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v1
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reusable-and-step-impostor.yml:5:59
+    ...
+    3 | jobs:
+    4 |   call:
+    5 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222
+      |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ commit must belong to octo-org/reusable-repo (impostor-commit)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/impostor-commit/README.md
+
+    --> {{.Dir}}/reusable-and-step-impostor.yml:10:34
+    ...
+     3 | jobs:
+    ...
+     6 |   build:
+    ...
+     9 |     steps:
+    10 |       - uses: actions/setup-node@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v1
+       |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ commit must belong to actions/setup-node (impostor-commit)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/impostor-commit/README.md
+
+    ✗ 2 errors found in 1 of 1 file

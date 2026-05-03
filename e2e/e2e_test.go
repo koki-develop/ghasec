@@ -180,7 +180,11 @@ func archivedActionHandler(w http.ResponseWriter, r *http.Request) {
 func mismatchedSHATagHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	const validSHA = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	const (
+		validSHA             = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+		reusableReachableSHA = "1111111111111111111111111111111111111111"
+		reusableV2SHA        = "3333333333333333333333333333333333333333"
+	)
 
 	switch r.URL.Path {
 	// Tag resolution for mismatched-sha-tag
@@ -196,8 +200,40 @@ func mismatchedSHATagHandler(w http.ResponseWriter, r *http.Request) {
 				SHA string `json:"sha"`
 			}{SHA: validSHA}},
 		})
+
+	// ===== octo-org/reusable-repo (job-level uses) =====
+	case "/repos/octo-org/reusable-repo/git/ref/tags/v1":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref: "refs/tags/v1", Object: mockGitObject{Type: "commit", SHA: reusableReachableSHA},
+		})
+	case "/repos/octo-org/reusable-repo/git/ref/tags/v2":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref: "refs/tags/v2", Object: mockGitObject{Type: "commit", SHA: reusableV2SHA},
+		})
+	case "/repos/octo-org/reusable-repo/tags":
+		_ = json.NewEncoder(w).Encode([]mockRepoTag{
+			{Name: "v1", Commit: struct {
+				SHA string `json:"sha"`
+			}{SHA: reusableReachableSHA}},
+			{Name: "v2", Commit: struct {
+				SHA string `json:"sha"`
+			}{SHA: reusableV2SHA}},
+		})
+
+	// ===== octo-org/evil-reusable (job-level API failure) =====
+	case "/repos/octo-org/evil-reusable/git/ref/tags/v1":
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+		return
+	case "/repos/octo-org/evil-reusable/tags":
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+		return
+
 	// Repo metadata — needed because archived-action rule also runs during mismatched-sha-tag tests
-	case "/repos/actions/checkout":
+	case "/repos/actions/checkout",
+		"/repos/octo-org/reusable-repo",
+		"/repos/octo-org/evil-reusable":
 		_ = json.NewEncoder(w).Encode(map[string]any{"archived": false})
 	default:
 		// Contents API — needed because unpinned-transitive-action rule also runs
@@ -214,12 +250,15 @@ func impostorCommitHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	const (
-		reachableSHA  = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
-		impostorSHA   = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-		taggedSHA     = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-		annotatedSHA  = "cccccccccccccccccccccccccccccccccccccccc"
-		tagObjectSHA  = "dddddddddddddddddddddddddddddddddddddd"
-		nonDefaultSHA = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+		reachableSHA         = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+		impostorSHA          = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+		taggedSHA            = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+		annotatedSHA         = "cccccccccccccccccccccccccccccccccccccccc"
+		tagObjectSHA         = "dddddddddddddddddddddddddddddddddddddd"
+		nonDefaultSHA        = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+		reusableReachableSHA = "1111111111111111111111111111111111111111"
+		reusableImpostorSHA  = "2222222222222222222222222222222222222222"
+		reusableV2SHA        = "3333333333333333333333333333333333333333"
 	)
 
 	switch r.URL.Path {
@@ -294,12 +333,47 @@ func impostorCommitHandler(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
 		return
 
+	// ===== octo-org/reusable-repo (job-level uses) =====
+	case "/repos/octo-org/reusable-repo/tags":
+		_ = json.NewEncoder(w).Encode([]mockRepoTag{
+			{Name: "v1", Commit: struct {
+				SHA string `json:"sha"`
+			}{SHA: reusableReachableSHA}},
+			{Name: "v2", Commit: struct {
+				SHA string `json:"sha"`
+			}{SHA: reusableV2SHA}},
+		})
+	case "/repos/octo-org/reusable-repo/git/ref/tags/v1":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref: "refs/tags/v1", Object: mockGitObject{Type: "commit", SHA: reusableReachableSHA},
+		})
+	case "/repos/octo-org/reusable-repo/git/ref/tags/v2":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref: "refs/tags/v2", Object: mockGitObject{Type: "commit", SHA: reusableV2SHA},
+		})
+	case "/repos/octo-org/reusable-repo/branches":
+		_ = json.NewEncoder(w).Encode([]map[string]string{{"name": "main"}})
+	case "/repos/octo-org/reusable-repo/compare/main..." + reusableReachableSHA,
+		"/repos/octo-org/reusable-repo/compare/main..." + reusableV2SHA:
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "behind"})
+	case "/repos/octo-org/reusable-repo/compare/main..." + reusableImpostorSHA:
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+
+	// ===== octo-org/evil-reusable (job-level API failure) =====
+	case "/repos/octo-org/evil-reusable/tags":
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+		return
+
 	// Repo metadata — needed because archived-action rule also runs during impostor-commit tests
 	case "/repos/actions/checkout",
 		"/repos/actions/setup-go",
 		"/repos/actions/setup-node",
 		"/repos/actions/cache",
-		"/repos/evil/action":
+		"/repos/evil/action",
+		"/repos/octo-org/reusable-repo",
+		"/repos/octo-org/evil-reusable":
 		_ = json.NewEncoder(w).Encode(map[string]any{"archived": false})
 
 	default:

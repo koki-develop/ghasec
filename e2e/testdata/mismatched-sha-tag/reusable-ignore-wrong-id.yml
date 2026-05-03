@@ -1,0 +1,34 @@
+args: --online
+workflows:
+  - name: reusable-ignore-wrong-id.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          # ghasec-ignore:unpinned-action
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reusable-ignore-wrong-id.yml:5:21
+    ...
+    3 | jobs:
+    4 |   call:
+    5 |     # ghasec-ignore:unpinned-action
+      |                     ^^^^^^^^^^^^^^^ unused ignore directive for "unpinned-action" (unused-ignore)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md
+
+    --> {{.Dir}}/reusable-ignore-wrong-id.yml:6:102
+    ...
+    3 | jobs:
+    4 |   call:
+    ...
+    6 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+      |                                                                                                      ^^ "v1" points to commit "1111111111111111111111111111111111111111", not the pinned commit (mismatched-sha-tag)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
+
+    ✗ 2 errors found in 1 of 1 file

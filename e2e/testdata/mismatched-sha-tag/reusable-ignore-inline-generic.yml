@@ -1,0 +1,17 @@
+args: --online
+workflows:
+  - name: reusable-ignore-inline-generic.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          # bare directive on previous line so the inline comment can carry the tag
+          # ghasec-ignore
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

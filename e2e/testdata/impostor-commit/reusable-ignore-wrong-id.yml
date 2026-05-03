@@ -1,0 +1,31 @@
+args: --online
+workflows:
+  - name: reusable-ignore-wrong-id.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222 # ghasec-ignore:unpinned-action
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reusable-ignore-wrong-id.yml:5:59
+    ...
+    3 | jobs:
+    4 |   call:
+    5 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222 # ghasec-ignore:unpinned-action
+      |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ commit must belong to octo-org/reusable-repo (impostor-commit)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/impostor-commit/README.md
+
+    --> {{.Dir}}/reusable-ignore-wrong-id.yml:5:116
+    ...
+    3 | jobs:
+    4 |   call:
+    5 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222 # ghasec-ignore:unpinned-action
+      |                                                                                                                    ^^^^^^^^^^^^^^^ unused ignore directive for "unpinned-action" (unused-ignore)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md
+
+    ✗ 2 errors found in 1 of 1 file

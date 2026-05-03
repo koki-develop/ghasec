@@ -1,0 +1,15 @@
+args: --online
+workflows:
+  - name: reusable-ignore-inline-specific.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222 # ghasec-ignore:impostor-commit
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

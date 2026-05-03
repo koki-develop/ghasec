@@ -26,4 +26,4 @@ steps:
   - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 ```
 
-Pin to a commit SHA that is reachable from a branch or tag in the action's repository. This rule verifies reachability via the GitHub API. It checks both workflow files and action metadata files (composite action steps).
+Pin to a commit SHA that is reachable from a branch or tag in the action's repository. This rule verifies reachability via the GitHub API. It checks step-level `uses:` in both workflow files and action metadata files (composite action steps), and job-level `uses:` for reusable workflow references in workflow files.

@@ -1,0 +1,47 @@
+args: --online
+workflows:
+  - name: reusable-mismatched-multiple-jobs.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call-a:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+        call-b:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+        call-c:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reusable-mismatched-multiple-jobs.yml:5:102
+    ...
+    3 | jobs:
+    4 |   call-a:
+    5 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+      |                                                                                                      ^^ "v1" points to commit "1111111111111111111111111111111111111111", not the pinned commit (mismatched-sha-tag)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
+
+    --> {{.Dir}}/reusable-mismatched-multiple-jobs.yml:7:102
+    ...
+    3 | jobs:
+    ...
+    6 |   call-b:
+    7 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+      |                                                                                                      ^^ "v1" points to commit "1111111111111111111111111111111111111111", not the pinned commit (mismatched-sha-tag)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
+
+    --> {{.Dir}}/reusable-mismatched-multiple-jobs.yml:9:102
+    ...
+    3 | jobs:
+    ...
+    8 |   call-c:
+    9 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+      |                                                                                                      ^^ "v1" points to commit "1111111111111111111111111111111111111111", not the pinned commit (mismatched-sha-tag)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
+
+    ✗ 3 errors found in 1 of 1 file

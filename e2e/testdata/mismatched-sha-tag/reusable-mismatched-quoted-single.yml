@@ -1,0 +1,23 @@
+args: --online
+workflows:
+  - name: reusable-mismatched-quoted-single.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: 'octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333' # v1
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reusable-mismatched-quoted-single.yml:5:104
+    ...
+    3 | jobs:
+    4 |   call:
+    5 |     uses: 'octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333' # v1
+      |                                                                                                        ^^ "v1" points to commit "1111111111111111111111111111111111111111", not the pinned commit (mismatched-sha-tag)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
+
+    ✗ 1 error found in 1 of 1 file

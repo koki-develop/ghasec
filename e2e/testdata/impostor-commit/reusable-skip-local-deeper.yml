@@ -1,0 +1,15 @@
+args: --online
+workflows:
+  - name: reusable-skip-local-deeper.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: ./path/to/wf.yml
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

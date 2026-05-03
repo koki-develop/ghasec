@@ -1,0 +1,15 @@
+args: --online
+workflows:
+  - name: reusable-valid-deep-subpath.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: octo-org/reusable-repo/.github/workflows/sub/dir/deep.yml@1111111111111111111111111111111111111111
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

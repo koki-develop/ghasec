@@ -1,0 +1,25 @@
+args: --online
+workflows:
+  - name: reusable-resolve-failure.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          # ghasec-ignore:impostor-commit
+          uses: octo-org/evil-reusable/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reusable-resolve-failure.yml:6:102
+    ...
+    3 | jobs:
+    4 |   call:
+    ...
+    6 |     uses: octo-org/evil-reusable/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+      |                                                                                                      ^^ failed to resolve tag "v1" for "octo-org/evil-reusable/.github/workflows/ci.yml@3333333333333333333333333333333333333333": failed to resolve tag "v1" on octo-org/evil-reusable: HTTP 500: Internal Server Error (mismatched-sha-tag)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
+
+    ✗ 1 error found in 1 of 1 file

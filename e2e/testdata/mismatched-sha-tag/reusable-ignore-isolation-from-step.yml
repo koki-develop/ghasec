@@ -1,0 +1,32 @@
+args: --online
+workflows:
+  - name: reusable-ignore-isolation-from-step.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            # ghasec-ignore:mismatched-sha-tag,impostor-commit
+            - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v4
+              with:
+                persist-credentials: false
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reusable-ignore-isolation-from-step.yml:5:102
+    ...
+    3 | jobs:
+    4 |   call:
+    5 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@3333333333333333333333333333333333333333 # v1
+      |                                                                                                      ^^ "v1" points to commit "1111111111111111111111111111111111111111", not the pinned commit (mismatched-sha-tag)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
+
+    ✗ 1 error found in 1 of 1 file

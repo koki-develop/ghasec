@@ -1,0 +1,25 @@
+args: --online
+workflows:
+  - name: reusable-impostor-with-comment.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          # ghasec-ignore:mismatched-sha-tag
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222 # v1
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reusable-impostor-with-comment.yml:6:59
+    ...
+    3 | jobs:
+    4 |   call:
+    ...
+    6 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222 # v1
+      |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ commit must belong to octo-org/reusable-repo (impostor-commit)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/impostor-commit/README.md
+
+    ✗ 1 error found in 1 of 1 file

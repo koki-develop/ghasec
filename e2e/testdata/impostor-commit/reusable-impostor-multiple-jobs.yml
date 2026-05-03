@@ -1,0 +1,47 @@
+args: --online
+workflows:
+  - name: reusable-impostor-multiple-jobs.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call-a:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222
+        call-b:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222
+        call-c:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/reusable-impostor-multiple-jobs.yml:5:59
+    ...
+    3 | jobs:
+    4 |   call-a:
+    5 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222
+      |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ commit must belong to octo-org/reusable-repo (impostor-commit)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/impostor-commit/README.md
+
+    --> {{.Dir}}/reusable-impostor-multiple-jobs.yml:7:59
+    ...
+    3 | jobs:
+    ...
+    6 |   call-b:
+    7 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222
+      |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ commit must belong to octo-org/reusable-repo (impostor-commit)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/impostor-commit/README.md
+
+    --> {{.Dir}}/reusable-impostor-multiple-jobs.yml:9:59
+    ...
+    3 | jobs:
+    ...
+    8 |   call-c:
+    9 |     uses: octo-org/reusable-repo/.github/workflows/ci.yml@2222222222222222222222222222222222222222
+      |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ commit must belong to octo-org/reusable-repo (impostor-commit)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/impostor-commit/README.md
+
+    ✗ 3 errors found in 1 of 1 file

@@ -1,0 +1,16 @@
+args: --online
+workflows:
+  - name: reusable-skip-tag-ref.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          # ghasec-ignore:unpinned-reusable-workflow
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@v1 # v1
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

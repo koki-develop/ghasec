@@ -1,0 +1,15 @@
+args: --online
+workflows:
+  - name: reusable-skip-empty-comment.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call:
+          uses: octo-org/reusable-repo/.github/workflows/ci.yml@1111111111111111111111111111111111111111 #
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found
