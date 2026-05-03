@@ -99,7 +99,7 @@ func checkJobUsesRef(job workflow.Mapping) []*diagnostic.Error {
 	if sv == "" {
 		return nil
 	}
-	ref := workflow.NewActionRef(sv, usesKV.Value.GetToken())
+	ref := workflow.NewActionRef(sv, usesKV.Value)
 	if !ref.IsLocal() && ref.Ref() == "" {
 		return []*diagnostic.Error{{
 			Token:   usesKV.Value.GetToken(),

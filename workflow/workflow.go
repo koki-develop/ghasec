@@ -135,9 +135,9 @@ func (j JobMapping) Uses() (ActionRef, bool) {
 	}
 	switch v := unwrapNode(usesKV.Value).(type) {
 	case *ast.StringNode:
-		return NewActionRef(v.Value, v.GetToken()), true
+		return NewActionRef(v.Value, v), true
 	case *ast.LiteralNode:
-		return NewActionRef(v.Value.Value, v.GetToken()), true
+		return NewActionRef(v.Value.Value, v), true
 	}
 	return ActionRef{}, false
 }
@@ -196,55 +196,112 @@ func (s StepMapping) Uses() (ActionRef, bool) {
 	}
 	switch v := unwrapNode(usesKV.Value).(type) {
 	case *ast.StringNode:
-		return NewActionRef(v.Value, v.GetToken()), true
+		return NewActionRef(v.Value, v), true
 	case *ast.LiteralNode:
-		return NewActionRef(v.Value.Value, v.GetToken()), true
+		return NewActionRef(v.Value.Value, v), true
 	}
 	return ActionRef{}, false
 }
 
-// ActionRef holds a step's "uses" value together with its source token.
+// ActionRef holds a step's "uses" value together with its source AST node.
+// The node is either a *ast.StringNode (plain or quoted scalar) or a
+// *ast.LiteralNode (block scalar). RefToken dispatches on the node type so
+// the caret position is correct regardless of which scalar form was used.
 type ActionRef struct {
 	value string
-	token *token.Token
+	node  ast.Node
 }
 
-// NewActionRef creates a new ActionRef.
-func NewActionRef(value string, tk *token.Token) ActionRef {
-	return ActionRef{value: value, token: tk}
+// NewActionRef creates a new ActionRef. node is the AST node of the "uses"
+// value (typically *ast.StringNode or *ast.LiteralNode); it may be nil in
+// tests that do not need positional information.
+func NewActionRef(value string, node ast.Node) ActionRef {
+	return ActionRef{value: value, node: node}
 }
 
 // String returns the raw uses value (e.g. "actions/checkout@abc123").
 func (a ActionRef) String() string { return a.value }
 
-// Token returns the source token for error reporting.
-func (a ActionRef) Token() *token.Token { return a.token }
+// Token returns the source token for error reporting. Returns nil if the
+// ActionRef was constructed without an AST node.
+func (a ActionRef) Token() *token.Token {
+	if a.node == nil {
+		return nil
+	}
+	return a.node.GetToken()
+}
 
 // RefToken returns a token pointing to just the ref portion (after "@").
-// If there is no "@", it returns the full token.
+// If there is no "@", it returns the full token. For literal block scalars,
+// the line and column are computed across the indicator/content boundary so
+// the caret lands on the actual ref characters in the source.
 func (a ActionRef) RefToken() *token.Token {
-	if a.token == nil || a.token.Position == nil {
-		return a.token
+	tk := a.Token()
+	if tk == nil || tk.Position == nil {
+		return tk
 	}
 	idx := strings.LastIndex(a.value, "@")
 	if idx == -1 {
-		return a.token
+		return tk
 	}
 	ref := a.value[idx+1:]
 	skip := idx + 1
+
+	if lit, ok := a.node.(*ast.LiteralNode); ok {
+		return literalRefToken(lit, a.value, skip, ref)
+	}
+
 	quoteOffset := 0
-	if a.token.Type == token.DoubleQuoteType || a.token.Type == token.SingleQuoteType {
+	if tk.Type == token.DoubleQuoteType || tk.Type == token.SingleQuoteType {
 		quoteOffset = 1
 	}
-	cp := *a.token
+	cp := *tk
 	cp.Type = token.StringType
 	cp.Value = ref
 	cp.Position = &token.Position{
-		Line:   a.token.Position.Line,
-		Column: a.token.Position.Column + quoteOffset + skip,
-		Offset: a.token.Position.Offset + quoteOffset + skip,
+		Line:   tk.Position.Line,
+		Column: tk.Position.Column + quoteOffset + skip,
+		Offset: tk.Position.Offset + quoteOffset + skip,
 	}
 	return &cp
+}
+
+// literalRefToken computes a synthetic token at byte offset spanStart within
+// a literal block scalar's value, mapping it back to a source (line, column)
+// by counting newlines in the value and applying the block's content
+// indentation. The block indicator (|, |-, >) sits on its own line, so the
+// content's first source line is indicator_line + 1.
+func literalRefToken(lit *ast.LiteralNode, value string, spanStart int, refValue string) *token.Token {
+	base := lit.Start
+
+	indent := 0
+	if lit.Value != nil {
+		valTok := lit.Value.GetToken()
+		if valTok != nil && valTok.Origin != "" && value != "" {
+			originFirst := strings.SplitN(valTok.Origin, "\n", 2)[0]
+			valueFirst := strings.SplitN(value, "\n", 2)[0]
+			if d := len(originFirst) - len(valueFirst); d > 0 {
+				indent = d
+			}
+		}
+	}
+
+	prefix := value[:spanStart]
+	lineOffset := strings.Count(prefix, "\n")
+	lastNL := strings.LastIndex(prefix, "\n")
+	col := indent + (spanStart - lastNL - 1) + 1
+	line := base.Position.Line + 1 + lineOffset
+
+	return &token.Token{
+		Type:  token.StringType,
+		Value: refValue,
+		Prev:  base.Prev,
+		Position: &token.Position{
+			Line:   line,
+			Column: col,
+			Offset: base.Position.Offset + spanStart,
+		},
+	}
 }
 
 // IsLocal reports whether the action is a local path reference (starts with "./").

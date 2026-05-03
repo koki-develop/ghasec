@@ -304,6 +304,38 @@ func TestActionRef_RefToken_SingleQuoted(t *testing.T) {
 	assert.Equal(t, expectedCol, tk.Position.Column)
 }
 
+func TestActionRef_RefToken_LiteralBlockKeep(t *testing.T) {
+	src := "jobs:\n  call:\n    uses: |\n      org/repo/.github/workflows/ci.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
+	w := parseWorkflow(t, src)
+	var ref workflow.ActionRef
+	w.EachJob(func(_ *token.Token, job workflow.JobMapping) {
+		ref, _ = job.Uses()
+	})
+	tk := ref.RefToken()
+	require.NotNil(t, tk)
+	// "|" preserves the trailing newline in the value, so the ref carries it too.
+	assert.Equal(t, "de0fac2e4500dabe0009e67214ff5f5447ce83dd\n", tk.Value)
+	// "|" indicator on line 3, content begins on line 4 indented 6 spaces.
+	// Last "@" is at byte 33 of the value, so the ref starts at byte 34.
+	// Source column = 6 (indent) + 34 (offset within first content line) + 1 (1-indexed) = 41.
+	assert.Equal(t, 4, tk.Position.Line)
+	assert.Equal(t, 41, tk.Position.Column)
+}
+
+func TestActionRef_RefToken_LiteralBlockStrip(t *testing.T) {
+	src := "jobs:\n  call:\n    uses: |-\n      org/repo/.github/workflows/ci.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
+	w := parseWorkflow(t, src)
+	var ref workflow.ActionRef
+	w.EachJob(func(_ *token.Token, job workflow.JobMapping) {
+		ref, _ = job.Uses()
+	})
+	tk := ref.RefToken()
+	require.NotNil(t, tk)
+	assert.Equal(t, "de0fac2e4500dabe0009e67214ff5f5447ce83dd", tk.Value)
+	assert.Equal(t, 4, tk.Position.Line)
+	assert.Equal(t, 41, tk.Position.Column)
+}
+
 func TestActionRef_RefToken_NoRef(t *testing.T) {
 	src := `jobs:
   build:
