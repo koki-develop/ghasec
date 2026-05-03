@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.13.0](https://github.com/koki-develop/ghasec/compare/v0.12.0...v0.13.0) (2026-05-03)
+
+
+### Features
+
+* extend impostor-commit and mismatched-sha-tag to verify reusable workflow refs ([b894009](https://github.com/koki-develop/ghasec/commit/b894009079bdeef2ac074243248f8725780cad5c))
+
+
+### Patches
+
+* correct caret position for literal block scalar uses values ([f1f5bdb](https://github.com/koki-develop/ghasec/commit/f1f5bdba19ccd4ace458e2d712d18ed609f0546d))
+
 ## [0.12.0](https://github.com/koki-develop/ghasec/compare/v0.11.3...v0.12.0) (2026-05-02)
 
 
