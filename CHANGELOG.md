@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/koki-develop/ghasec/compare/v0.13.0...v0.13.1) (2026-05-26)
+
+
+### Patches
+
+* validate concurrency.queue and services command/entrypoint ([bedfe7a](https://github.com/koki-develop/ghasec/commit/bedfe7a4dd2ab0086eac5d5d3ed03fad9be5a06c))
+
 ## [0.13.0](https://github.com/koki-develop/ghasec/compare/v0.12.0...v0.13.0) (2026-05-03)
 
 
