@@ -1,0 +1,24 @@
+workflows:
+  - name: valid-concurrency-queue.yml
+    content: |
+      on: push
+      permissions: {}
+      concurrency:
+        group: my-group
+        queue: single
+        cancel-in-progress: true
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          concurrency:
+            group: job-group
+            queue: max
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

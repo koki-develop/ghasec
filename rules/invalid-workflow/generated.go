@@ -92,6 +92,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							_knownKeysconcurrency := map[string]bool{
 								"cancel-in-progress": true,
 								"group":              true,
+								"queue":              true,
 							}
 							for _, _entry := range _oneOfM0.Values {
 								_key := _entry.Key.GetToken().Value
@@ -145,6 +146,38 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											Allowed: []string{"string"},
 											Token:   _kvgroup.Value.GetToken(),
 										})
+									}
+								}
+							}
+
+							// Property: "queue"
+							if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM0}).FindKey("queue"); _kvqueue != nil {
+								if !rules.IsExpressionNode(_kvqueue.Value) {
+									if !rules.IsString(_kvqueue.Value) {
+										errs = append(errs, rules.ValidationError{
+											Kind:    rules.KindTypeMismatch,
+											Path:    "concurrency.queue",
+											Key:     "queue",
+											Got:     rules.NodeTypeName(_kvqueue.Value),
+											Allowed: []string{"string"},
+											Token:   _kvqueue.Value.GetToken(),
+										})
+									}
+									if _sv := rules.StringValue(_kvqueue.Value); _sv != "" {
+										_validEnumqueue := map[string]bool{
+											"single": true,
+											"max":    true,
+										}
+										if !_validEnumqueue[_sv] {
+											errs = append(errs, rules.ValidationError{
+												Kind:    rules.KindInvalidEnum,
+												Path:    "concurrency.queue",
+												Key:     "queue",
+												Got:     _sv,
+												Allowed: []string{"single", "max"},
+												Token:   _kvqueue.Value.GetToken(),
+											})
+										}
 									}
 								}
 							}
@@ -408,6 +441,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 															_knownKeysjobs___concurrency := map[string]bool{
 																"cancel-in-progress": true,
 																"group":              true,
+																"queue":              true,
 															}
 															for _, _entry := range _oneOfM4.Values {
 																_key := _entry.Key.GetToken().Value
@@ -461,6 +495,38 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																			Allowed: []string{"string"},
 																			Token:   _kvgroup.Value.GetToken(),
 																		})
+																	}
+																}
+															}
+
+															// Property: "queue"
+															if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM4}).FindKey("queue"); _kvqueue != nil {
+																if !rules.IsExpressionNode(_kvqueue.Value) {
+																	if !rules.IsString(_kvqueue.Value) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "jobs.*.concurrency.queue",
+																			Key:     "queue",
+																			Got:     rules.NodeTypeName(_kvqueue.Value),
+																			Allowed: []string{"string"},
+																			Token:   _kvqueue.Value.GetToken(),
+																		})
+																	}
+																	if _sv := rules.StringValue(_kvqueue.Value); _sv != "" {
+																		_validEnumqueue := map[string]bool{
+																			"single": true,
+																			"max":    true,
+																		}
+																		if !_validEnumqueue[_sv] {
+																			errs = append(errs, rules.ValidationError{
+																				Kind:    rules.KindInvalidEnum,
+																				Path:    "jobs.*.concurrency.queue",
+																				Key:     "queue",
+																				Got:     _sv,
+																				Allowed: []string{"single", "max"},
+																				Token:   _kvqueue.Value.GetToken(),
+																			})
+																		}
 																	}
 																}
 															}
@@ -2471,6 +2537,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 															_knownKeysjobs___concurrency := map[string]bool{
 																"cancel-in-progress": true,
 																"group":              true,
+																"queue":              true,
 															}
 															for _, _entry := range _oneOfM26.Values {
 																_key := _entry.Key.GetToken().Value
@@ -2524,6 +2591,38 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																			Allowed: []string{"string"},
 																			Token:   _kvgroup.Value.GetToken(),
 																		})
+																	}
+																}
+															}
+
+															// Property: "queue"
+															if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM26}).FindKey("queue"); _kvqueue != nil {
+																if !rules.IsExpressionNode(_kvqueue.Value) {
+																	if !rules.IsString(_kvqueue.Value) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "jobs.*.concurrency.queue",
+																			Key:     "queue",
+																			Got:     rules.NodeTypeName(_kvqueue.Value),
+																			Allowed: []string{"string"},
+																			Token:   _kvqueue.Value.GetToken(),
+																		})
+																	}
+																	if _sv := rules.StringValue(_kvqueue.Value); _sv != "" {
+																		_validEnumqueue := map[string]bool{
+																			"single": true,
+																			"max":    true,
+																		}
+																		if !_validEnumqueue[_sv] {
+																			errs = append(errs, rules.ValidationError{
+																				Kind:    rules.KindInvalidEnum,
+																				Path:    "jobs.*.concurrency.queue",
+																				Key:     "queue",
+																				Got:     _sv,
+																				Allowed: []string{"single", "max"},
+																				Token:   _kvqueue.Value.GetToken(),
+																			})
+																		}
 																	}
 																}
 															}
@@ -8090,6 +8189,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					_knownKeysconcurrency := map[string]bool{
 						"cancel-in-progress": true,
 						"group":              true,
+						"queue":              true,
 					}
 					for _, _entry := range _oneOfM62.Values {
 						_key := _entry.Key.GetToken().Value
@@ -8143,6 +8243,38 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									Allowed: []string{"string"},
 									Token:   _kvgroup.Value.GetToken(),
 								})
+							}
+						}
+					}
+
+					// Property: "queue"
+					if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM62}).FindKey("queue"); _kvqueue != nil {
+						if !rules.IsExpressionNode(_kvqueue.Value) {
+							if !rules.IsString(_kvqueue.Value) {
+								errs = append(errs, rules.ValidationError{
+									Kind:    rules.KindTypeMismatch,
+									Path:    "concurrency.queue",
+									Key:     "queue",
+									Got:     rules.NodeTypeName(_kvqueue.Value),
+									Allowed: []string{"string"},
+									Token:   _kvqueue.Value.GetToken(),
+								})
+							}
+							if _sv := rules.StringValue(_kvqueue.Value); _sv != "" {
+								_validEnumqueue := map[string]bool{
+									"single": true,
+									"max":    true,
+								}
+								if !_validEnumqueue[_sv] {
+									errs = append(errs, rules.ValidationError{
+										Kind:    rules.KindInvalidEnum,
+										Path:    "concurrency.queue",
+										Key:     "queue",
+										Got:     _sv,
+										Allowed: []string{"single", "max"},
+										Token:   _kvqueue.Value.GetToken(),
+									})
+								}
 							}
 						}
 					}
@@ -8406,6 +8538,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													_knownKeysjobs___concurrency := map[string]bool{
 														"cancel-in-progress": true,
 														"group":              true,
+														"queue":              true,
 													}
 													for _, _entry := range _oneOfM65.Values {
 														_key := _entry.Key.GetToken().Value
@@ -8459,6 +8592,38 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																	Allowed: []string{"string"},
 																	Token:   _kvgroup.Value.GetToken(),
 																})
+															}
+														}
+													}
+
+													// Property: "queue"
+													if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM65}).FindKey("queue"); _kvqueue != nil {
+														if !rules.IsExpressionNode(_kvqueue.Value) {
+															if !rules.IsString(_kvqueue.Value) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "jobs.*.concurrency.queue",
+																	Key:     "queue",
+																	Got:     rules.NodeTypeName(_kvqueue.Value),
+																	Allowed: []string{"string"},
+																	Token:   _kvqueue.Value.GetToken(),
+																})
+															}
+															if _sv := rules.StringValue(_kvqueue.Value); _sv != "" {
+																_validEnumqueue := map[string]bool{
+																	"single": true,
+																	"max":    true,
+																}
+																if !_validEnumqueue[_sv] {
+																	errs = append(errs, rules.ValidationError{
+																		Kind:    rules.KindInvalidEnum,
+																		Path:    "jobs.*.concurrency.queue",
+																		Key:     "queue",
+																		Got:     _sv,
+																		Allowed: []string{"single", "max"},
+																		Token:   _kvqueue.Value.GetToken(),
+																	})
+																}
 															}
 														}
 													}
@@ -10469,6 +10634,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													_knownKeysjobs___concurrency := map[string]bool{
 														"cancel-in-progress": true,
 														"group":              true,
+														"queue":              true,
 													}
 													for _, _entry := range _oneOfM80.Values {
 														_key := _entry.Key.GetToken().Value
@@ -10522,6 +10688,38 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																	Allowed: []string{"string"},
 																	Token:   _kvgroup.Value.GetToken(),
 																})
+															}
+														}
+													}
+
+													// Property: "queue"
+													if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM80}).FindKey("queue"); _kvqueue != nil {
+														if !rules.IsExpressionNode(_kvqueue.Value) {
+															if !rules.IsString(_kvqueue.Value) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "jobs.*.concurrency.queue",
+																	Key:     "queue",
+																	Got:     rules.NodeTypeName(_kvqueue.Value),
+																	Allowed: []string{"string"},
+																	Token:   _kvqueue.Value.GetToken(),
+																})
+															}
+															if _sv := rules.StringValue(_kvqueue.Value); _sv != "" {
+																_validEnumqueue := map[string]bool{
+																	"single": true,
+																	"max":    true,
+																}
+																if !_validEnumqueue[_sv] {
+																	errs = append(errs, rules.ValidationError{
+																		Kind:    rules.KindInvalidEnum,
+																		Path:    "jobs.*.concurrency.queue",
+																		Key:     "queue",
+																		Got:     _sv,
+																		Allowed: []string{"single", "max"},
+																		Token:   _kvqueue.Value.GetToken(),
+																	})
+																}
 															}
 														}
 													}
@@ -16091,7 +16289,9 @@ func _validateAP14(value ast.Node, keyName string) []rules.ValidationError {
 		if _subM_, _ok_ := rules.UnwrapNode(value).(*ast.MappingNode); _ok_ {
 			// Unknown key detection
 			_knownKeysjobs___services__ := map[string]bool{
+				"command":     true,
 				"credentials": true,
+				"entrypoint":  true,
 				"env":         true,
 				"image":       true,
 				"options":     true,
@@ -16119,6 +16319,22 @@ func _validateAP14(value ast.Node, keyName string) []rules.ValidationError {
 					Key:   "image",
 					Token: _subM_.GetToken(),
 				})
+			}
+
+			// Property: "command"
+			if _kvcommand := (workflow.Mapping{MappingNode: _subM_}).FindKey("command"); _kvcommand != nil {
+				if !rules.IsExpressionNode(_kvcommand.Value) {
+					if !rules.IsString(_kvcommand.Value) {
+						errs = append(errs, rules.ValidationError{
+							Kind:    rules.KindTypeMismatch,
+							Path:    "jobs.*.services.*.command",
+							Key:     "command",
+							Got:     rules.NodeTypeName(_kvcommand.Value),
+							Allowed: []string{"string"},
+							Token:   _kvcommand.Value.GetToken(),
+						})
+					}
+				}
 			}
 
 			// Property: "credentials"
@@ -16167,6 +16383,22 @@ func _validateAP14(value ast.Node, keyName string) []rules.ValidationError {
 							}
 						}
 
+					}
+				}
+			}
+
+			// Property: "entrypoint"
+			if _kventrypoint := (workflow.Mapping{MappingNode: _subM_}).FindKey("entrypoint"); _kventrypoint != nil {
+				if !rules.IsExpressionNode(_kventrypoint.Value) {
+					if !rules.IsString(_kventrypoint.Value) {
+						errs = append(errs, rules.ValidationError{
+							Kind:    rules.KindTypeMismatch,
+							Path:    "jobs.*.services.*.entrypoint",
+							Key:     "entrypoint",
+							Got:     rules.NodeTypeName(_kventrypoint.Value),
+							Allowed: []string{"string"},
+							Token:   _kventrypoint.Value.GetToken(),
+						})
 					}
 				}
 			}

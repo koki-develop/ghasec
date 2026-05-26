@@ -20,6 +20,8 @@ workflows:
               volumes:
                 - /data:/data
               options: --health-cmd "redis-cli ping"
+              entrypoint: /usr/local/bin/docker-entrypoint.sh
+              command: redis-server --appendonly yes
           steps:
             - run: echo hi
 

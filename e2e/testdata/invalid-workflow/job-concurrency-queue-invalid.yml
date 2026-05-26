@@ -1,0 +1,32 @@
+workflows:
+  - name: job-concurrency-queue-invalid.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          concurrency:
+            group: my-group
+            queue: invalid-value
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/job-concurrency-queue-invalid.yml:9:14
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     concurrency:
+    ...
+    9 |       queue: invalid-value
+      |              ^^^^^^^^^^^^^ "queue" has unknown value "invalid-value" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 1 error found in 1 of 1 file
