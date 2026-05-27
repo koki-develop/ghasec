@@ -3,7 +3,7 @@ module github.com/koki-develop/ghasec
 go 1.26.1
 
 require (
-	github.com/alecthomas/chroma/v2 v2.23.1
+	github.com/alecthomas/chroma/v2 v2.24.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/koki-develop/annotate-go v0.4.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
@@ -21,7 +21,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dlclark/regexp2 v1.11.5 // indirect
+	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
