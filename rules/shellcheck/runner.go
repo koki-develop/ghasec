@@ -57,7 +57,12 @@ func (r *execRunner) Run(ctx context.Context, shell, script string) ([]Comment, 
 	if r.path == "" {
 		return nil, errUnavailable
 	}
-	cmd := exec.CommandContext(ctx, r.path, "--norc", "-f", "json1", "-S", "info", "-s", shell, "-")
+	// SC2154 (variable referenced but not assigned) is excluded: GitHub Actions
+	// defines variables outside the analyzed script (env: blocks, $GITHUB_ENV
+	// from prior steps, matrix, runner env), which shellcheck cannot see, so it
+	// is an unavoidable false positive in this context. shellcheck already
+	// suppresses it for all-caps names; -e covers lowercase ones too.
+	cmd := exec.CommandContext(ctx, r.path, "--norc", "-f", "json1", "-S", "info", "-e", "SC2154", "-s", shell, "-")
 	cmd.Stdin = strings.NewReader(script)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

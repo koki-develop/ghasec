@@ -40,14 +40,19 @@ func TestExecRunner_Smoke(t *testing.T) {
 	}
 	comments, err := r.Run(context.Background(), "bash", "echo $x\n")
 	require.NoError(t, err)
-	// Unquoted $x should yield at least SC2086 (and SC2154 for undefined $x).
-	var hasSC2086 bool
+	// Unquoted $x yields SC2086. SC2154 (referenced but not assigned) must be
+	// excluded via -e, since Actions variables are defined outside the script.
+	var hasSC2086, hasSC2154 bool
 	for _, c := range comments {
-		if c.Code == 2086 {
+		switch c.Code {
+		case 2086:
 			hasSC2086 = true
+		case 2154:
+			hasSC2154 = true
 		}
 	}
 	assert.True(t, hasSC2086, "expected SC2086 for unquoted $x, got %+v", comments)
+	assert.False(t, hasSC2154, "SC2154 must be excluded, got %+v", comments)
 }
 
 func TestExecRunner_Unavailable(t *testing.T) {

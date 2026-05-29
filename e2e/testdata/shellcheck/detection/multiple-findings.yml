@@ -23,18 +23,6 @@ expected:
     7 |     steps:
     8 |       - run: |
     9 |           echo $foo
-      |                ^^^^ foo is referenced but not assigned. (shellcheck/SC2154)
-    ...
-      Ref: https://www.shellcheck.net/wiki/SC2154
-
-    --> {{.Dir}}/ci.yml:9:16
-    ...
-    3 | jobs:
-    4 |   build:
-    ...
-    7 |     steps:
-    8 |       - run: |
-    9 |           echo $foo
       |                ^^^^ Double quote to prevent globbing and word splitting. (shellcheck/SC2086)
     ...
       Ref: https://www.shellcheck.net/wiki/SC2086
@@ -51,4 +39,4 @@ expected:
        |           ^^^^^^^ Use 'cd ... || exit' or 'cd ... || return' in case cd fails. (shellcheck/SC2164)
       Ref: https://www.shellcheck.net/wiki/SC2164
 
-    ✗ 3 errors found in 1 of 1 file
+    ✗ 2 errors found in 1 of 1 file

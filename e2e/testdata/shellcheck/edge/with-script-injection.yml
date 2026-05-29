@@ -36,19 +36,7 @@ expected:
      8 |       - run: |
     ...
     10 |           deploy $target
-       |                  ^^^^^^^ target is referenced but not assigned. (shellcheck/SC2154)
-      Ref: https://www.shellcheck.net/wiki/SC2154
-
-    --> {{.Dir}}/ci.yml:10:18
-    ...
-     3 | jobs:
-     4 |   build:
-    ...
-     7 |     steps:
-     8 |       - run: |
-    ...
-    10 |           deploy $target
        |                  ^^^^^^^ Double quote to prevent globbing and word splitting. (shellcheck/SC2086)
       Ref: https://www.shellcheck.net/wiki/SC2086
 
-    ✗ 3 errors found in 1 of 1 file
+    ✗ 2 errors found in 1 of 1 file

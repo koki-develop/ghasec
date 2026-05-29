@@ -1,3 +1,5 @@
+# A lowercase variable defined in a step env: block is invisible to shellcheck,
+# which would report SC2154. SC2154 is excluded, so this is clean.
 workflows:
   - name: ci.yml
     content: |
@@ -8,8 +10,9 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 5
           steps:
-            # ghasec-ignore:shellcheck/SC2086
-            - run: echo $x
+            - run: echo "$x"
+              env:
+                x: "foo bar"
 expected:
   exit_code: 0
   stdout: ""

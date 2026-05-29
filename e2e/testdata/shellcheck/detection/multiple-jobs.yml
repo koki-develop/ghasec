@@ -25,17 +25,6 @@ expected:
     ...
     7 |     steps:
     8 |       - run: echo $x
-      |                   ^^ x is referenced but not assigned. (shellcheck/SC2154)
-    ...
-      Ref: https://www.shellcheck.net/wiki/SC2154
-
-    --> {{.Dir}}/ci.yml:8:19
-    ...
-    3 | jobs:
-    4 |   a:
-    ...
-    7 |     steps:
-    8 |       - run: echo $x
       |                   ^^ Double quote to prevent globbing and word splitting. (shellcheck/SC2086)
     ...
       Ref: https://www.shellcheck.net/wiki/SC2086
@@ -48,18 +37,7 @@ expected:
     ...
     12 |     steps:
     13 |       - run: echo $y
-       |                   ^^ y is referenced but not assigned. (shellcheck/SC2154)
-      Ref: https://www.shellcheck.net/wiki/SC2154
-
-    --> {{.Dir}}/ci.yml:13:19
-    ...
-     3 | jobs:
-    ...
-     9 |   b:
-    ...
-    12 |     steps:
-    13 |       - run: echo $y
        |                   ^^ Double quote to prevent globbing and word splitting. (shellcheck/SC2086)
       Ref: https://www.shellcheck.net/wiki/SC2086
 
-    ✗ 4 errors found in 1 of 1 file
+    ✗ 2 errors found in 1 of 1 file

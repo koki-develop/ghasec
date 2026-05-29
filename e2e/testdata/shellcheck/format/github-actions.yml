@@ -13,6 +13,5 @@ workflows:
 expected:
   exit_code: 1
   stdout: |
-    ::error title=shellcheck/SC2154,file={{.Dir}}/ci.yml,line=8::{{.Dir}}/ci.yml:8:19: x is referenced but not assigned.
     ::error title=shellcheck/SC2086,file={{.Dir}}/ci.yml,line=8::{{.Dir}}/ci.yml:8:19: Double quote to prevent globbing and word splitting.
   stderr: ""

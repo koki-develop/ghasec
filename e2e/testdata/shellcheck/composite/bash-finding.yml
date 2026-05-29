@@ -18,18 +18,8 @@ expected:
     ...
     5 |   steps:
     6 |     - run: echo $x
-      |                 ^^ x is referenced but not assigned. (shellcheck/SC2154)
-    ...
-      Ref: https://www.shellcheck.net/wiki/SC2154
-
-    --> {{.Dir}}/action.yml:6:17
-    ...
-    3 | runs:
-    ...
-    5 |   steps:
-    6 |     - run: echo $x
       |                 ^^ Double quote to prevent globbing and word splitting. (shellcheck/SC2086)
     ...
       Ref: https://www.shellcheck.net/wiki/SC2086
 
-    ✗ 2 errors found in 1 of 1 file
+    ✗ 1 error found in 1 of 1 file

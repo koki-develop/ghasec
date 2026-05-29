@@ -90,14 +90,14 @@ func TestCheckWorkflow_DropsFindingsInsideMask(t *testing.T) {
 			// Inside the mask: must be dropped.
 			{Line: 1, EndLine: 1, Column: 8, EndColumn: 16, Level: "info", Code: 2086, Message: "quote the mask"},
 			// Outside the mask (the "deploy" command word): must be kept.
-			{Line: 1, EndLine: 1, Column: 1, EndColumn: 7, Level: "warning", Code: 2154, Message: "real finding"},
+			{Line: 1, EndLine: 1, Column: 1, EndColumn: 7, Level: "warning", Code: 2164, Message: "real finding"},
 		},
 	}
 	rule := &Rule{Runner: runner}
 	errs := rule.CheckWorkflow(parseWorkflowMapping(t, src))
 
 	require.Len(t, errs, 1)
-	assert.Equal(t, "shellcheck/SC2154", errs[0].RuleID)
+	assert.Equal(t, "shellcheck/SC2164", errs[0].RuleID)
 	assert.Equal(t, "real finding", errs[0].Message)
 }
 

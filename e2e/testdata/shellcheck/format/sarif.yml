@@ -153,10 +153,6 @@ expected:
                   }
                 },
                 {
-                  "id": "shellcheck/SC2154",
-                  "helpUri": "https://www.shellcheck.net/wiki/SC2154"
-                },
-                {
                   "id": "shellcheck/SC2086",
                   "helpUri": "https://www.shellcheck.net/wiki/SC2086"
                 }
@@ -165,29 +161,8 @@ expected:
           },
           "results": [
             {
-              "ruleId": "shellcheck/SC2154",
-              "ruleIndex": 21,
-              "level": "error",
-              "message": {
-                "text": "x is referenced but not assigned."
-              },
-              "locations": [
-                {
-                  "physicalLocation": {
-                    "artifactLocation": {
-                      "uri": "{{.Dir}}/ci.yml"
-                    },
-                    "region": {
-                      "startLine": 8,
-                      "startColumn": 19
-                    }
-                  }
-                }
-              ]
-            },
-            {
               "ruleId": "shellcheck/SC2086",
-              "ruleIndex": 22,
+              "ruleIndex": 21,
               "level": "error",
               "message": {
                 "text": "Double quote to prevent globbing and word splitting."
