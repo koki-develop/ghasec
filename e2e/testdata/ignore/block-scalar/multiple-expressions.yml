@@ -1,0 +1,19 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: issues
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: | # ghasec-ignore:script-injection
+                echo ${{ github.event.issue.title }}
+                echo ${{ github.event.issue.body }}
+                echo ${{ github.actor }}
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

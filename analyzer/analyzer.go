@@ -278,7 +278,11 @@ func filterDiagnostics(directives []*ignore.Directive, errs []*diagnostic.Error)
 		}
 		suppressed := false
 		for _, d := range directives {
-			if d.Line != e.Token.Position.Line {
+			// A directive covers [Line, EndLine]. EndLine equals Line except when
+			// the directive targets a block scalar (e.g. a multi-line `run:`),
+			// where it extends over the block's inner lines so diagnostics
+			// reported there (e.g. script-injection) are matched.
+			if line := e.Token.Position.Line; line < d.Line || line > d.EndLine {
 				continue
 			}
 			if len(d.RuleIDs) == 0 {

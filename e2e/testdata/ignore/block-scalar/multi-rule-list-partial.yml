@@ -1,0 +1,28 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: issues
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: | # ghasec-ignore:script-injection,unpinned-action
+                echo ${{ github.event.issue.title }}
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:8:49
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: | # ghasec-ignore:script-injection,unpinned-action
+      |                                                 ^^^^^^^^^^^^^^^ unused ignore directive for "unpinned-action" (unused-ignore)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md
+
+    ✗ 1 error found in 1 of 1 file

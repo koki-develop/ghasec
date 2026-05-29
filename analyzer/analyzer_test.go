@@ -5,6 +5,7 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	yamlparser "github.com/goccy/go-yaml/parser"
+	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/progress"
@@ -138,6 +139,61 @@ func TestAnalyzeWorkflow_IgnoreSuppressesDiagnostic(t *testing.T) {
 	f := parseYAML(t, "key: value # ghasec-ignore:lint")
 	errs := a.AnalyzeWorkflow(f)
 	assert.Empty(t, errs)
+}
+
+// diagAt builds a diagnostic carrying a synthetic token positioned at the given
+// line/column. Rules that report expressions inside a multi-line block scalar
+// (e.g. script-injection) emit such tokens, whose line differs from the `run:`
+// key line.
+func diagAt(line, col int, msg string) *diagnostic.Error {
+	return &diagnostic.Error{
+		Token:   &token.Token{Value: "x", Position: &token.Position{Line: line, Column: col}},
+		Message: msg,
+	}
+}
+
+func TestAnalyzeWorkflow_IgnoreSuppressesDiagnosticInBlockScalar(t *testing.T) {
+	// Directive sits inline on the `run: |` line (2); the diagnostic is reported
+	// on an inner block line (3). The directive must cover the whole block.
+	src := "steps:\n  - run: | # ghasec-ignore:lint\n      echo a\n      echo b\n"
+	lintRule := &mockWorkflowRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{diagAt(3, 7, "lint error")}
+	}}
+	a := analyzer.New(1, lintRule)
+	f := parseYAML(t, src)
+	errs := a.AnalyzeWorkflow(f)
+	assert.Empty(t, errs, "block-covering directive should suppress the diagnostic and not fire unused-ignore")
+}
+
+func TestAnalyzeWorkflow_IgnorePreviousLineCoversBlockScalar(t *testing.T) {
+	// Directive sits on the line before `run: |`; it targets line 3 (the run key)
+	// and must extend to cover the block content on lines 4-5.
+	src := "steps:\n  # ghasec-ignore:lint\n  - run: |\n      echo a\n      echo b\n"
+	lintRule := &mockWorkflowRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{diagAt(5, 7, "lint error")}
+	}}
+	a := analyzer.New(1, lintRule)
+	f := parseYAML(t, src)
+	errs := a.AnalyzeWorkflow(f)
+	assert.Empty(t, errs)
+}
+
+func TestAnalyzeWorkflow_IgnoreBlockScalarDoesNotLeakBeyondBlock(t *testing.T) {
+	// The directive covers the block on lines 2-4 only. A diagnostic on line 5
+	// (the next key) is outside the block and must NOT be suppressed; the
+	// directive is then unused.
+	src := "steps:\n  - run: | # ghasec-ignore:lint\n      echo a\n      echo b\n    name: x\n"
+	lintRule := &mockWorkflowRule{id: "lint", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{diagAt(5, 11, "lint error")}
+	}}
+	a := analyzer.New(1, lintRule)
+	f := parseYAML(t, src)
+	errs := a.AnalyzeWorkflow(f)
+	require.Len(t, errs, 2)
+	// Sorted by position: the unused directive (line 2) precedes the leaked
+	// diagnostic (line 5).
+	assert.Equal(t, "unused-ignore", errs[0].RuleID)
+	assert.Equal(t, "lint error", errs[1].Message)
 }
 
 func TestAnalyzeWorkflow_IgnoreDoesNotSuppressRequiredRule(t *testing.T) {

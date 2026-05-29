@@ -1,6 +1,7 @@
 package ignore_test
 
 import (
+	"strings"
 	"testing"
 
 	yamlparser "github.com/goccy/go-yaml/parser"
@@ -168,6 +169,159 @@ func TestCollect(t *testing.T) {
 				assert.Equal(t, w.ruleIDs, directives[i].RuleIDs, "directive %d ruleIDs", i)
 				assert.NotNil(t, directives[i].Token, "directive %d token", i)
 			}
+		})
+	}
+}
+
+// substringAt returns the source substring of length n starting at the given
+// 1-based line and column. The renderer maps a token's Position to the source
+// the same way (line + column), so this checks that a synthetic token's Column
+// actually lands on the text its Value claims to mark.
+func substringAt(t *testing.T, src string, line, col, n int) string {
+	t.Helper()
+	lines := strings.Split(src, "\n")
+	require.GreaterOrEqual(t, line, 1)
+	require.LessOrEqual(t, line, len(lines))
+	ln := lines[line-1]
+	start := col - 1
+	require.GreaterOrEqual(t, start, 0)
+	require.LessOrEqual(t, start+n, len(ln), "token span overruns source line %q", ln)
+	return ln[start : start+n]
+}
+
+// TestKeywordTokenColumn verifies the all-rules directive's synthetic token
+// points exactly at the "ghasec-ignore" keyword in the source, including when
+// the comment follows a block scalar header (`|`/`>`), where go-yaml shifts the
+// comment token's column.
+func TestKeywordTokenColumn(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+	}{
+		{name: "normal inline", yaml: "a: b # ghasec-ignore\n"},
+		{name: "standalone", yaml: "# ghasec-ignore\na: b\n"},
+		{name: "after literal header", yaml: "steps:\n  - run: | # ghasec-ignore\n      echo x\n"},
+		{name: "after folded header", yaml: "steps:\n  - run: > # ghasec-ignore\n      echo x\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := yamlparser.ParseBytes([]byte(tt.yaml), 0)
+			require.NoError(t, err)
+			tk := f.Docs[0].Body.GetToken()
+			for tk.Prev != nil {
+				tk = tk.Prev
+			}
+			directives := ignore.Collect(tk)
+			require.Len(t, directives, 1)
+
+			kw := directives[0].KeywordToken()
+			require.Equal(t, "ghasec-ignore", kw.Value)
+			got := substringAt(t, tt.yaml, kw.Position.Line, kw.Position.Column, len(kw.Value))
+			assert.Equal(t, "ghasec-ignore", got, "caret should underline the keyword")
+		})
+	}
+}
+
+// TestRuleIDTokenColumn verifies a per-rule directive's synthetic token points
+// exactly at the rule ID in the source, across the same comment placements.
+func TestRuleIDTokenColumn(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+	}{
+		{name: "normal inline", yaml: "a: b # ghasec-ignore:script-injection\n"},
+		{name: "standalone", yaml: "# ghasec-ignore:script-injection\na: b\n"},
+		{name: "after literal header", yaml: "steps:\n  - run: | # ghasec-ignore:script-injection\n      echo x\n"},
+		{name: "after folded header", yaml: "steps:\n  - run: > # ghasec-ignore:script-injection\n      echo x\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := yamlparser.ParseBytes([]byte(tt.yaml), 0)
+			require.NoError(t, err)
+			tk := f.Docs[0].Body.GetToken()
+			for tk.Prev != nil {
+				tk = tk.Prev
+			}
+			directives := ignore.Collect(tk)
+			require.Len(t, directives, 1)
+
+			rt := directives[0].RuleIDToken("script-injection")
+			require.Equal(t, "script-injection", rt.Value)
+			got := substringAt(t, tt.yaml, rt.Position.Line, rt.Position.Column, len(rt.Value))
+			assert.Equal(t, "script-injection", got, "caret should underline the rule ID")
+		})
+	}
+}
+
+// TestCollectEndLine verifies that a directive targeting a block scalar's start
+// line has its EndLine extended to cover the full block, while a directive on a
+// non-block line keeps EndLine == Line.
+func TestCollectEndLine(t *testing.T) {
+	tests := []struct {
+		name     string
+		yaml     string
+		wantLine int
+		wantEnd  int
+	}{
+		{
+			name:     "non-block inline keeps EndLine == Line",
+			yaml:     "key: value # ghasec-ignore:foo",
+			wantLine: 1,
+			wantEnd:  1,
+		},
+		{
+			name:     "previous-line comment on plain value keeps EndLine == Line",
+			yaml:     "# ghasec-ignore:foo\nkey: value",
+			wantLine: 2,
+			wantEnd:  2,
+		},
+		{
+			name:     "inline on literal block extends to last content line",
+			yaml:     "steps:\n  - run: | # ghasec-ignore:foo\n      echo a\n      echo b\n    name: x\n",
+			wantLine: 2,
+			wantEnd:  4,
+		},
+		{
+			name:     "previous-line before literal block extends to last content line",
+			yaml:     "steps:\n  # ghasec-ignore:foo\n  - run: |\n      echo a\n      echo b\n    name: x\n",
+			wantLine: 3,
+			wantEnd:  5,
+		},
+		{
+			name:     "inline on folded block extends to last content line",
+			yaml:     "steps:\n  - run: >- # ghasec-ignore:foo\n      echo a\n      echo b\n    name: x\n",
+			wantLine: 2,
+			wantEnd:  4,
+		},
+		{
+			name:     "literal block last in file (single content line)",
+			yaml:     "steps:\n  - run: | # ghasec-ignore:foo\n      echo a\n",
+			wantLine: 2,
+			wantEnd:  3,
+		},
+		{
+			name:     "literal block last in file (multiple content lines)",
+			yaml:     "steps:\n  - run: | # ghasec-ignore:foo\n      echo a\n      echo b\n      echo c\n",
+			wantLine: 2,
+			wantEnd:  5,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := yamlparser.ParseBytes([]byte(tt.yaml), 0)
+			require.NoError(t, err)
+			require.NotEmpty(t, f.Docs)
+
+			tk := f.Docs[0].Body.GetToken()
+			for tk.Prev != nil {
+				tk = tk.Prev
+			}
+
+			directives := ignore.Collect(tk)
+			require.Len(t, directives, 1)
+			assert.Equal(t, tt.wantLine, directives[0].Line, "Line")
+			assert.Equal(t, tt.wantEnd, directives[0].EndLine, "EndLine")
 		})
 	}
 }
