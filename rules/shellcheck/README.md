@@ -1,6 +1,6 @@
 # shellcheck
 
-Runs [ShellCheck](https://www.shellcheck.net/) against the shell scripts in `run:` steps and reports its findings as ghasec diagnostics.
+Runs [ShellCheck](https://www.shellcheck.net/) against the shell scripts in `run:` steps and reports its findings.
 
 ## Requirements
 

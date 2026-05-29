@@ -21,6 +21,7 @@ Rules marked as **Online** require network access (e.g., GitHub API) and are dis
 | [missing-sha-ref-comment](./missing-sha-ref-comment/README.md) | Checks that actions pinned to a full-length commit SHA have an inline comment containing a valid git ref. | |
 | [script-injection](./script-injection/README.md) | Checks that `run:` steps and `actions/github-script`'s `script:` input do not contain `${{ }}` expressions. | |
 | [secrets-inherit](./secrets-inherit/README.md) | Checks that jobs do not use `secrets: inherit`. | |
+| [shellcheck](./shellcheck/README.md) | Runs [ShellCheck](https://www.shellcheck.net/) against the shell scripts in `run:` steps and reports its findings. | |
 | [unpinned-action](./unpinned-action/README.md) | Checks that third-party action references are pinned to a full-length commit SHA. | |
 | [unpinned-container](./unpinned-container/README.md) | Checks that container images in job `container` and `services` definitions are pinned to a digest. | |
 | [unpinned-reusable-workflow](./unpinned-reusable-workflow/README.md) | Checks that reusable workflow references are pinned to a full-length commit SHA. | |
