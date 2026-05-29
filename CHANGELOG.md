@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0](https://github.com/koki-develop/ghasec/compare/v0.13.1...v0.14.0) (2026-05-29)
+
+
+### Features
+
+* shellcheck integration ([#59](https://github.com/koki-develop/ghasec/issues/59)) ([c7fd14e](https://github.com/koki-develop/ghasec/commit/c7fd14eec173637f5d8ee325ee42a06d84d3e2d1))
+
+
+### Patches
+
+* cover block scalars with ghasec-ignore directives ([bb53d6b](https://github.com/koki-develop/ghasec/commit/bb53d6bb65ba81c4180230c77deaa3e095bfdd5e))
+* **deps:** update module github.com/alecthomas/chroma/v2 to v2.24.1 ([#56](https://github.com/koki-develop/ghasec/issues/56)) ([9d30ea1](https://github.com/koki-develop/ghasec/commit/9d30ea11c7588f9c78771a756231c1ca7c3a3dd1))
+
 ## [0.13.1](https://github.com/koki-develop/ghasec/compare/v0.13.0...v0.13.1) (2026-05-26)
 
 
