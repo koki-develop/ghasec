@@ -1,0 +1,36 @@
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          steps:
+            - run: echo "$x" # ghasec-ignore:shellcheck/SC9999
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/ci.yml:8:20
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: echo "$x" # ghasec-ignore:shellcheck/SC9999
+      |                    ^^ x is referenced but not assigned. (shellcheck/SC2154)
+      Ref: https://www.shellcheck.net/wiki/SC2154
+
+    --> {{.Dir}}/ci.yml:8:40
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: echo "$x" # ghasec-ignore:shellcheck/SC9999
+      |                                        ^^^^^^^^^^^^^^^^^ unused ignore directive for "shellcheck/SC9999" (unused-ignore)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unused-ignore/README.md
+
+    ✗ 2 errors found in 1 of 1 file

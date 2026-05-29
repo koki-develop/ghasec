@@ -100,7 +100,11 @@ func (r *MarkdownRenderer) PrintDiagnosticError(path string, e *diagnostic.Error
 			fmt.Fprintf(sb, "- **Fix**: %s\n", fix)
 		}
 
-		fmt.Fprintf(sb, "- **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/%s/README.md\n", e.RuleID)
+		ref := e.Ref
+		if ref == "" {
+			ref = fmt.Sprintf("https://github.com/koki-develop/ghasec/blob/main/rules/%s/README.md", e.RuleID)
+		}
+		fmt.Fprintf(sb, "- **Ref**: %s\n", ref)
 	})
 }
 

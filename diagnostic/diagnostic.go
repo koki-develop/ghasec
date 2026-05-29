@@ -18,6 +18,11 @@ type Error struct {
 	// Fix overrides the rule-level Explainer.Fix() for this specific diagnostic.
 	// When non-empty, the markdown renderer uses this instead of the rule's Fix().
 	Fix string
+	// Ref overrides the default rule README URL for this specific diagnostic.
+	// When non-empty, renderers use this URL instead of the
+	// rules/<RuleID>/README.md default. Used by rules whose RuleID does not map
+	// to a repository README (e.g. shellcheck/SC2086 links to the shellcheck wiki).
+	Ref string
 }
 
 func (e *Error) Error() string { return e.Message }

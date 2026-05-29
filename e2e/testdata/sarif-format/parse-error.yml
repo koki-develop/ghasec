@@ -2,7 +2,6 @@ args: --format sarif
 workflows:
   - name: workflow.yml
     content: "on: push\n  bad: indent\n"
-
 expected:
   exit_code: 1
   stdout: |
@@ -105,6 +104,10 @@ expected:
                   "shortDescription": {
                     "text": "${{"{{" }} }} expressions interpolated into shell scripts or JavaScript can be manipulated by untrusted input (e.g., PR titles, issue bodies), enabling arbitrary code execution"
                   }
+                },
+                {
+                  "id": "shellcheck",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/shellcheck/README.md"
                 },
                 {
                   "id": "deprecated-commands",

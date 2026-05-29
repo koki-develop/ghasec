@@ -499,3 +499,55 @@ func TestJobMapping_Uses_LiteralBlockScalar(t *testing.T) {
 	require.True(t, found)
 	assert.Equal(t, "org/repo/.github/workflows/ci.yml@v1\n", ref.String())
 }
+
+func TestWorkflowMapping_DefaultsRunShell(t *testing.T) {
+	wf := parseWorkflow(t, "defaults:\n  run:\n    shell: bash\njobs: {}\n")
+	sh, ok := wf.DefaultsRunShell()
+	require.True(t, ok)
+	assert.Equal(t, "bash", sh)
+}
+
+func TestWorkflowMapping_DefaultsRunShell_Absent(t *testing.T) {
+	wf := parseWorkflow(t, "jobs: {}\n")
+	_, ok := wf.DefaultsRunShell()
+	assert.False(t, ok)
+}
+
+func TestJobMapping_EachStepAndAccessors(t *testing.T) {
+	src := `jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - run: echo a
+      - run: echo b
+`
+	wf := parseWorkflow(t, src)
+	var jobCount int
+	wf.EachJob(func(_ *token.Token, job workflow.JobMapping) {
+		jobCount++
+
+		sh, ok := job.DefaultsRunShell()
+		require.True(t, ok)
+		assert.Equal(t, "sh", sh)
+
+		runsOn := job.RunsOnNode()
+		require.NotNil(t, runsOn)
+		assert.Equal(t, "ubuntu-latest", runsOn.GetToken().Value)
+
+		var steps int
+		job.EachStep(func(_ workflow.StepMapping) { steps++ })
+		assert.Equal(t, 2, steps)
+	})
+	assert.Equal(t, 1, jobCount)
+}
+
+func TestJobMapping_RunsOnNode_Absent(t *testing.T) {
+	src := "jobs:\n  build:\n    steps: []\n"
+	wf := parseWorkflow(t, src)
+	wf.EachJob(func(_ *token.Token, job workflow.JobMapping) {
+		assert.Nil(t, job.RunsOnNode())
+	})
+}

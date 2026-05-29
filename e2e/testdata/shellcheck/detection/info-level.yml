@@ -1,0 +1,30 @@
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          steps:
+            - run: |
+                read line
+                echo "$line"
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/ci.yml:9:11
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: |
+    9 |           read line
+      |           ^^^^ read without -r will mangle backslashes. (shellcheck/SC2162)
+    ...
+      Ref: https://www.shellcheck.net/wiki/SC2162
+
+    ✗ 1 error found in 1 of 1 file

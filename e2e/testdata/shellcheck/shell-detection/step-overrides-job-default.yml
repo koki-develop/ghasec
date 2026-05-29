@@ -1,0 +1,20 @@
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          defaults:
+            run:
+              shell: bash
+          steps:
+            - run: echo $x
+              shell: pwsh
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

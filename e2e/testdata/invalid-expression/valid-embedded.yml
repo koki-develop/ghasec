@@ -9,9 +9,18 @@ workflows:
           timeout-minutes: 10
           steps:
             - run: echo ${{ github.actor }} done # ghasec-ignore:script-injection
-
 expected:
-  exit_code: 0
+  exit_code: 1
   stdout: ""
   stderr: |
-    ✓ 1 file checked, no errors found
+    --> {{.Dir}}/workflow.yml:8:39
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: echo ${{"{{" }} github.actor }} done # ghasec-ignore:script-injection
+      |                                       ^ Use semicolon or linefeed before 'done' (or quote to make it literal). (shellcheck/SC1010)
+      Ref: https://www.shellcheck.net/wiki/SC1010
+
+    ✗ 1 error found in 1 of 1 file

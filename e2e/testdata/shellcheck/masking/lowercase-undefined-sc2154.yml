@@ -1,0 +1,26 @@
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          steps:
+            - run: echo "$undefined_local"
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/ci.yml:8:20
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: echo "$undefined_local"
+      |                    ^^^^^^^^^^^^^^^^ undefined_local is referenced but not assigned. (shellcheck/SC2154)
+      Ref: https://www.shellcheck.net/wiki/SC2154
+
+    ✗ 1 error found in 1 of 1 file

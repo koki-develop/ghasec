@@ -3,7 +3,9 @@ package analyzer
 import (
 	"cmp"
 	"fmt"
+	"regexp"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/goccy/go-yaml/ast"
@@ -127,7 +129,9 @@ func runRules[R rules.Rule](a *Analyzer, ruleList []R, checkFn func(R) []*diagno
 	for _, r := range ruleList {
 		if r.Required() {
 			for _, e := range checkFn(r) {
-				e.RuleID = r.ID()
+				if e.RuleID == "" {
+					e.RuleID = r.ID()
+				}
 				requiredErrs = append(requiredErrs, e)
 			}
 			a.completeRule()
@@ -155,7 +159,9 @@ func runRules[R rules.Rule](a *Analyzer, ruleList []R, checkFn func(R) []*diagno
 			defer func() { <-sem }()
 			var errs []*diagnostic.Error
 			for _, e := range checkFn(r) {
-				e.RuleID = r.ID()
+				if e.RuleID == "" {
+					e.RuleID = r.ID()
+				}
 				errs = append(errs, e)
 			}
 			ruleResults[i] = errs
@@ -236,6 +242,33 @@ func checkRequiredIgnores(directives []*ignore.Directive, requiredIDs map[string
 	return errs
 }
 
+// shellcheckCodeRe matches per-code shellcheck rule IDs (e.g. "shellcheck/SC2086").
+// These IDs are generated at analysis time and are not part of the static rule
+// registry, so they must be recognized as known IDs explicitly.
+var shellcheckCodeRe = regexp.MustCompile(`^shellcheck/SC\d+$`)
+
+// isKnownRuleID reports whether id is a recognized rule ID, either a statically
+// registered rule or a dynamically generated shellcheck per-code ID.
+func isKnownRuleID(id string, knownIDs map[string]bool) bool {
+	if knownIDs[id] {
+		return true
+	}
+	return shellcheckCodeRe.MatchString(id)
+}
+
+// matchDirectiveRuleID returns the directive rule ID that matches diagID, either
+// exactly or as a namespace prefix (e.g. directive "shellcheck" matches
+// diagnostic "shellcheck/SC2086"). The returned ID is the directive's own ID,
+// which callers use for MarkUsed.
+func matchDirectiveRuleID(directiveIDs []string, diagID string) (string, bool) {
+	for _, id := range directiveIDs {
+		if id == diagID || strings.HasPrefix(diagID, id+"/") {
+			return id, true
+		}
+	}
+	return "", false
+}
+
 func filterDiagnostics(directives []*ignore.Directive, errs []*diagnostic.Error) []*diagnostic.Error {
 	var filtered []*diagnostic.Error
 	for _, e := range errs {
@@ -248,8 +281,19 @@ func filterDiagnostics(directives []*ignore.Directive, errs []*diagnostic.Error)
 			if d.Line != e.Token.Position.Line {
 				continue
 			}
-			if len(d.RuleIDs) == 0 || slices.Contains(d.RuleIDs, e.RuleID) {
+			if len(d.RuleIDs) == 0 {
+				// All-rules directive: any usage marks it used.
 				d.MarkUsed(e.RuleID)
+				suppressed = true
+				break
+			}
+			// Per-rule directive: match exactly or as a namespace prefix
+			// (e.g. directive "shellcheck" matches diagnostic
+			// "shellcheck/SC2086"). MarkUsed must record the directive's own
+			// ID, not the diagnostic ID, so unused-ignore detection (which
+			// checks IsUsed against d.RuleIDs) works correctly.
+			if matchedID, ok := matchDirectiveRuleID(d.RuleIDs, e.RuleID); ok {
+				d.MarkUsed(matchedID)
 				suppressed = true
 				break
 			}
@@ -282,7 +326,7 @@ func unusedIgnoreErrors(directives []*ignore.Directive, knownIDs map[string]bool
 				continue
 			}
 			msg := fmt.Sprintf("unused ignore directive for %q", id)
-			if !knownIDs[id] {
+			if !isKnownRuleID(id, knownIDs) {
 				msg = fmt.Sprintf("unknown rule %q", id)
 			}
 			errs = append(errs, &diagnostic.Error{

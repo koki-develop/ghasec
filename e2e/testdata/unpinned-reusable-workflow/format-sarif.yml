@@ -7,7 +7,6 @@ workflows:
       jobs:
         call:
           uses: org/repo/.github/workflows/ci.yml@v1.0.0
-
 expected:
   exit_code: 1
   stdout: |
@@ -110,6 +109,10 @@ expected:
                   "shortDescription": {
                     "text": "${{"{{" }} }} expressions interpolated into shell scripts or JavaScript can be manipulated by untrusted input (e.g., PR titles, issue bodies), enabling arbitrary code execution"
                   }
+                },
+                {
+                  "id": "shellcheck",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/shellcheck/README.md"
                 },
                 {
                   "id": "deprecated-commands",

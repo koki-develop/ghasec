@@ -116,6 +116,10 @@ expected:
                   }
                 },
                 {
+                  "id": "shellcheck",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/shellcheck/README.md"
+                },
+                {
                   "id": "deprecated-commands",
                   "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/deprecated-commands/README.md",
                   "shortDescription": {
@@ -184,7 +188,7 @@ expected:
           "results": [
             {
               "ruleId": "unpinned-transitive-action",
-              "ruleIndex": 23,
+              "ruleIndex": 24,
               "level": "error",
               "message": {
                 "text": "\"owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" uses unpinned action \"other/action-b@v2\""
