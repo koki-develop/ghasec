@@ -9,7 +9,6 @@ workflows:
           timeout-minutes: 10
           steps:
             - run: echo "::set-output name=x::y"; echo done
-
 expected:
   exit_code: 1
   stdout: ""
@@ -24,4 +23,14 @@ expected:
       |                    ^^^^^^^^^^^^^^^^^^^^^^ deprecated workflow command "::set-output" must not be used (deprecated-commands)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/deprecated-commands/README.md
 
-    ✗ 1 error found in 1 of 1 file
+    --> {{.Dir}}/workflow.yml:8:50
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: echo "::set-output name=x::y"; echo done
+      |                                                  ^ Use semicolon or linefeed before 'done' (or quote to make it literal). (shellcheck/SC1010)
+      Ref: https://www.shellcheck.net/wiki/SC1010
+
+    ✗ 2 errors found in 1 of 1 file

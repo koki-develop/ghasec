@@ -1,0 +1,28 @@
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          steps:
+            - run: echo $x
+              shell: bash -e {0}
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/ci.yml:8:19
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: echo $x
+      |                   ^^ Double quote to prevent globbing and word splitting. (shellcheck/SC2086)
+    ...
+      Ref: https://www.shellcheck.net/wiki/SC2086
+
+    ✗ 1 error found in 1 of 1 file

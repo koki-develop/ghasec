@@ -1,0 +1,31 @@
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          steps:
+            - run: |
+                echo "first line"
+                echo "second"
+                cd /var/tmp
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/ci.yml:11:11
+    ...
+     3 | jobs:
+     4 |   build:
+    ...
+     7 |     steps:
+     8 |       - run: |
+    ...
+    11 |           cd /var/tmp
+       |           ^^^^^^^^^^^ Use 'cd ... || exit' or 'cd ... || return' in case cd fails. (shellcheck/SC2164)
+      Ref: https://www.shellcheck.net/wiki/SC2164
+
+    ✗ 1 error found in 1 of 1 file

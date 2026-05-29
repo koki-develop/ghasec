@@ -38,6 +38,7 @@ import (
 	missingsharefcomment "github.com/koki-develop/ghasec/rules/missing-sha-ref-comment"
 	scriptinjection "github.com/koki-develop/ghasec/rules/script-injection"
 	secretsinherit "github.com/koki-develop/ghasec/rules/secrets-inherit"
+	shellcheckrule "github.com/koki-develop/ghasec/rules/shellcheck"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	unpinnedcontainer "github.com/koki-develop/ghasec/rules/unpinned-container"
 	unpinnedreusableworkflow "github.com/koki-develop/ghasec/rules/unpinned-reusable-workflow"
@@ -106,7 +107,7 @@ var rootCmd = &cobra.Command{
 			return errors.New("no files found")
 		}
 
-		activeRules, skippedOnline, ghClient := buildRules(online)
+		activeRules, skippedOnline, ghClient, shellcheckRule := buildRules(online)
 		if _, disabled := os.LookupEnv("GHASEC_DISABLE_OFFLINE_WARNING"); disabled {
 			skippedOnline = 0
 		}
@@ -233,6 +234,12 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
+		if !shellcheckRule.Runner.Available() && shellcheckRule.SawEligibleStep() {
+			if err := rdr.PrintHint("install shellcheck to lint shell scripts: https://www.shellcheck.net"); err != nil {
+				return err
+			}
+		}
+
 		if updateCh != nil && format == FormatDefault {
 			select {
 			case res := <-updateCh:
@@ -251,8 +258,9 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, client *ghclient.Client) {
+func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, client *ghclient.Client, shellcheckRule *shellcheckrule.Rule) {
 	client = newGitHubClient()
+	shellcheckRule = &shellcheckrule.Rule{Runner: shellcheckrule.NewExecRunner()}
 	all := []rules.Rule{
 		&invalidworkflow.Rule{},
 		&invalidaction.Rule{},
@@ -267,6 +275,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&jobtimeoutminutes.Rule{},
 		&secretsinherit.Rule{},
 		&scriptinjection.Rule{},
+		shellcheckRule,
 		&deprecatedcommands.Rule{},
 		&missingsharefcomment.Rule{},
 		&actorbotcheck.Rule{},

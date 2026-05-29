@@ -46,6 +46,7 @@ expected:
 ```
 
 - `args` (optional): space-separated CLI flags passed to ghasec (e.g. `--online`, `--format markdown`). Parsed with `strings.Fields`.
+- `env` (optional): map of environment variables set for the ghasec process, applied last so they override defaults (e.g. `PATH: ""` to hide the `shellcheck` binary for missing-binary tests).
 - `workflows`: list of objects with `name` (filename) and `content` (workflow YAML as block scalar). Files are written to `{{.Dir}}/`.
 - `actions`: list of objects with `name` (filename, e.g. `action.yml`) and `content` (action YAML as block scalar). Files are written to the temp directory root (`{{.Dir}}/`), not `.github/workflows/`.
 - `expected`: exit_code, stdout, stderr.
@@ -55,3 +56,7 @@ expected:
 - The test runner sets `NO_COLOR=` to disable ANSI codes. All expected output is plain text.
 - Valid workflow files (no errors) produce no output entries.
 - The summary line shows both the error file count and the total files processed (e.g., "1 of 3 files").
+
+## shellcheck cases
+
+Cases under `testdata/shellcheck/` exercise the `shellcheck` rule and therefore run the real `shellcheck` binary. Their expected output depends on the installed ShellCheck version (message text and codes can change between versions); CI should pin the version. To regenerate the `expected:` blocks after a ShellCheck upgrade — or when adding/editing a case's inputs — run `go run ./e2e/_gen` (a dev aid under the Go-ignored `e2e/_gen` directory). It runs ghasec against each case's inputs exactly as the runner does and rewrites only the `expected:` block. Pass explicit file paths to regenerate specific (offline) files, e.g. when a new rule changes existing SARIF `driver.rules` output.

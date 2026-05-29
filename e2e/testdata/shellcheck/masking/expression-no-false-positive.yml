@@ -1,0 +1,19 @@
+# Masking ${{ }} with a variable placeholder must not trigger constant-folding
+# false positives (SC2050 "expression is constant"). script-injection is ignored
+# to isolate shellcheck behavior.
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          steps:
+            - run: if [ "${{ github.event_name }}" = push ]; then echo hi; fi # ghasec-ignore:script-injection
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

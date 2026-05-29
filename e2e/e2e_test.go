@@ -64,10 +64,11 @@ type expected struct {
 }
 
 type testCase struct {
-	Args      string         `yaml:"args"`
-	Workflows []testWorkflow `yaml:"workflows"`
-	Actions   []testAction   `yaml:"actions"`
-	Expected  expected       `yaml:"expected"`
+	Args      string            `yaml:"args"`
+	Env       map[string]string `yaml:"env"`
+	Workflows []testWorkflow    `yaml:"workflows"`
+	Actions   []testAction      `yaml:"actions"`
+	Expected  expected          `yaml:"expected"`
 }
 
 type testAction struct {
@@ -611,6 +612,20 @@ func runTestCase(t *testing.T, name string) {
 		extraEnv = append(extraEnv, "GHASEC_DISABLE_OFFLINE_WARNING=")
 	}
 	extraEnv = append(extraEnv, "GHASEC_DISABLE_UPDATE_CHECK=")
+
+	// Per-case environment overrides from the test YAML (e.g. PATH="" to hide
+	// the shellcheck binary). Applied last so they win. Keys are sorted for
+	// deterministic ordering.
+	if len(tc.Env) > 0 {
+		keys := make([]string, 0, len(tc.Env))
+		for k := range tc.Env {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			extraEnv = append(extraEnv, k+"="+tc.Env[k])
+		}
+	}
 
 	stdout, stderr, exitCode := runGhasec(t, files, extraArgs, extraEnv...)
 

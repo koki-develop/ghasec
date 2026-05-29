@@ -125,6 +125,76 @@ func (w WorkflowMapping) EachJob(fn func(jobKeyToken *token.Token, job JobMappin
 // JobMapping represents a job-level mapping.
 type JobMapping struct{ Mapping }
 
+// EachStep iterates over the steps in this job's "steps" sequence.
+// It silently skips malformed sections (missing steps, non-mapping entries),
+// consistent with the other Each* methods.
+func (j JobMapping) EachStep(fn func(step StepMapping)) {
+	stepsKV := j.FindKey("steps")
+	if stepsKV == nil {
+		return
+	}
+	stepsSeq, ok := unwrapNode(stepsKV.Value).(*ast.SequenceNode)
+	if !ok {
+		return
+	}
+	for _, stepNode := range stepsSeq.Values {
+		stepMapping, ok := unwrapNode(stepNode).(*ast.MappingNode)
+		if !ok {
+			continue
+		}
+		fn(StepMapping{Mapping: Mapping{stepMapping}})
+	}
+}
+
+// RunsOnNode returns the value node of the job's "runs-on" key (anchors
+// unwrapped), or nil if absent.
+func (j JobMapping) RunsOnNode() ast.Node {
+	kv := j.FindKey("runs-on")
+	if kv == nil {
+		return nil
+	}
+	return unwrapNode(kv.Value)
+}
+
+// DefaultsRunShell returns the value of the mapping's defaults.run.shell, and
+// whether it is present. It works at both the workflow and job level since the
+// structure is identical.
+func (m Mapping) DefaultsRunShell() (string, bool) {
+	defaultsKV := m.FindKey("defaults")
+	if defaultsKV == nil {
+		return "", false
+	}
+	defaultsMap, ok := unwrapNode(defaultsKV.Value).(*ast.MappingNode)
+	if !ok {
+		return "", false
+	}
+	runKV := Mapping{defaultsMap}.FindKey("run")
+	if runKV == nil {
+		return "", false
+	}
+	runMap, ok := unwrapNode(runKV.Value).(*ast.MappingNode)
+	if !ok {
+		return "", false
+	}
+	shellKV := Mapping{runMap}.FindKey("shell")
+	if shellKV == nil {
+		return "", false
+	}
+	return scalarString(unwrapNode(shellKV.Value))
+}
+
+// scalarString extracts a plain string value from a string or literal scalar
+// node. Returns ("", false) for any other node type.
+func scalarString(node ast.Node) (string, bool) {
+	switch v := node.(type) {
+	case *ast.StringNode:
+		return v.Value, true
+	case *ast.LiteralNode:
+		return v.Value.Value, true
+	}
+	return "", false
+}
+
 // Uses extracts the ActionRef from the job's "uses" key (used for reusable
 // workflow references). Returns (ActionRef, false) if the job has no "uses"
 // key or the value is not a string/literal node.
@@ -153,21 +223,7 @@ type StepMapping struct {
 // which gates all non-required rules.
 func (w WorkflowMapping) EachStep(fn func(step StepMapping)) {
 	w.EachJob(func(_ *token.Token, job JobMapping) {
-		stepsKV := job.FindKey("steps")
-		if stepsKV == nil {
-			return
-		}
-		stepsSeq, ok := unwrapNode(stepsKV.Value).(*ast.SequenceNode)
-		if !ok {
-			return
-		}
-		for _, stepNode := range stepsSeq.Values {
-			stepMapping, ok := unwrapNode(stepNode).(*ast.MappingNode)
-			if !ok {
-				continue
-			}
-			fn(StepMapping{Mapping: Mapping{stepMapping}})
-		}
+		job.EachStep(fn)
 	})
 }
 

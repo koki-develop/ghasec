@@ -1,0 +1,42 @@
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          steps:
+            - run: |
+                echo "${{ inputs.メッセージ }}"
+                cd /tmp
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/ci.yml:9:17
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: |
+    9 |           echo "${{"{{" }} inputs.メッセージ }}"
+      |                 ^^^^^^^^^^^^^^^^^^^^^^^^ "run" must not contain expressions; use environment variables instead (script-injection)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/script-injection/README.md
+
+    --> {{.Dir}}/ci.yml:10:11
+    ...
+     3 | jobs:
+     4 |   build:
+    ...
+     7 |     steps:
+     8 |       - run: |
+    ...
+    10 |           cd /tmp
+       |           ^^^^^^^ Use 'cd ... || exit' or 'cd ... || return' in case cd fails. (shellcheck/SC2164)
+      Ref: https://www.shellcheck.net/wiki/SC2164
+
+    ✗ 2 errors found in 1 of 1 file

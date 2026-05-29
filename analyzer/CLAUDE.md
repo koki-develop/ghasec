@@ -16,7 +16,9 @@
 The analyzer centralizes all `# ghasec-ignore` directive processing — individual rules do not handle ignore directives.
 
 - Directives are collected by walking the token chain from the beginning of the file (`ignore.Collect`).
-- Non-required rule diagnostics are filtered against directives by matching line position and rule ID.
+- Non-required rule diagnostics are filtered against directives by matching line position and rule ID. Rule-ID matching supports namespace prefixes: a directive for `shellcheck` suppresses `shellcheck/SC2086` (see `matchDirectiveRuleID`). The directive's own ID — not the diagnostic's — is recorded as used, so unused-ignore detection stays correct.
+- Known-ID validation (`isKnownRuleID`) accepts statically registered rule IDs plus dynamically generated `shellcheck/SC<digits>` IDs, so an unused `# ghasec-ignore:shellcheck/SC9999` is reported as "unused" rather than "unknown rule".
+- A diagnostic that already has a non-empty `RuleID` is preserved; the analyzer only assigns `r.ID()` when `RuleID` is empty. This lets a single rule (shellcheck) emit per-code IDs.
 - Required rules cannot be ignored. Explicitly targeting a required rule by name produces an `unused-ignore` diagnostic with `"<id>" is a required rule and cannot be ignored`. All-rules directives (no rule IDs) silently skip required rules.
 - Unused directives and unknown rule IDs produce `unused-ignore` diagnostics.
 - `unused-ignore` is not a real `Rule` implementation — the analyzer sets it as a `RuleID` string directly.

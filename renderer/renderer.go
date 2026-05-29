@@ -63,7 +63,10 @@ func (r *DefaultRenderer) PrintDiagnosticError(path string, e *diagnostic.Error)
 	var ruleRef string
 	if e.RuleID != "" {
 		message = fmt.Sprintf("%s (%s)", e.Message, e.RuleID)
-		url := fmt.Sprintf("https://github.com/koki-develop/ghasec/blob/main/rules/%s/README.md", e.RuleID)
+		url := e.Ref
+		if url == "" {
+			url = fmt.Sprintf("https://github.com/koki-develop/ghasec/blob/main/rules/%s/README.md", e.RuleID)
+		}
 		ruleRef = fmt.Sprintf("  %s %s",
 			r.styled(annotate.ComposeStyles(annotate.Dim, annotate.Italic))("Ref:"),
 			r.styled(annotate.ComposeStyles(annotate.Dim, annotate.Italic))(url))

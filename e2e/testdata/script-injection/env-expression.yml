@@ -11,9 +11,19 @@ workflows:
             - run: echo $FOO
               env:
                 FOO: ${{ github.token }}
-
 expected:
-  exit_code: 0
+  exit_code: 1
   stdout: ""
   stderr: |
-    ✓ 1 file checked, no errors found
+    --> {{.Dir}}/workflow.yml:8:19
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: echo $FOO
+      |                   ^^^^ Double quote to prevent globbing and word splitting. (shellcheck/SC2086)
+    ...
+      Ref: https://www.shellcheck.net/wiki/SC2086
+
+    ✗ 1 error found in 1 of 1 file

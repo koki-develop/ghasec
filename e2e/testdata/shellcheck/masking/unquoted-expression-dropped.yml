@@ -1,0 +1,19 @@
+# An unquoted ${{ }} becomes the masked placeholder; the SC2086 shellcheck emits
+# on the placeholder itself lies entirely within the masked region and is
+# dropped, so no shellcheck finding remains.
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          steps:
+            - run: deploy ${{ inputs.target }} # ghasec-ignore:script-injection
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

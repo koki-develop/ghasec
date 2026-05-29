@@ -150,12 +150,33 @@ func (r *SARIFRenderer) PrintParseError(path string, err error) error {
 	return nil
 }
 
+// resolveRuleIndex returns the index of the descriptor for ruleID in
+// driver.Rules. Rules registered at construction time (NewSARIF) are found in
+// ruleMap. For rules whose IDs are only known at analysis time (e.g.
+// shellcheck/SC2086, generated per shellcheck code), a new reportingDescriptor
+// is appended on first encounter, using ref as its helpUri. This avoids the
+// zero-value pitfall where an unknown ruleID would silently map to index 0
+// (the synthetic parse-error descriptor).
+func (r *SARIFRenderer) resolveRuleIndex(ruleID, ref string) int {
+	if idx, ok := r.ruleMap[ruleID]; ok {
+		return idx
+	}
+	idx := len(r.driver.Rules)
+	desc := sarifReportingDescriptor{ID: ruleID}
+	if ref != "" {
+		desc.HelpURI = ref
+	}
+	r.driver.Rules = append(r.driver.Rules, desc)
+	r.ruleMap[ruleID] = idx
+	return idx
+}
+
 // PrintDiagnosticError buffers a diagnostic error as a SARIF result.
 func (r *SARIFRenderer) PrintDiagnosticError(path string, e *diagnostic.Error) error {
 	if !isValidToken(e.Token) {
 		return fmt.Errorf("diagnostic error without position for %s: %s", path, e.Message)
 	}
-	ruleIndex := r.ruleMap[e.RuleID]
+	ruleIndex := r.resolveRuleIndex(e.RuleID, e.Ref)
 	r.results = append(r.results, sarifResult{
 		RuleID:    e.RuleID,
 		RuleIndex: ruleIndex,

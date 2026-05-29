@@ -50,3 +50,4 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 
 - Tests use `github.com/stretchr/testify` (assert/require).
 - Supports `NO_COLOR` environment variable to disable ANSI styling ([no-color.org](https://no-color.org) compliant).
+- The `shellcheck` rule shells out to the external `shellcheck` binary (the only rule with an external dependency). It is enabled by default and skipped with a hint when the binary is absent. The `shellcheck` e2e tests require `shellcheck` installed; their expected output is version-sensitive (regenerate with `go run ./e2e/_gen`).

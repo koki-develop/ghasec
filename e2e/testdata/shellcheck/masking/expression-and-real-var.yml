@@ -1,0 +1,28 @@
+# A masked expression and a real unquoted lowercase variable on the same line:
+# the placeholder finding is dropped, the real $target findings are kept.
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          steps:
+            - run: deploy ${{ inputs.env }} $target # ghasec-ignore:script-injection
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/ci.yml:8:39
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - run: deploy ${{"{{" }} inputs.env }} $target # ghasec-ignore:script-injection
+      |                                       ^^^^^^^ Double quote to prevent globbing and word splitting. (shellcheck/SC2086)
+      Ref: https://www.shellcheck.net/wiki/SC2086
+
+    ✗ 1 error found in 1 of 1 file

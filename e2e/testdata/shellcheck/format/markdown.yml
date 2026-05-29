@@ -1,0 +1,29 @@
+args: --format markdown
+workflows:
+  - name: ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 5
+          steps:
+            - run: echo $x
+expected:
+  exit_code: 1
+  stdout: |
+    ## {{.Dir}}/ci.yml:8:19
+
+    ```yaml
+          - run: echo $x
+    ```
+
+    - **Rule**: shellcheck/SC2086
+    - **Message**: Double quote to prevent globbing and word splitting.
+    - **Ref**: https://www.shellcheck.net/wiki/SC2086
+
+    ---
+
+    1 error found in 1 of 1 file.
+  stderr: ""

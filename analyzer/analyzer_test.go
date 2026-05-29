@@ -185,6 +185,67 @@ func TestAnalyzeWorkflow_AllRulesIgnore_SkipsRequiredSilently(t *testing.T) {
 	assert.Equal(t, "req", errs[0].RuleID)
 }
 
+func TestAnalyzeWorkflow_PreservesPresetRuleID(t *testing.T) {
+	// A rule that sets RuleID itself (e.g. shellcheck emitting per-code IDs)
+	// must not be overwritten with r.ID() by the analyzer.
+	scRule := &mockWorkflowRule{id: "shellcheck", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{{
+			Token:   mapping.GetToken(),
+			RuleID:  "shellcheck/SC2086",
+			Message: "Double quote to prevent globbing and word splitting.",
+		}}
+	}}
+	a := analyzer.New(1, scRule)
+	f := parseYAML(t, "key: value")
+	errs := a.AnalyzeWorkflow(f)
+	require.Len(t, errs, 1)
+	assert.Equal(t, "shellcheck/SC2086", errs[0].RuleID)
+}
+
+func TestAnalyzeWorkflow_IgnoreNamespacePrefixSuppresses(t *testing.T) {
+	// "# ghasec-ignore:shellcheck" must suppress a "shellcheck/SC2086"
+	// diagnostic via namespace prefix matching, with no false unused-ignore.
+	scRule := &mockWorkflowRule{id: "shellcheck", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		return []*diagnostic.Error{{
+			Token:   mapping.GetToken(),
+			RuleID:  "shellcheck/SC2086",
+			Message: "quote it",
+		}}
+	}}
+	a := analyzer.New(1, scRule)
+	f := parseYAML(t, "key: value # ghasec-ignore:shellcheck")
+	errs := a.AnalyzeWorkflow(f)
+	assert.Empty(t, errs)
+}
+
+func TestAnalyzeWorkflow_IgnoreSpecificShellcheckCode(t *testing.T) {
+	// "# ghasec-ignore:shellcheck/SC2086" suppresses that code but leaves
+	// another shellcheck code on the same line reported.
+	scRule := &mockWorkflowRule{id: "shellcheck", required: false, check: func(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+		tk := mapping.GetToken()
+		return []*diagnostic.Error{
+			{Token: tk, RuleID: "shellcheck/SC2086", Message: "quote it"},
+			{Token: tk, RuleID: "shellcheck/SC2046", Message: "quote subst"},
+		}
+	}}
+	a := analyzer.New(1, scRule)
+	f := parseYAML(t, "key: value # ghasec-ignore:shellcheck/SC2086")
+	errs := a.AnalyzeWorkflow(f)
+	require.Len(t, errs, 1)
+	assert.Equal(t, "shellcheck/SC2046", errs[0].RuleID)
+}
+
+func TestAnalyzeWorkflow_UnusedIgnore_ShellcheckCodeIsKnown(t *testing.T) {
+	// An unused "# ghasec-ignore:shellcheck/SC9999" must be reported as
+	// "unused" (a syntactically valid per-code ID), not "unknown rule".
+	a := analyzer.New(1)
+	f := parseYAML(t, "key: value # ghasec-ignore:shellcheck/SC9999")
+	errs := a.AnalyzeWorkflow(f)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, `unused ignore directive for "shellcheck/SC9999"`)
+	assert.Equal(t, "unused-ignore", errs[0].RuleID)
+}
+
 func TestAnalyzeWorkflow_UnusedIgnore_UnknownRule(t *testing.T) {
 	a := analyzer.New(1)
 	f := parseYAML(t, "key: value # ghasec-ignore:nonexistent")

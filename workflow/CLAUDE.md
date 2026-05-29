@@ -9,7 +9,8 @@
 - `Mapping` — wraps `*ast.MappingNode`. Provides `FindKey(key)` for key lookup and `FirstToken()` to get the first non-comment token in the file.
 - `WorkflowMapping` — embeds `Mapping`. Represents the top-level workflow document. Provides `EachJob(fn)` to iterate over all jobs and `EachStep(fn)` to iterate over all steps across all jobs. `EachStep` delegates to `EachJob` internally.
 - `ActionMapping` — embeds `Mapping`. Represents the top-level action metadata document. Provides `EachStep(fn)` to iterate over steps in a composite action's `runs.steps`.
-- `JobMapping` — embeds `Mapping`. Represents a job-level mapping. Provides `Uses()` to extract `ActionRef` from a job-level `uses:` key (reusable workflow references).
+- `JobMapping` — embeds `Mapping`. Represents a job-level mapping. Provides `Uses()` to extract `ActionRef` from a job-level `uses:` key (reusable workflow references), `EachStep(fn)` to iterate the job's own steps (used when per-job context such as `defaults`/`runs-on` is needed — `WorkflowMapping.EachStep` discards it), and `RunsOnNode()` to get the `runs-on` value node.
+- `Mapping.DefaultsRunShell()` returns `defaults.run.shell` and works at both workflow and job level (identical structure). Used by the shellcheck rule for shell resolution.
 - `StepMapping` — embeds `Mapping`. Represents a step-level mapping. Provides `Uses()` to extract `ActionRef` and `With()` to access the `with` mapping.
 
 ## ActionRef
