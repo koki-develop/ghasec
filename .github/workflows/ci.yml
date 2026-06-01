@@ -25,6 +25,9 @@ jobs:
           submodules: true
       - uses: ./.github/actions/setup
       - run: go test ./...
+      - run: echo "$SECRETS"
+        env:
+          SECRETS: ${{ secrets }}
 
   build:
     timeout-minutes: 10

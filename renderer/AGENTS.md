@@ -1,4 +1,4 @@
-# renderer/CLAUDE.md
+# renderer/AGENTS.md
 
 ## Overview
 

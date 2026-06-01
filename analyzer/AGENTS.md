@@ -1,4 +1,4 @@
-# analyzer/CLAUDE.md
+# analyzer/AGENTS.md
 
 ## Overview
 

@@ -174,7 +174,7 @@ Create `rules/<rule-id>/README.md` following the existing pattern:
 
 ## Phase 4: E2E Test Updates
 
-See `e2e/CLAUDE.md` for the test directory structure and `expected.yml` format.
+See `e2e/AGENTS.md` for the test directory structure and `expected.yml` format.
 
 ### Part A: Update existing E2E tests
 
@@ -223,7 +223,7 @@ Before writing test files, enumerate the full set of scenarios the rule needs to
 
 Each scenario gets its own `.yml` file under `e2e/testdata/<rule-id>/`. Use descriptive filenames that make the test's purpose obvious at a glance (e.g., `write-all.yml`, `scoped-permissions.yml`, `ignore-inline.yml`, `multiple-jobs.yml`, `empty-job-permissions.yml`).
 
-Follow the format in `e2e/CLAUDE.md`:
+Follow the format in `e2e/AGENTS.md`:
 
 ```yaml
 workflows:
@@ -266,7 +266,7 @@ Before considering E2E tests complete, verify you have test cases for:
 
 Update these files:
 
-1. **`rules/CLAUDE.md`** — Add entry to "Existing Rules" section
+1. **`rules/AGENTS.md`** — Add entry to "Existing Rules" section
 2. **`rules/README.md`** — Add row to the rules index table
 
 ## Phase 6: Final Verification
@@ -296,7 +296,7 @@ Use this to track progress:
 - [ ] New E2E test cases added (covering all enumerated scenarios)
 - [ ] E2E coverage checklist verified
 - [ ] All E2E tests passing
-- [ ] rules/CLAUDE.md updated
+- [ ] rules/AGENTS.md updated
 - [ ] rules/README.md updated
 - [ ] Full test suite passing
 - [ ] Binary builds successfully

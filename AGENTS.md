@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -37,14 +37,14 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 - `cmd/root.go` — CLI entry point (cobra). Orchestrates the full pipeline.
 - `cmd/gen/` — Code generator. Reads JSON Schema from SchemaStore submodule, emits Go validation code. Output: `rules/invalid-workflow/generated.go` and `rules/invalid-action/generated.go`.
 - `cmd/formula/` — Homebrew formula generator. Downloads release archives from GitHub, computes sha256, outputs `ghasec.rb` to stdout.
-- `analyzer/` — Rule execution and diagnostic filtering. See `analyzer/CLAUDE.md`.
-- `renderer/` — Diagnostic error rendering with source annotation. See `renderer/CLAUDE.md`.
-- `workflow/` — Typed AST wrappers for workflow/action navigation. See `workflow/CLAUDE.md`.
-- `expression/` — Lexer and parser for `${{ }}` expression syntax. See `expression/CLAUDE.md`.
+- `analyzer/` — Rule execution and diagnostic filtering. See `analyzer/AGENTS.md`.
+- `renderer/` — Diagnostic error rendering with source annotation. See `renderer/AGENTS.md`.
+- `workflow/` — Typed AST wrappers for workflow/action navigation. See `workflow/AGENTS.md`.
+- `expression/` — Lexer and parser for `${{ }}` expression syntax. See `expression/AGENTS.md`.
 - `progress/` — Single-line progress bar for TTY output. Ticker-based spinner animation, ANSI color support, terminal width adaptation.
 - `update/` — Version update checker. Queries GitHub Releases API, caches results locally, displays notification after lint output. All errors silently ignored.
-- `rules/` — Pluggable validation rules. See `rules/CLAUDE.md`.
-- `e2e/` — E2E tests. See `e2e/CLAUDE.md`.
+- `rules/` — Pluggable validation rules. See `rules/AGENTS.md`.
+- `e2e/` — E2E tests. See `e2e/AGENTS.md`.
 
 ## Key Design Decisions
 

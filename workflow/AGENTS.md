@@ -1,4 +1,4 @@
-# workflow/CLAUDE.md
+# workflow/AGENTS.md
 
 ## Overview
 

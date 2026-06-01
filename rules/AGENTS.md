@@ -1,4 +1,4 @@
-# rules/CLAUDE.md
+# rules/AGENTS.md
 
 ## Overview
 

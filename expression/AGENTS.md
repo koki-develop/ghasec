@@ -1,4 +1,4 @@
-# expression/CLAUDE.md
+# expression/AGENTS.md
 
 ## Overview
 
