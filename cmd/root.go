@@ -56,6 +56,7 @@ var (
 	online  bool
 	noColor bool
 	format  Format = FormatDefault
+	workdir string = "."
 )
 
 func init() {
@@ -63,6 +64,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&online, "online", false, "enable rules that require network access")
 	rootCmd.Flags().BoolVar(&noColor, "no-color", false, "disable colored output")
 	rootCmd.Flags().Var(&format, "format", `output format ("default", "github-actions", "markdown", or "sarif")`)
+	rootCmd.Flags().StringVar(&workdir, "workdir", ".", "working directory")
 }
 
 type classifiedFiles struct {
@@ -300,25 +302,29 @@ func resolveFiles(args []string) (classifiedFiles, error) {
 	if len(args) > 0 {
 		var cf classifiedFiles
 		for _, arg := range args {
-			info, err := os.Stat(arg)
+			path := arg
+			if !filepath.IsAbs(path) {
+				path = filepath.Join(workdir, path)
+			}
+			info, err := os.Stat(path)
 			if err != nil {
 				return classifiedFiles{}, err
 			}
 			if info.IsDir() {
-				return classifiedFiles{}, fmt.Errorf("%s is a directory; specify files directly", arg)
+				return classifiedFiles{}, fmt.Errorf("%s is a directory; specify files directly", path)
 			}
-			switch classifyFile(arg) {
+			switch classifyFile(path) {
 			case "action":
-				cf.Actions = append(cf.Actions, arg)
+				cf.Actions = append(cf.Actions, path)
 			default:
-				cf.Workflows = append(cf.Workflows, arg)
+				cf.Workflows = append(cf.Workflows, path)
 			}
 		}
 		sort.Strings(cf.Workflows)
 		sort.Strings(cf.Actions)
 		return cf, nil
 	}
-	res, err := discover.Discover(".")
+	res, err := discover.Discover(workdir)
 	if err != nil {
 		return classifiedFiles{}, err
 	}
