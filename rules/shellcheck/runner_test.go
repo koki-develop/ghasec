@@ -38,8 +38,10 @@ func TestExecRunner_Smoke(t *testing.T) {
 	if !r.Available() {
 		t.Skip("shellcheck not installed")
 	}
-	comments, err := r.Run(context.Background(), "bash", "echo $x\n")
+	batched, err := r.RunBatch(context.Background(), "bash", []string{"echo $x\n"})
 	require.NoError(t, err)
+	require.Len(t, batched, 1)
+	comments := batched[0]
 	// Unquoted $x yields SC2086. SC2154 (referenced but not assigned) must be
 	// excluded via -e, since Actions variables are defined outside the script.
 	var hasSC2086, hasSC2154 bool
@@ -55,9 +57,33 @@ func TestExecRunner_Smoke(t *testing.T) {
 	assert.False(t, hasSC2154, "SC2154 must be excluded, got %+v", comments)
 }
 
+// TestExecRunner_BatchDemux verifies that a multi-script batch invocation maps
+// findings back to the correct script index: only the first script has an
+// unquoted expansion (SC2086), the second is clean.
+func TestExecRunner_BatchDemux(t *testing.T) {
+	r := NewExecRunner()
+	if !r.Available() {
+		t.Skip("shellcheck not installed")
+	}
+	batched, err := r.RunBatch(context.Background(), "bash", []string{"echo $x\n", "echo hello\n"})
+	require.NoError(t, err)
+	require.Len(t, batched, 2)
+
+	var firstHasSC2086 bool
+	for _, c := range batched[0] {
+		if c.Code == 2086 {
+			firstHasSC2086 = true
+		}
+	}
+	assert.True(t, firstHasSC2086, "expected SC2086 in first script, got %+v", batched[0])
+	assert.Empty(t, batched[1], "clean second script must have no findings, got %+v", batched[1])
+}
+
 func TestExecRunner_Unavailable(t *testing.T) {
 	r := &execRunner{} // empty path
 	assert.False(t, r.Available())
 	_, err := r.Run(context.Background(), "bash", "echo x")
+	assert.ErrorIs(t, err, errUnavailable)
+	_, err = r.RunBatch(context.Background(), "bash", []string{"echo x"})
 	assert.ErrorIs(t, err, errUnavailable)
 }

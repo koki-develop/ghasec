@@ -14,9 +14,9 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"sync"
 	"sync/atomic"
 
+	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/rules"
@@ -97,34 +97,137 @@ func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 	return r.checkSteps(steps)
 }
 
-// checkSteps runs shellcheck on every collected step concurrently and returns
-// the merged diagnostics. Each step spawns an independent shellcheck process;
-// the global execSem caps total concurrency. Results are written to a
-// per-index slot so the final ordering is deterministic (and identical to the
-// previous serial implementation), which the analyzer then re-sorts by
-// position anyway.
+// preparedStep holds the masking result for a single analyzable run step, ready
+// to be linted by shellcheck and mapped back to YAML positions.
+type preparedStep struct {
+	node    ast.Node // the run value node, used to compute YAML span positions
+	value   string   // original run script
+	masked  string   // expression-masked script sent to shellcheck
+	regions []maskRegion
+	shell   string
+}
+
+// checkSteps lints every collected run step and returns the merged diagnostics.
+// Scripts are masked, grouped by shell, and handed to shellcheck in a single
+// batched invocation per shell (the -s dialect applies to the whole batch), so
+// the dominant per-process startup cost is paid once per file instead of once
+// per step. Results are written to a per-index slot so the final ordering is
+// deterministic (identical to the previous per-step implementation), which the
+// analyzer then re-sorts by position anyway.
 func (r *Rule) checkSteps(steps []shellStep) []*diagnostic.Error {
 	if len(steps) == 0 {
 		return nil
 	}
-	if len(steps) == 1 {
-		return r.checkRunStep(steps[0].step, steps[0].shell)
+
+	available := r.Runner.Available()
+	prepared := make([]*preparedStep, len(steps))
+	eligible := false
+	for i, s := range steps {
+		runKV := s.step.FindKey("run")
+		if runKV == nil {
+			continue
+		}
+		value := rules.StringValue(runKV.Value)
+		if value == "" {
+			continue
+		}
+		// An analyzable shell run step was found; it would have been linted had
+		// the binary been available.
+		eligible = true
+		if !available {
+			continue
+		}
+		masked, regions, malformed := maskExpressions(value)
+		if malformed {
+			// A malformed ${{ }} expression could not be masked; running
+			// shellcheck on the broken syntax would only produce noise. The
+			// malformed expression is reported by invalid-expression.
+			continue
+		}
+		prepared[i] = &preparedStep{
+			node:    runKV.Value,
+			value:   value,
+			masked:  masked,
+			regions: regions,
+			shell:   s.shell,
+		}
+	}
+
+	if !available {
+		if eligible {
+			r.sawEligibleStep.Store(true)
+		}
+		return nil
+	}
+
+	// Group prepared steps by shell, preserving original step indexes so results
+	// can be mapped back deterministically.
+	type group struct {
+		indexes []int
+		scripts []string
+	}
+	var shells []string
+	byShell := map[string]*group{}
+	for i, p := range prepared {
+		if p == nil {
+			continue
+		}
+		g := byShell[p.shell]
+		if g == nil {
+			g = &group{}
+			byShell[p.shell] = g
+			shells = append(shells, p.shell)
+		}
+		g.indexes = append(g.indexes, i)
+		g.scripts = append(g.scripts, p.masked)
 	}
 
 	perStep := make([][]*diagnostic.Error, len(steps))
-	var wg sync.WaitGroup
-	for i, s := range steps {
-		wg.Add(1)
-		go func(i int, s shellStep) {
-			defer wg.Done()
-			perStep[i] = r.checkRunStep(s.step, s.shell)
-		}(i, s)
+	for _, shell := range shells {
+		g := byShell[shell]
+		execSem <- struct{}{}
+		results, err := r.Runner.RunBatch(context.Background(), shell, g.scripts)
+		<-execSem
+		if err != nil {
+			// shellcheck could not process the batch; skip silently.
+			continue
+		}
+		for j, idx := range g.indexes {
+			if j >= len(results) {
+				continue
+			}
+			perStep[idx] = interpretComments(prepared[idx], results[j])
+		}
 	}
-	wg.Wait()
 
 	var errs []*diagnostic.Error
 	for _, e := range perStep {
 		errs = append(errs, e...)
+	}
+	return errs
+}
+
+// interpretComments maps shellcheck findings for a single masked script back to
+// YAML-positioned diagnostics, dropping style-level findings and findings that
+// fall entirely within masked expression placeholders.
+func interpretComments(p *preparedStep, comments []Comment) []*diagnostic.Error {
+	var errs []*diagnostic.Error
+	for _, c := range comments {
+		if c.Level == "style" {
+			// Defensive: -S info already excludes style.
+			continue
+		}
+		if isInsideMask(p.regions, c.Line, c.Column, c.EndColumn) {
+			// shellcheck commenting on synthesized placeholder text.
+			continue
+		}
+		tk := spanToken(p.node, p.value, p.masked, c.Line, c.Column, c.EndLine, c.EndColumn)
+		errs = append(errs, &diagnostic.Error{
+			Token:   tk,
+			RuleID:  fmt.Sprintf("shellcheck/SC%d", c.Code),
+			Ref:     fmt.Sprintf("https://www.shellcheck.net/wiki/SC%d", c.Code),
+			Message: c.Message,
+		})
 	}
 	return errs
 }
@@ -147,56 +250,3 @@ func resolveEffectiveShell(step workflow.StepMapping, jobShell string, jobOK boo
 	return "", false
 }
 
-// checkRunStep masks expressions, runs shellcheck, drops findings inside masked
-// regions, and maps the rest back to YAML positions.
-func (r *Rule) checkRunStep(step workflow.StepMapping, shell string) []*diagnostic.Error {
-	runKV := step.FindKey("run")
-	if runKV == nil {
-		return nil
-	}
-	value := rules.StringValue(runKV.Value)
-	if value == "" {
-		return nil
-	}
-
-	// At this point the step is an analyzable shell run step.
-	if !r.Runner.Available() {
-		r.sawEligibleStep.Store(true)
-		return nil
-	}
-
-	masked, regions, malformed := maskExpressions(value)
-	if malformed {
-		// The run contains a malformed ${{ }} expression that could not be
-		// masked; running shellcheck on the broken syntax would only produce
-		// noise. The malformed expression is reported by invalid-expression.
-		return nil
-	}
-	execSem <- struct{}{}
-	comments, err := r.Runner.Run(context.Background(), shell, masked)
-	<-execSem
-	if err != nil {
-		// shellcheck could not process the input; skip silently.
-		return nil
-	}
-
-	var errs []*diagnostic.Error
-	for _, c := range comments {
-		if c.Level == "style" {
-			// Defensive: -S info already excludes style.
-			continue
-		}
-		if isInsideMask(regions, c.Line, c.Column, c.EndColumn) {
-			// shellcheck commenting on synthesized placeholder text.
-			continue
-		}
-		tk := spanToken(runKV.Value, value, masked, c.Line, c.Column, c.EndLine, c.EndColumn)
-		errs = append(errs, &diagnostic.Error{
-			Token:   tk,
-			RuleID:  fmt.Sprintf("shellcheck/SC%d", c.Code),
-			Ref:     fmt.Sprintf("https://www.shellcheck.net/wiki/SC%d", c.Code),
-			Message: c.Message,
-		})
-	}
-	return errs
-}

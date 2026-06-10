@@ -21,11 +21,17 @@ type mockRunner struct {
 }
 
 func (m *mockRunner) Available() bool { return m.available }
-func (m *mockRunner) Run(_ context.Context, shell, script string) ([]Comment, error) {
+func (m *mockRunner) RunBatch(_ context.Context, shell string, scripts []string) ([][]Comment, error) {
 	m.calls++
 	m.lastShell = shell
-	m.lastScript = script
-	return m.comments, nil
+	if len(scripts) > 0 {
+		m.lastScript = scripts[len(scripts)-1]
+	}
+	out := make([][]Comment, len(scripts))
+	for i := range scripts {
+		out[i] = m.comments
+	}
+	return out, nil
 }
 
 func parseWorkflowMapping(t *testing.T, src string) workflow.WorkflowMapping {
