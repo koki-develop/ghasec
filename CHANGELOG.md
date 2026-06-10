@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/koki-develop/ghasec/compare/v0.14.0...v0.15.0) (2026-06-10)
+
+
+### Features
+
+* add --workdir flag to specify working directory ([d70fcff](https://github.com/koki-develop/ghasec/commit/d70fcffcc088dcaf0eea81e802f6f06fb3d0e998))
+
 ## [0.14.0](https://github.com/koki-develop/ghasec/compare/v0.13.1...v0.14.0) (2026-05-29)
 
 
