@@ -13,6 +13,8 @@ package shellcheck
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"sync"
 	"sync/atomic"
 
 	"github.com/goccy/go-yaml/token"
@@ -22,6 +24,13 @@ import (
 )
 
 const id = "shellcheck"
+
+// execSem bounds the number of concurrent shellcheck subprocesses across the
+// whole process. Each run step spawns one shellcheck invocation; without a
+// global cap, parallelizing per-step (on top of file-level concurrency) could
+// fork hundreds of processes at once and thrash the scheduler. Sizing it to the
+// CPU count keeps the cores busy without oversubscription.
+var execSem = make(chan struct{}, max(runtime.NumCPU()*2, 1))
 
 // Rule runs shellcheck against run: steps. It implements both WorkflowRule and
 // ActionRule. All methods use pointer receivers because the rule carries a
@@ -44,10 +53,16 @@ func (r *Rule) Online() bool   { return false }
 // while the shellcheck binary was unavailable.
 func (r *Rule) SawEligibleStep() bool { return r.sawEligibleStep.Load() }
 
+// shellStep pairs an analyzable run step with its resolved shell.
+type shellStep struct {
+	step  workflow.StepMapping
+	shell string
+}
+
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
 	wfShell, wfOK := mapping.DefaultsRunShell()
 
-	var errs []*diagnostic.Error
+	var steps []shellStep
 	mapping.EachJob(func(_ *token.Token, job workflow.JobMapping) {
 		jobShell, jobOK := job.DefaultsRunShell()
 		runsOn := job.RunsOnNode()
@@ -57,14 +72,14 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 			if !target {
 				return
 			}
-			errs = append(errs, r.checkRunStep(step, sh)...)
+			steps = append(steps, shellStep{step: step, shell: sh})
 		})
 	})
-	return errs
+	return r.checkSteps(steps)
 }
 
 func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
-	var errs []*diagnostic.Error
+	var steps []shellStep
 	mapping.EachStep(func(step workflow.StepMapping) {
 		// Composite action run steps require an explicit shell (its absence is
 		// reported by invalid-action). No runs-on / defaults exist here, so there
@@ -77,8 +92,40 @@ func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 		if !ok {
 			return
 		}
-		errs = append(errs, r.checkRunStep(step, sh)...)
+		steps = append(steps, shellStep{step: step, shell: sh})
 	})
+	return r.checkSteps(steps)
+}
+
+// checkSteps runs shellcheck on every collected step concurrently and returns
+// the merged diagnostics. Each step spawns an independent shellcheck process;
+// the global execSem caps total concurrency. Results are written to a
+// per-index slot so the final ordering is deterministic (and identical to the
+// previous serial implementation), which the analyzer then re-sorts by
+// position anyway.
+func (r *Rule) checkSteps(steps []shellStep) []*diagnostic.Error {
+	if len(steps) == 0 {
+		return nil
+	}
+	if len(steps) == 1 {
+		return r.checkRunStep(steps[0].step, steps[0].shell)
+	}
+
+	perStep := make([][]*diagnostic.Error, len(steps))
+	var wg sync.WaitGroup
+	for i, s := range steps {
+		wg.Add(1)
+		go func(i int, s shellStep) {
+			defer wg.Done()
+			perStep[i] = r.checkRunStep(s.step, s.shell)
+		}(i, s)
+	}
+	wg.Wait()
+
+	var errs []*diagnostic.Error
+	for _, e := range perStep {
+		errs = append(errs, e...)
+	}
 	return errs
 }
 
@@ -125,7 +172,9 @@ func (r *Rule) checkRunStep(step workflow.StepMapping, shell string) []*diagnost
 		// noise. The malformed expression is reported by invalid-expression.
 		return nil
 	}
+	execSem <- struct{}{}
 	comments, err := r.Runner.Run(context.Background(), shell, masked)
+	<-execSem
 	if err != nil {
 		// shellcheck could not process the input; skip silently.
 		return nil

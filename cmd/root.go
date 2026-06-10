@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -50,7 +51,7 @@ import (
 
 var errValidationFailed = errors.New("validation errors found")
 
-const concurrency = 4
+var concurrency = max(runtime.NumCPU(), 4)
 
 var (
 	online  bool
