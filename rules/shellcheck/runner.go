@@ -9,8 +9,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // Comment is a single shellcheck finding (subset of the json1 schema).
@@ -76,6 +78,13 @@ func (r *execRunner) run(ctx context.Context, stdin string, args ...string) ([]C
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
 	}
+	return runCmd(cmd)
+}
+
+// runCmd runs a prepared shellcheck command, applying the shared exit-code
+// handling (exit 1 = issues found, normal; exit >= 2 = could not process) and
+// decoding its json1 output. The caller wires up Stdin/ExtraFiles as needed.
+func runCmd(cmd *exec.Cmd) ([]Comment, error) {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -103,11 +112,14 @@ func (r *execRunner) Run(ctx context.Context, shell, script string) ([]Comment, 
 	return r.run(ctx, script, args...)
 }
 
-// RunBatch analyzes multiple scripts. A single script takes the stdin fast path
-// (byte-for-byte identical to Run). Two or more scripts are written to temp
-// files and linted in one shellcheck invocation, so the per-process startup cost
-// is paid once instead of once per script; findings are demultiplexed back to
-// each script by the reported file path.
+// RunBatch analyzes multiple scripts in a single shellcheck invocation so the
+// per-process startup cost is paid once instead of once per script; findings are
+// demultiplexed back to each script by the reported file path.
+//
+// On platforms that support it (Unix), scripts are streamed through per-script
+// pipes exposed as /dev/fd/N, avoiding temp-file disk I/O. Elsewhere — or if the
+// pipe transport is unavailable at runtime (e.g. a minimal sandbox without
+// /dev/fd) — it falls back to temp files, so findings are never silently dropped.
 func (r *execRunner) RunBatch(ctx context.Context, shell string, scripts []string) ([][]Comment, error) {
 	if r.path == "" {
 		return nil, errUnavailable
@@ -123,21 +135,59 @@ func (r *execRunner) RunBatch(ctx context.Context, shell string, scripts []strin
 		return [][]Comment{cs}, nil
 	}
 
+	if pipeInputSupported {
+		out, err := r.runBatchPipes(ctx, shell, scripts)
+		if err == nil {
+			return out, nil
+		}
+		// The pipe transport failed (e.g. /dev/fd unavailable, or a genuine
+		// shellcheck error). Fall back to temp files so findings are never
+		// silently dropped; a genuine failure surfaces the same way there.
+	}
+	return r.runBatchTempFiles(ctx, shell, scripts)
+}
+
+// runBatchTempFiles writes each script to its own temp file and lints them all in
+// one shellcheck invocation. This is the portable path, used on platforms without
+// pipe support and as a fallback. Writes happen concurrently since they are
+// independent.
+func (r *execRunner) runBatchTempFiles(ctx context.Context, shell string, scripts []string) ([][]Comment, error) {
 	dir, err := os.MkdirTemp("", "ghasec-shellcheck-")
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	idxByPath := make(map[string]int, len(scripts))
 	args := append(append([]string{}, scArgs...), "-s", shell)
-	for i, s := range scripts {
+	for i := range scripts {
 		p := filepath.Join(dir, strconv.Itoa(i))
-		if err := os.WriteFile(p, []byte(s), 0o600); err != nil {
-			return nil, err
-		}
 		idxByPath[p] = i
 		args = append(args, p)
+	}
+
+	writeErr := make(chan error, 1)
+	var wwg sync.WaitGroup
+	writeSem := make(chan struct{}, max(runtime.NumCPU(), 1))
+	for i, s := range scripts {
+		wwg.Add(1)
+		go func(i int, s string) {
+			defer wwg.Done()
+			writeSem <- struct{}{}
+			defer func() { <-writeSem }()
+			if err := os.WriteFile(filepath.Join(dir, strconv.Itoa(i)), []byte(s), 0o600); err != nil {
+				select {
+				case writeErr <- err:
+				default:
+				}
+			}
+		}(i, s)
+	}
+	wwg.Wait()
+	select {
+	case err := <-writeErr:
+		return nil, err
+	default:
 	}
 
 	comments, err := r.run(ctx, "", args...)

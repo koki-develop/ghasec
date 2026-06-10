@@ -14,6 +14,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync"
 	"sync/atomic"
 
 	"github.com/goccy/go-yaml/ast"
@@ -43,7 +44,39 @@ type Rule struct {
 	// uses it to decide whether to show the "install shellcheck" hint. Accessed
 	// concurrently across files/jobs, hence atomic.
 	sawEligibleStep atomic.Bool
+
+	// cache holds precomputed diagnostics keyed by the run-value AST node,
+	// populated by Precompute. When precomputed is set, CheckWorkflow/CheckAction
+	// serve results from it instead of invoking shellcheck per file. This lets
+	// cmd/root batch every run step across all files into a few shellcheck
+	// invocations, paying the (dominant) process-startup cost a handful of times
+	// rather than once per file. A sync.Map is used because Precompute may run for
+	// the workflow and action batches concurrently (they write disjoint keys)
+	// while analysis reads it. When precomputed is unset (no Precompute call, e.g.
+	// unit tests), the per-file path is used as a fallback.
+	cache       sync.Map // map[ast.Node][]*diagnostic.Error
+	precomputed atomic.Bool
+	// ready is closed by MarkReady once every precompute batch has populated the
+	// cache. resultsFor (cache path) blocks on it, so analysis can begin — and run
+	// its many non-shellcheck rules — concurrently with the (slow) shellcheck
+	// precompute: only the shellcheck rule waits, the rest overlap. Set up by
+	// BeginPrecompute before analysis starts.
+	ready chan struct{}
 }
+
+// BeginPrecompute marks the rule as serving from the precompute cache and arms
+// the readiness gate. It must be called before any concurrent analysis and
+// before the precompute batches run, so resultsFor takes the cache path (and
+// waits for readiness) rather than the per-file fallback.
+func (r *Rule) BeginPrecompute() {
+	r.ready = make(chan struct{})
+	r.precomputed.Store(true)
+}
+
+// MarkReady signals that all precompute batches have finished populating the
+// cache, unblocking analysis reads. It must be called exactly once after the
+// last Precompute call.
+func (r *Rule) MarkReady() { close(r.ready) }
 
 func (r *Rule) ID() string     { return id }
 func (r *Rule) Required() bool { return false }
@@ -59,7 +92,9 @@ type shellStep struct {
 	shell string
 }
 
-func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+// collectWorkflowSteps returns the analyzable shell run steps of a workflow,
+// each paired with its resolved shellcheck dialect.
+func collectWorkflowSteps(mapping workflow.WorkflowMapping) []shellStep {
 	wfShell, wfOK := mapping.DefaultsRunShell()
 
 	var steps []shellStep
@@ -75,10 +110,12 @@ func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Err
 			steps = append(steps, shellStep{step: step, shell: sh})
 		})
 	})
-	return r.checkSteps(steps)
+	return steps
 }
 
-func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
+// collectActionSteps returns the analyzable shell run steps of a composite
+// action, each paired with its resolved shellcheck dialect.
+func collectActionSteps(mapping workflow.ActionMapping) []shellStep {
 	var steps []shellStep
 	mapping.EachStep(func(step workflow.StepMapping) {
 		// Composite action run steps require an explicit shell (its absence is
@@ -94,7 +131,46 @@ func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
 		}
 		steps = append(steps, shellStep{step: step, shell: sh})
 	})
-	return r.checkSteps(steps)
+	return steps
+}
+
+func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
+	return r.resultsFor(collectWorkflowSteps(mapping))
+}
+
+func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
+	return r.resultsFor(collectActionSteps(mapping))
+}
+
+// resultsFor returns the shellcheck diagnostics for a file's collected steps.
+// When Precompute has run, results are served from the shared cache (keyed by
+// run-value node) so the ordering matches the per-step path exactly. Otherwise
+// it falls back to a per-file shellcheck invocation.
+func (r *Rule) resultsFor(steps []shellStep) []*diagnostic.Error {
+	if len(steps) == 0 {
+		return nil
+	}
+	if !r.precomputed.Load() {
+		// No global precompute (e.g. unit tests): lint this file directly.
+		return r.checkSteps(steps)
+	}
+	// Wait until precompute has populated the cache. When ready is nil the cache
+	// was populated synchronously before analysis (Precompute without
+	// BeginPrecompute), so no wait is needed.
+	if r.ready != nil {
+		<-r.ready
+	}
+	var errs []*diagnostic.Error
+	for _, s := range steps {
+		runKV := s.step.FindKey("run")
+		if runKV == nil {
+			continue
+		}
+		if v, ok := r.cache.Load(runKV.Value); ok {
+			errs = append(errs, v.([]*diagnostic.Error)...)
+		}
+	}
+	return errs
 }
 
 // preparedStep holds the masking result for a single analyzable run step, ready
@@ -107,21 +183,12 @@ type preparedStep struct {
 	shell   string
 }
 
-// checkSteps lints every collected run step and returns the merged diagnostics.
-// Scripts are masked, grouped by shell, and handed to shellcheck in a single
-// batched invocation per shell (the -s dialect applies to the whole batch), so
-// the dominant per-process startup cost is paid once per file instead of once
-// per step. Results are written to a per-index slot so the final ordering is
-// deterministic (identical to the previous per-step implementation), which the
-// analyzer then re-sorts by position anyway.
-func (r *Rule) checkSteps(steps []shellStep) []*diagnostic.Error {
-	if len(steps) == 0 {
-		return nil
-	}
-
-	available := r.Runner.Available()
-	prepared := make([]*preparedStep, len(steps))
-	eligible := false
+// prepareSteps masks each step's run script for shellcheck. The returned slice
+// is parallel to steps (nil where a step is not analyzable). eligible reports
+// whether at least one analyzable shell run step was present, which drives the
+// "install shellcheck" hint when the binary is unavailable.
+func prepareSteps(steps []shellStep) (prepared []*preparedStep, eligible bool) {
+	prepared = make([]*preparedStep, len(steps))
 	for i, s := range steps {
 		runKV := s.step.FindKey("run")
 		if runKV == nil {
@@ -134,9 +201,6 @@ func (r *Rule) checkSteps(steps []shellStep) []*diagnostic.Error {
 		// An analyzable shell run step was found; it would have been linted had
 		// the binary been available.
 		eligible = true
-		if !available {
-			continue
-		}
 		masked, regions, malformed := maskExpressions(value)
 		if malformed {
 			// A malformed ${{ }} expression could not be masked; running
@@ -152,16 +216,15 @@ func (r *Rule) checkSteps(steps []shellStep) []*diagnostic.Error {
 			shell:   s.shell,
 		}
 	}
+	return prepared, eligible
+}
 
-	if !available {
-		if eligible {
-			r.sawEligibleStep.Store(true)
-		}
-		return nil
-	}
-
-	// Group prepared steps by shell, preserving original step indexes so results
-	// can be mapped back deterministically.
+// lintPrepared groups prepared steps by shell, runs shellcheck once per shell
+// (the -s dialect applies to the whole batch), and writes the interpreted
+// diagnostics into perStep, indexed parallel to prepared. The dominant
+// per-process startup cost is thus paid once per shell rather than once per
+// script. perStep must have len(prepared) slots.
+func (r *Rule) lintPrepared(prepared []*preparedStep, perStep [][]*diagnostic.Error) {
 	type group struct {
 		indexes []int
 		scripts []string
@@ -182,7 +245,6 @@ func (r *Rule) checkSteps(steps []shellStep) []*diagnostic.Error {
 		g.scripts = append(g.scripts, p.masked)
 	}
 
-	perStep := make([][]*diagnostic.Error, len(steps))
 	for _, shell := range shells {
 		g := byShell[shell]
 		execSem <- struct{}{}
@@ -199,6 +261,210 @@ func (r *Rule) checkSteps(steps []shellStep) []*diagnostic.Error {
 			perStep[idx] = interpretComments(prepared[idx], results[j])
 		}
 	}
+}
+
+// Precompute lints every run step across all workflow and action files in a
+// single shellcheck invocation per shell, caching the resulting diagnostics by
+// run-value AST node. cmd/root calls it once, after parsing and before the
+// per-file analysis pass, so CheckWorkflow/CheckAction can serve results from
+// the cache instead of forking shellcheck per file. Batching globally collapses
+// what would be one process spawn per file (the dominant cost on large repos)
+// into one spawn per shell.
+//
+// The cache is always initialized (so resultsFor takes the cache path even when
+// no steps are eligible). When the binary is unavailable, only sawEligibleStep
+// is updated and the cache stays empty.
+func (r *Rule) Precompute(workflows []workflow.WorkflowMapping, actions []workflow.ActionMapping) {
+	var steps []shellStep
+	for _, m := range workflows {
+		steps = append(steps, collectWorkflowSteps(m)...)
+	}
+	for _, m := range actions {
+		steps = append(steps, collectActionSteps(m)...)
+	}
+	r.precomputeSteps(steps)
+}
+
+// precomputeSteps lints the given steps and merges their diagnostics into the
+// cache (keyed by run-value node). It may be called more than once — e.g. with
+// workflow steps and action steps separately, so the workflow batch can run
+// concurrently with the (slow) recursive action discovery — and accumulates into
+// the same cache. The cache is initialized even when there are no steps, so
+// resultsFor always takes the cache path once any Precompute call has run.
+func (r *Rule) precomputeSteps(steps []shellStep) {
+	r.precomputed.Store(true)
+
+	if len(steps) == 0 {
+		return
+	}
+
+	prepared, eligible := prepareSteps(steps)
+	if !r.Runner.Available() {
+		if eligible {
+			r.sawEligibleStep.Store(true)
+		}
+		return
+	}
+
+	perStep := make([][]*diagnostic.Error, len(prepared))
+	r.lintPreparedParallel(prepared, perStep)
+
+	for i, p := range prepared {
+		if p == nil || len(perStep[i]) == 0 {
+			continue
+		}
+		r.cache.Store(p.node, perStep[i])
+	}
+}
+
+// lintPreparedParallel lints prepared steps with shellcheck and writes the
+// interpreted diagnostics into perStep (indexed parallel to prepared, which must
+// have len(prepared) slots).
+//
+// Two optimizations keep this fast on large repos:
+//   - Deduplication: identical scripts (same shell + masked text) are analyzed
+//     once. Real workflows repeat the same setup snippets across many jobs, so
+//     this cuts the script count shellcheck must process. Findings depend only on
+//     the script text, so they are reused across every step sharing it (each step
+//     still interprets them against its own YAML node for correct positions).
+//   - Chunked parallelism: a single shellcheck process is single-threaded, so the
+//     unique scripts are split into chunks (one shellcheck spawn each) sized to
+//     the CPU count. This spreads the analysis across cores in roughly one wave
+//     while amortizing the dominant process-startup cost once per core.
+func (r *Rule) lintPreparedParallel(prepared []*preparedStep, perStep [][]*diagnostic.Error) {
+	// Deduplicate by (shell, masked script). uniques holds one representative per
+	// distinct script; dupeIndexes maps each unique to every prepared step that
+	// shares it.
+	type uniqueScript struct {
+		shell  string
+		script string
+	}
+	indexByScript := map[string]int{}
+	var uniques []uniqueScript
+	var dupeIndexes [][]int
+	for i, p := range prepared {
+		if p == nil {
+			continue
+		}
+		key := p.shell + "\x00" + p.masked
+		ui, ok := indexByScript[key]
+		if !ok {
+			ui = len(uniques)
+			indexByScript[key] = ui
+			uniques = append(uniques, uniqueScript{shell: p.shell, script: p.masked})
+			dupeIndexes = append(dupeIndexes, nil)
+		}
+		dupeIndexes[ui] = append(dupeIndexes[ui], i)
+	}
+	if len(uniques) == 0 {
+		return
+	}
+
+	// Group unique scripts by shell (the -s dialect applies to a whole batch).
+	byShell := map[string][]int{}
+	var shells []string
+	for ui, u := range uniques {
+		if _, seen := byShell[u.shell]; !seen {
+			shells = append(shells, u.shell)
+		}
+		byShell[u.shell] = append(byShell[u.shell], ui)
+	}
+
+	// Choose a chunk count (each chunk is one shellcheck process). shellcheck's
+	// per-process startup is a large, mostly fixed cost, so the workload is
+	// startup-dominated: measurements show that fewer, larger chunks (≈ half the
+	// cores) beat one-chunk-per-core, because halving the process count halves the
+	// aggregate startup overhead while still keeping the cores busy. The walk and
+	// the Go runtime also need cores. minChunkScripts then keeps chunks from
+	// getting so small that startup dominates — important for the small action
+	// batch, where a single spawn beats one per core.
+	const minChunkScripts = 16
+	target := max(runtime.NumCPU()/2, 2)
+	if maxByScripts := (len(uniques) + minChunkScripts - 1) / minChunkScripts; target > maxByScripts {
+		target = maxByScripts
+	}
+	if target < 1 {
+		target = 1
+	}
+	chunkSize := (len(uniques) + target - 1) / target
+	if chunkSize < 1 {
+		chunkSize = 1
+	}
+
+	// comments holds shellcheck's raw findings per unique script.
+	comments := make([][]Comment, len(uniques))
+
+	type chunk struct {
+		shell   string
+		uindex  []int
+		scripts []string
+	}
+	var chunks []chunk
+	for _, shell := range shells {
+		uis := byShell[shell]
+		for start := 0; start < len(uis); start += chunkSize {
+			end := min(start+chunkSize, len(uis))
+			c := chunk{shell: shell}
+			for _, ui := range uis[start:end] {
+				c.uindex = append(c.uindex, ui)
+				c.scripts = append(c.scripts, uniques[ui].script)
+			}
+			chunks = append(chunks, c)
+		}
+	}
+
+	var wg sync.WaitGroup
+	for _, c := range chunks {
+		wg.Add(1)
+		go func(c chunk) {
+			defer wg.Done()
+			execSem <- struct{}{}
+			results, err := r.Runner.RunBatch(context.Background(), c.shell, c.scripts)
+			<-execSem
+			if err != nil {
+				// shellcheck could not process the chunk; skip silently.
+				return
+			}
+			for j, ui := range c.uindex {
+				if j >= len(results) {
+					continue
+				}
+				comments[ui] = results[j]
+			}
+		}(c)
+	}
+	wg.Wait()
+
+	// Map each unique script's findings back onto every step that shares it,
+	// interpreting against each step's own node for correct YAML positions.
+	for ui, idxs := range dupeIndexes {
+		cs := comments[ui]
+		if len(cs) == 0 {
+			continue
+		}
+		for _, idx := range idxs {
+			perStep[idx] = interpretComments(prepared[idx], cs)
+		}
+	}
+}
+
+// checkSteps lints a single file's collected run steps directly. It is the
+// fallback used when Precompute has not populated the cache (e.g. unit tests).
+func (r *Rule) checkSteps(steps []shellStep) []*diagnostic.Error {
+	if len(steps) == 0 {
+		return nil
+	}
+
+	prepared, eligible := prepareSteps(steps)
+	if !r.Runner.Available() {
+		if eligible {
+			r.sawEligibleStep.Store(true)
+		}
+		return nil
+	}
+
+	perStep := make([][]*diagnostic.Error, len(steps))
+	r.lintPrepared(prepared, perStep)
 
 	var errs []*diagnostic.Error
 	for _, e := range perStep {
@@ -249,4 +515,3 @@ func resolveEffectiveShell(step workflow.StepMapping, jobShell string, jobOK boo
 	}
 	return "", false
 }
-

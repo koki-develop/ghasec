@@ -116,6 +116,23 @@ func (a *Analyzer) AnalyzeAction(f *ast.File) []*diagnostic.Error {
 	}, f)
 }
 
+// WorkflowMappingOf extracts the top-level workflow mapping from f. The bool
+// reports whether f has a usable top-level mapping, matching the gate that
+// AnalyzeWorkflow applies before running rules. It lets callers (e.g. the global
+// shellcheck precompute in cmd/root) collect run steps from exactly the files
+// that AnalyzeWorkflow will analyze.
+func WorkflowMappingOf(f *ast.File) (workflow.WorkflowMapping, bool) {
+	m, errs := workflowTopLevelMapping(f)
+	return m, errs == nil
+}
+
+// ActionMappingOf extracts the top-level action mapping from f, mirroring
+// WorkflowMappingOf for composite action files.
+func ActionMappingOf(f *ast.File) (workflow.ActionMapping, bool) {
+	m, errs := actionTopLevelMapping(f)
+	return m, errs == nil
+}
+
 func runRules[R rules.Rule](a *Analyzer, ruleList []R, checkFn func(R) []*diagnostic.Error, f *ast.File) []*diagnostic.Error {
 	directives := collectDirectives(f)
 	knownIDs := a.allRuleIDs()

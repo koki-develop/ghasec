@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/goccy/go-yaml/ast"
 	annotate "github.com/koki-develop/annotate-go"
 	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/diagnostic"
@@ -45,6 +46,7 @@ import (
 	unpinnedreusableworkflow "github.com/koki-develop/ghasec/rules/unpinned-reusable-workflow"
 	unpinnedtransitiveaction "github.com/koki-develop/ghasec/rules/unpinned-transitive-action"
 	"github.com/koki-develop/ghasec/update"
+	"github.com/koki-develop/ghasec/workflow"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -73,11 +75,6 @@ type classifiedFiles struct {
 	Actions   []string
 }
 
-type fileTask struct {
-	path     string
-	isAction bool
-}
-
 type fileResult struct {
 	path     string
 	parseErr error
@@ -102,12 +99,9 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		files, err := resolveFiles(args)
+		workflowPaths, actionsFn, err := resolveFiles(args)
 		if err != nil {
 			return err
-		}
-		if len(files.Workflows) == 0 && len(files.Actions) == 0 {
-			return errors.New("no files found")
 		}
 
 		activeRules, skippedOnline, ghClient, shellcheckRule := buildRules(online)
@@ -115,8 +109,13 @@ var rootCmd = &cobra.Command{
 			skippedOnline = 0
 		}
 
+		// The update notification is only printed for the default format (see the
+		// updateCh consumer below), so skip the check entirely for other formats:
+		// its result would be discarded, and launching it only adds a goroutine and
+		// a GitHub client request that contend with analysis.
 		var updateCh <-chan *update.Result
-		if _, disabled := os.LookupEnv("GHASEC_DISABLE_UPDATE_CHECK"); !disabled {
+		_, updateDisabled := os.LookupEnv("GHASEC_DISABLE_UPDATE_CHECK")
+		if !updateDisabled && format == FormatDefault {
 			ch := make(chan *update.Result, 1)
 			updateCtx, updateCancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer updateCancel()
@@ -142,19 +141,7 @@ var rootCmd = &cobra.Command{
 			rdr = renderer.NewSARIF(activeRules, cmd.Version)
 		}
 
-		var tasks []fileTask
-		for _, f := range files.Workflows {
-			tasks = append(tasks, fileTask{path: f, isAction: false})
-		}
-		for _, f := range files.Actions {
-			tasks = append(tasks, fileTask{path: f, isAction: true})
-		}
-
-		// Progress tracking setup
-		totalRuleExecs := len(files.Workflows)*a.WorkflowRuleCount() + len(files.Actions)*a.ActionRuleCount()
-		a.InitProgress(totalRuleExecs)
-
-		// Progress bar setup (only when stderr is a TTY and default format)
+		// Progress bar setup (only when stderr is a TTY and default format).
 		var prog *progress.Progress
 		stderrFd := int(os.Stderr.Fd())
 		if format == FormatDefault && term.IsTerminal(stderrFd) {
@@ -165,38 +152,143 @@ var rootCmd = &cobra.Command{
 			})
 		}
 
-		results := make([]fileResult, len(tasks))
-		fileSem := make(chan struct{}, concurrency)
-		var wg sync.WaitGroup
+		// Progress total starts with the workflow rule executions; the action
+		// count is only known once the background walk finishes, so it is added
+		// once the actions are discovered below.
+		a.InitProgress(len(workflowPaths) * a.WorkflowRuleCount())
 
-		for i, task := range tasks {
-			wg.Add(1)
-			go func(i int, task fileTask) {
-				defer wg.Done()
-				fileSem <- struct{}{}
-				defer func() { <-fileSem }()
+		// analyzeSem bounds how many files are analyzed concurrently, capping
+		// goroutine fan-out on very large repos. Parsing is intentionally not
+		// gated (it is light, short-lived I/O, and the action batch parses inside
+		// a precompute goroutine — gating both with one semaphore could deadlock
+		// since analysis goroutines block on the shellcheck readiness gate).
+		analyzeSem := make(chan struct{}, concurrency)
 
-				astFile, err := parser.Parse(task.path)
-				if err != nil {
-					results[i] = fileResult{path: task.path, parseErr: err}
-					ruleCount := a.WorkflowRuleCount()
-					if task.isAction {
-						ruleCount = a.ActionRuleCount()
+		// parseFiles parses paths concurrently, returning the ASTs (nil on parse
+		// error) and the per-file results pre-populated with any parse errors.
+		parseFiles := func(paths []string, isAction bool) ([]*ast.File, []fileResult) {
+			asts := make([]*ast.File, len(paths))
+			res := make([]fileResult, len(paths))
+			var wg sync.WaitGroup
+			for i, p := range paths {
+				wg.Add(1)
+				go func(i int, p string) {
+					defer wg.Done()
+					astFile, parseErr := parser.Parse(p)
+					if parseErr != nil {
+						res[i] = fileResult{path: p, parseErr: parseErr}
+						ruleCount := a.WorkflowRuleCount()
+						if isAction {
+							ruleCount = a.ActionRuleCount()
+						}
+						a.AdjustTotal(-ruleCount)
+						return
 					}
-					a.AdjustTotal(-ruleCount)
-					return
-				}
-
-				var errs []*diagnostic.Error
-				if task.isAction {
-					errs = a.AnalyzeAction(astFile)
-				} else {
-					errs = a.AnalyzeWorkflow(astFile)
-				}
-				results[i] = fileResult{path: task.path, diagErrs: errs}
-			}(i, task)
+					asts[i] = astFile
+				}(i, p)
+			}
+			wg.Wait()
+			return asts, res
 		}
-		wg.Wait()
+
+		// analyzeFiles runs the rules over each parsed file concurrently, writing
+		// diagnostics into res. The shellcheck rule blocks until MarkReady, so the
+		// other (cheap) rules run concurrently with the slow shellcheck precompute.
+		analyzeFiles := func(paths []string, asts []*ast.File, res []fileResult, isAction bool) {
+			var wg sync.WaitGroup
+			for i := range paths {
+				if asts[i] == nil {
+					continue
+				}
+				wg.Add(1)
+				go func(i int) {
+					defer wg.Done()
+					analyzeSem <- struct{}{}
+					defer func() { <-analyzeSem }()
+
+					var errs []*diagnostic.Error
+					if isAction {
+						errs = a.AnalyzeAction(asts[i])
+					} else {
+						errs = a.AnalyzeWorkflow(asts[i])
+					}
+					res[i] = fileResult{path: paths[i], diagErrs: errs}
+				}(i)
+			}
+			wg.Wait()
+		}
+
+		shellcheckRule.BeginPrecompute()
+
+		// Parse workflows up front; the background action walk runs concurrently.
+		wfAsts, workflowResults := parseFiles(workflowPaths, false)
+
+		// Kick off the workflow shellcheck precompute immediately so it overlaps
+		// the still-running action walk (CPU-bound shellcheck vs I/O-bound walk).
+		var pcWg sync.WaitGroup
+		pcWg.Add(1)
+		go func() {
+			defer pcWg.Done()
+			var ms []workflow.WorkflowMapping
+			for i := range workflowPaths {
+				if wfAsts[i] == nil {
+					continue
+				}
+				if m, ok := analyzer.WorkflowMappingOf(wfAsts[i]); ok {
+					ms = append(ms, m)
+				}
+			}
+			shellcheckRule.Precompute(ms, nil)
+		}()
+
+		// Discover, parse and shellcheck the action files in their own goroutine so
+		// the action shellcheck overlaps the workflow precompute pool (rather than
+		// tailing it). The walk join, action parse, and action precompute all run
+		// concurrently with the workflow batch.
+		var (
+			actionPaths   []string
+			acAsts        []*ast.File
+			actionResults []fileResult
+		)
+		pcWg.Add(1)
+		go func() {
+			defer pcWg.Done()
+			actionPaths = actionsFn()
+			a.AdjustTotal(len(actionPaths) * a.ActionRuleCount())
+			acAsts, actionResults = parseFiles(actionPaths, true)
+			var ms []workflow.ActionMapping
+			for i := range actionPaths {
+				if acAsts[i] == nil {
+					continue
+				}
+				if m, ok := analyzer.ActionMappingOf(acAsts[i]); ok {
+					ms = append(ms, m)
+				}
+			}
+			shellcheckRule.Precompute(nil, ms)
+		}()
+
+		// Mark the shellcheck cache ready once both precompute batches finish.
+		go func() {
+			pcWg.Wait()
+			shellcheckRule.MarkReady()
+		}()
+
+		// Analyze workflows now: the cheap rules run while the precompute proceeds;
+		// the shellcheck rule blocks on MarkReady. All workflow files are already
+		// parsed, so this never starves the action goroutine.
+		analyzeFiles(workflowPaths, wfAsts, workflowResults, false)
+
+		// Join the action goroutine (parse + precompute done), then analyze actions.
+		pcWg.Wait()
+
+		if len(workflowPaths) == 0 && len(actionPaths) == 0 {
+			return errors.New("no files found")
+		}
+
+		analyzeFiles(actionPaths, acAsts, actionResults, true)
+
+		results := append(workflowResults, actionResults...)
 
 		// Clear progress bar before printing results.
 		// defer above handles panic cleanup; this handles normal flow.
@@ -227,7 +319,7 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		if err := rdr.PrintSummary(len(tasks), errorCount, errorFileCount, skippedOnline); err != nil {
+		if err := rdr.PrintSummary(len(results), errorCount, errorFileCount, skippedOnline); err != nil {
 			return err
 		}
 
@@ -299,7 +391,13 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 	return
 }
 
-func resolveFiles(args []string) (classifiedFiles, error) {
+// resolveFiles returns the workflow paths immediately and an actions thunk that
+// yields the action paths. In auto-discover mode the (slow) recursive action
+// walk runs in a background goroutine started here, so the caller can parse and
+// shellcheck the workflows — which are known up front via a cheap glob — while
+// the walk proceeds. The thunk joins the goroutine. In explicit-args mode both
+// sets are known synchronously and the thunk just returns the actions.
+func resolveFiles(args []string) (workflows []string, actions func() []string, err error) {
 	if len(args) > 0 {
 		var cf classifiedFiles
 		for _, arg := range args {
@@ -307,12 +405,12 @@ func resolveFiles(args []string) (classifiedFiles, error) {
 			if !filepath.IsAbs(path) {
 				path = filepath.Join(workdir, path)
 			}
-			info, err := os.Stat(path)
-			if err != nil {
-				return classifiedFiles{}, err
+			info, statErr := os.Stat(path)
+			if statErr != nil {
+				return nil, nil, statErr
 			}
 			if info.IsDir() {
-				return classifiedFiles{}, fmt.Errorf("%s is a directory; specify files directly", path)
+				return nil, nil, fmt.Errorf("%s is a directory; specify files directly", path)
 			}
 			switch classifyFile(path) {
 			case "action":
@@ -323,16 +421,16 @@ func resolveFiles(args []string) (classifiedFiles, error) {
 		}
 		sort.Strings(cf.Workflows)
 		sort.Strings(cf.Actions)
-		return cf, nil
+		return cf.Workflows, func() []string { return cf.Actions }, nil
 	}
-	res, err := discover.Discover(workdir)
+
+	wf, wfSet, err := discover.GlobWorkflows(workdir)
 	if err != nil {
-		return classifiedFiles{}, err
+		return nil, nil, err
 	}
-	return classifiedFiles{
-		Workflows: res.Workflows,
-		Actions:   res.Actions,
-	}, nil
+	ch := make(chan []string, 1)
+	go func() { ch <- discover.FindActions(workdir, wfSet) }()
+	return wf, func() []string { return <-ch }, nil
 }
 
 func newGitHubClient() *ghclient.Client {
