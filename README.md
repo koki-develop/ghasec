@@ -58,11 +58,12 @@ Usage:
   ghasec [files...] [flags]
 
 Flags:
-      --format string   output format ("default", "github-actions", "markdown", or "sarif") (default "default")
-  -h, --help            help for ghasec
-      --no-color        disable colored output
-      --online          enable rules that require network access
-  -v, --version         version for ghasec
+      --format string    output format ("default", "github-actions", "markdown", or "sarif") (default "default")
+  -h, --help             help for ghasec
+      --no-color         disable colored output
+      --online           enable rules that require network access
+  -v, --version          version for ghasec
+      --workdir string   working directory (default ".")
 ```
 
 When run without arguments, ghasec automatically discovers `.github/workflows/*.yml|yaml` and `**/action.yml|yaml` files in the current directory.
