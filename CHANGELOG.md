@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.16.0](https://github.com/koki-develop/ghasec/compare/v0.15.0...v0.16.0) (2026-06-21)
+
+
+### Features
+
+* detect allow-unsafe-pr-checkout in dangerous-checkout rule ([5d5ab29](https://github.com/koki-develop/ghasec/commit/5d5ab296c4fd02b2ff57a1b32f19dca1a9ea6959))
+* detect workflow_run head refs and fork repository inputs in dangerous-checkout ([fcec8c2](https://github.com/koki-develop/ghasec/commit/fcec8c21ecd8b30b7880c591e51676b8f7ce5a8a))
+
 ## [0.15.0](https://github.com/koki-develop/ghasec/compare/v0.14.0...v0.15.0) (2026-06-10)
 
 
