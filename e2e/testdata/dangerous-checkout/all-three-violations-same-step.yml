@@ -1,0 +1,65 @@
+workflows:
+  - name: dangerous-checkout.yml
+    content: |
+      on:
+        workflow_run:
+          workflows: [CI]
+          types: [completed]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+              with:
+                persist-credentials: false
+                ref: ${{ github.event.workflow_run.head_sha }}
+                repository: ${{ github.event.workflow_run.head_repository.full_name }}
+                allow-unsafe-pr-checkout: true
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/dangerous-checkout.yml:14:16
+    ...
+     6 | jobs:
+     7 |   build:
+    ...
+    10 |     steps:
+    11 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+    12 |         with:
+    ...
+    14 |           ref: ${{"{{" }} github.event.workflow_run.head_sha }}
+       |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "ref" must not reference pull request head in a "workflow_run" workflow (dangerous-checkout)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/dangerous-checkout/README.md
+
+    --> {{.Dir}}/dangerous-checkout.yml:15:23
+    ...
+     6 | jobs:
+     7 |   build:
+    ...
+    10 |     steps:
+    11 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+    12 |         with:
+    ...
+    15 |           repository: ${{"{{" }} github.event.workflow_run.head_repository.full_name }}
+       |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "repository" must not reference fork pull request repository in a "workflow_run" workflow (dangerous-checkout)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/dangerous-checkout/README.md
+
+    --> {{.Dir}}/dangerous-checkout.yml:16:37
+    ...
+     6 | jobs:
+     7 |   build:
+    ...
+    10 |     steps:
+    11 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+    12 |         with:
+    ...
+    16 |           allow-unsafe-pr-checkout: true
+       |                                     ^^^^ "allow-unsafe-pr-checkout" must not be true in a "workflow_run" workflow (dangerous-checkout)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/dangerous-checkout/README.md
+
+    ✗ 3 errors found in 1 of 1 file

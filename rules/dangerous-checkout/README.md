@@ -4,7 +4,7 @@ Checks that `actions/checkout` in `pull_request_target` or `workflow_run` workfl
 
 ## Risk
 
-Workflows triggered by `pull_request_target` and `workflow_run` run in the context of the base repository with access to repository secrets. If such a workflow checks out the pull request's head code via the `ref:` parameter of `actions/checkout`, or opts out of the default fork checkout protection via `allow-unsafe-pr-checkout: true`, an attacker can open a pull request from a fork containing malicious code that executes with access to those secrets.
+`pull_request_target` and `workflow_run` workflows run with access to repository secrets. Checking out fork pull request code in such a workflow lets attacker-controlled code execute with those secrets — a "pwn request" vulnerability.
 
 ## Examples
 
@@ -102,6 +102,59 @@ jobs:
           allow-unsafe-pr-checkout: true
 ```
 
+```yaml
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+```
+
+```yaml
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: refs/pull/${{ github.event.workflow_run.pull_requests[0].number }}/merge
+```
+
+```yaml
+on: pull_request_target
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+```
+
+```yaml
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+```
+
 **Good** :white_check_mark:
 
 ```yaml
@@ -113,4 +166,4 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 ```
 
-Omitting the `ref:` parameter causes `actions/checkout` to check out the base branch code, which is safe because it is controlled by the repository maintainers. Leaving `allow-unsafe-pr-checkout` at its default (`false`) keeps the built-in protection against fork pull request checkouts active.
+Omitting the `ref:` and `repository:` parameters causes `actions/checkout` to check out the base branch of the base repository, which is safe because it is controlled by the repository maintainers. Leaving `allow-unsafe-pr-checkout` at its default (`false`) keeps the built-in protection against fork pull request checkouts active.

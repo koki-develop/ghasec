@@ -332,3 +332,209 @@ func TestRule_MultipleJobs(t *testing.T) {
 	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 2)
 }
+
+func TestRule_WorkflowRunRef_Detected(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{
+			"head_sha",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.workflow_run.head_sha }}\n",
+		},
+		{
+			"head_commit.id",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.workflow_run.head_commit.id }}\n",
+		},
+		{
+			"pull_requests[0].head.sha",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.workflow_run.pull_requests[0].head.sha }}\n",
+		},
+		{
+			"pull_requests[0].head.ref",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.workflow_run.pull_requests[0].head.ref }}\n",
+		},
+		{
+			"pull_requests[*].number merge ref",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: refs/pull/${{ github.event.workflow_run.pull_requests[0].number }}/merge\n",
+		},
+		{
+			"pull_requests[*].number head ref",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: refs/pull/${{ github.event.workflow_run.pull_requests[0].number }}/head\n",
+		},
+		{
+			"workflow_run mapping trigger",
+			"on:\n  workflow_run:\n    workflows: [CI]\n    types: [completed]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.workflow_run.head_sha }}\n",
+		},
+	}
+	r := &dangerouscheckout.Rule{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := parseMapping(t, tt.src)
+			errs := r.CheckWorkflow(m)
+			require.Len(t, errs, 1)
+			assert.Contains(t, errs[0].Message, `"ref" must not reference pull request head`)
+			assert.Contains(t, errs[0].Message, `"workflow_run" workflow`)
+		})
+	}
+}
+
+func TestRule_WorkflowRunRef_NotDetected(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{
+			"head_branch (excluded from detection)",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.workflow_run.head_branch }}\n",
+		},
+		{
+			"pull_requests[0].base.sha (base, not head)",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.workflow_run.pull_requests[0].base.sha }}\n",
+		},
+		{
+			"pull_requests[0].base.ref (base, not head)",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.workflow_run.pull_requests[0].base.ref }}\n",
+		},
+		{
+			"literal ref",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: main\n",
+		},
+		{
+			"pull_request_target dangerous expression in workflow_run scope (not detected here)",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}\n",
+		},
+	}
+	r := &dangerouscheckout.Rule{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := parseMapping(t, tt.src)
+			errs := r.CheckWorkflow(m)
+			assert.Empty(t, errs)
+		})
+	}
+}
+
+func TestRule_WorkflowRunRef_TokenPointsToRefValue(t *testing.T) {
+	r := &dangerouscheckout.Rule{}
+	src := "on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.workflow_run.head_sha }}\n"
+	m := parseMapping(t, src)
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Token.Value, "github.event.workflow_run.head_sha")
+}
+
+func TestRule_Repository_PullRequestTarget_Detected(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{
+			"head.repo.full_name",
+			"on: pull_request_target\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.event.pull_request.head.repo.full_name }}\n",
+		},
+		{
+			"head.repo.name",
+			"on: pull_request_target\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.event.pull_request.head.repo.name }}\n",
+		},
+	}
+	r := &dangerouscheckout.Rule{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := parseMapping(t, tt.src)
+			errs := r.CheckWorkflow(m)
+			require.Len(t, errs, 1)
+			assert.Contains(t, errs[0].Message, `"repository" must not reference fork pull request repository`)
+			assert.Contains(t, errs[0].Message, `"pull_request_target" workflow`)
+		})
+	}
+}
+
+func TestRule_Repository_WorkflowRun_Detected(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{
+			"workflow_run.head_repository.full_name",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.event.workflow_run.head_repository.full_name }}\n",
+		},
+		{
+			"workflow_run.head_repository.name",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.event.workflow_run.head_repository.name }}\n",
+		},
+		{
+			"workflow_run.pull_requests[0].head.repo.full_name",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.event.workflow_run.pull_requests[0].head.repo.full_name }}\n",
+		},
+	}
+	r := &dangerouscheckout.Rule{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := parseMapping(t, tt.src)
+			errs := r.CheckWorkflow(m)
+			require.Len(t, errs, 1)
+			assert.Contains(t, errs[0].Message, `"repository" must not reference fork pull request repository`)
+			assert.Contains(t, errs[0].Message, `"workflow_run" workflow`)
+		})
+	}
+}
+
+func TestRule_Repository_NotDetected(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{
+			"literal repository",
+			"on: pull_request_target\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: owner/repo\n",
+		},
+		{
+			"safe base repo expression",
+			"on: pull_request_target\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.repository }}\n",
+		},
+		{
+			"pull_request_target with workflow_run repo expression",
+			"on: pull_request_target\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.event.workflow_run.head_repository.full_name }}\n",
+		},
+		{
+			"workflow_run with pull_request_target repo expression",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.event.pull_request.head.repo.full_name }}\n",
+		},
+		{
+			"out of scope trigger (push)",
+			"on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.event.pull_request.head.repo.full_name }}\n",
+		},
+		{
+			"pull_requests[0].base.repo.full_name (base)",
+			"on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.event.workflow_run.pull_requests[0].base.repo.full_name }}\n",
+		},
+	}
+	r := &dangerouscheckout.Rule{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := parseMapping(t, tt.src)
+			errs := r.CheckWorkflow(m)
+			assert.Empty(t, errs)
+		})
+	}
+}
+
+func TestRule_Repository_TokenAndContext(t *testing.T) {
+	r := &dangerouscheckout.Rule{}
+	src := "on: workflow_run\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          repository: ${{ github.event.workflow_run.head_repository.full_name }}\n"
+	m := parseMapping(t, src)
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Token.Value, "github.event.workflow_run.head_repository.full_name")
+	require.Len(t, errs[0].ExtraContexts, 1)
+	assert.Equal(t, "actions/checkout@v4", errs[0].ExtraContexts[0].Value)
+}
+
+func TestRule_AllPatternsCombined(t *testing.T) {
+	r := &dangerouscheckout.Rule{}
+	src := "on:\n  workflow_run:\n    workflows: [CI]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.workflow_run.head_sha }}\n          repository: ${{ github.event.workflow_run.head_repository.full_name }}\n          allow-unsafe-pr-checkout: true\n"
+	m := parseMapping(t, src)
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 3)
+}
