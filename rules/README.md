@@ -10,7 +10,7 @@ Rules marked as **Online** require network access (e.g., GitHub API) and are dis
 | [actor-bot-check](./actor-bot-check/README.md) | Checks that `if:` conditions in `pull_request` / `pull_request_target` workflows do not use `github.actor` to identify bots. | |
 | [archived-action](./archived-action/README.md) | Checks that third-party action references do not point to archived GitHub repositories. | Yes |
 | [checkout-persist-credentials](./checkout-persist-credentials/README.md) | Checks that `actions/checkout` is configured with `persist-credentials: false`. | |
-| [dangerous-checkout](./dangerous-checkout/README.md) | Checks that `actions/checkout` in `pull_request_target` workflows does not check out pull request head code. | |
+| [dangerous-checkout](./dangerous-checkout/README.md) | Checks that `actions/checkout` in `pull_request_target` or `workflow_run` workflows does not check out pull request head code. | |
 | [default-permissions](./default-permissions/README.md) | Checks that workflow-level `permissions` is set to `{}`. | |
 | [deprecated-commands](./deprecated-commands/README.md) | Detects usage of deprecated GitHub Actions workflow commands and the `ACTIONS_ALLOW_UNSECURE_COMMANDS` environment variable. | |
 | [impostor-commit](./impostor-commit/README.md) | Checks that a commit SHA pinned in an action reference is reachable from a branch or tag in the referenced repository. | Yes |

@@ -67,7 +67,7 @@ expected:
                   "id": "dangerous-checkout",
                   "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/dangerous-checkout/README.md",
                   "shortDescription": {
-                    "text": "Workflows triggered by pull_request_target run with access to repository secrets. Checking out pull request head code allows an attacker to execute malicious code from a fork with those secrets"
+                    "text": "Workflows triggered by pull_request_target or workflow_run run with access to repository secrets. Checking out pull request head code — either via a ref pointing to the fork head or via allow-unsafe-pr-checkout: true — lets attacker-controlled code execute with those secrets"
                   }
                 },
                 {

@@ -1,0 +1,18 @@
+workflows:
+  - name: dangerous-checkout.yml
+    content: |
+      on: pull_request_target
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/setup-go@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v5
+              with:
+                allow-unsafe-pr-checkout: true
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

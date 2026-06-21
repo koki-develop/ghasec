@@ -1,10 +1,10 @@
 # dangerous-checkout
 
-Checks that `actions/checkout` in `pull_request_target` workflows does not check out pull request head code.
+Checks that `actions/checkout` in `pull_request_target` or `workflow_run` workflows does not check out pull request head code.
 
 ## Risk
 
-Workflows triggered by `pull_request_target` run in the context of the base repository with access to repository secrets. If such a workflow checks out the pull request's head code via the `ref:` parameter of `actions/checkout`, an attacker can open a pull request from a fork containing malicious code that executes with access to those secrets.
+Workflows triggered by `pull_request_target` and `workflow_run` run in the context of the base repository with access to repository secrets. If such a workflow checks out the pull request's head code via the `ref:` parameter of `actions/checkout`, or opts out of the default fork checkout protection via `allow-unsafe-pr-checkout: true`, an attacker can open a pull request from a fork containing malicious code that executes with access to those secrets.
 
 ## Examples
 
@@ -77,6 +77,31 @@ jobs:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
 ```
 
+```yaml
+on: pull_request_target
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          allow-unsafe-pr-checkout: true
+```
+
+```yaml
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          allow-unsafe-pr-checkout: true
+```
+
 **Good** :white_check_mark:
 
 ```yaml
@@ -88,4 +113,4 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 ```
 
-Omitting the `ref:` parameter causes `actions/checkout` to check out the base branch code, which is safe because it is controlled by the repository maintainers.
+Omitting the `ref:` parameter causes `actions/checkout` to check out the base branch code, which is safe because it is controlled by the repository maintainers. Leaving `allow-unsafe-pr-checkout` at its default (`false`) keeps the built-in protection against fork pull request checkouts active.

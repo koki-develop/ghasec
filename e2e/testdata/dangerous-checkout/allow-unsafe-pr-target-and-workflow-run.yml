@@ -1,0 +1,36 @@
+workflows:
+  - name: dangerous-checkout.yml
+    content: |
+      on:
+        pull_request_target:
+        workflow_run:
+          workflows: [CI]
+          types: [completed]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+              with:
+                persist-credentials: false
+                allow-unsafe-pr-checkout: true
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/dangerous-checkout.yml:15:37
+    ...
+     7 | jobs:
+     8 |   build:
+    ...
+    11 |     steps:
+    12 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+    13 |         with:
+    ...
+    15 |           allow-unsafe-pr-checkout: true
+       |                                     ^^^^ "allow-unsafe-pr-checkout" must not be true in a "pull_request_target" workflow (dangerous-checkout)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/dangerous-checkout/README.md
+
+    ✗ 1 error found in 1 of 1 file
