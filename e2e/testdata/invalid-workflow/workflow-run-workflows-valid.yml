@@ -1,9 +1,10 @@
 workflows:
-  - name: event-type-string.yml
+  - name: workflow-run-workflows-valid.yml
     content: |
       on:
-        release:
-          types: published
+        workflow_run:
+          workflows: [Build, Test]
+          types: [completed]
       permissions: {}
       jobs:
         build:

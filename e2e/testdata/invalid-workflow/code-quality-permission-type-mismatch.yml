@@ -1,0 +1,25 @@
+workflows:
+  - name: code-quality-permission-type-mismatch.yml
+    content: |
+      on: push
+      permissions:
+        code-quality: 42
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/code-quality-permission-type-mismatch.yml:3:17
+    ...
+    2 | permissions:
+    3 |   code-quality: 42
+      |                 ^^ "permissions" scope "code-quality" must be a string, but got integer (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 1 error found in 1 of 1 file

@@ -1,0 +1,31 @@
+workflows:
+  - name: workflow-run-filter-conflict-branches.yml
+    content: |
+      on:
+        workflow_run:
+          workflows: [Build]
+          types: [completed]
+          branches: [main]
+          branches-ignore: [draft/*]
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow-run-filter-conflict-branches.yml:5:5
+    1 | on:
+    2 |   workflow_run:
+    ...
+    5 |     branches: [main]
+      |     ^^^^^^^^ "branches" and "branches-ignore" are mutually exclusive (invalid-workflow)
+    6 |     branches-ignore: [draft/*]
+      |     ^^^^^^^^^^^^^^^
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 1 error found in 1 of 1 file

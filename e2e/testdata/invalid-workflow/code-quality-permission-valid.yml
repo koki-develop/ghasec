@@ -1,13 +1,13 @@
 workflows:
-  - name: event-type-string.yml
+  - name: code-quality-permission-valid.yml
     content: |
-      on:
-        release:
-          types: published
+      on: push
       permissions: {}
       jobs:
         build:
           runs-on: ubuntu-latest
+          permissions:
+            code-quality: read
           timeout-minutes: 10
           steps:
             - run: echo hi
