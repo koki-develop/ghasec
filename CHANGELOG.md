@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.0](https://github.com/koki-develop/ghasec/compare/v0.16.0...v0.17.0) (2026-06-27)
+
+
+### Features
+
+* **invalid-workflow:** add code-quality permission and workflow_run.workflows validation ([00c0edb](https://github.com/koki-develop/ghasec/commit/00c0edb8f76dc578909e2082f0b4f7c9bb6be3cc))
+* **invalid-workflow:** add validation for parallel/background step properties ([173cb86](https://github.com/koki-develop/ghasec/commit/173cb866124f4c00e4b7b620b0c8d5c7aee24409))
+
 ## [0.16.0](https://github.com/koki-develop/ghasec/compare/v0.15.0...v0.16.0) (2026-06-21)
 
 
