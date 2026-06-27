@@ -1,0 +1,25 @@
+workflows:
+  - name: step-wait-sequence-valid.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - id: api
+              run: ./start-api.sh
+              background: true
+            - id: db
+              run: ./start-db.sh
+              background: true
+            - wait:
+                - api
+                - db
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

@@ -1,0 +1,19 @@
+workflows:
+  - name: step-background-valid.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - id: server
+              run: ./start-server.sh
+              background: true
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

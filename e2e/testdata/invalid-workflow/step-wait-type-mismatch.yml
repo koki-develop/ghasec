@@ -1,25 +1,25 @@
 workflows:
-  - name: step-missing-uses-and-run.yml
+  - name: step-wait-type-mismatch.yml
     content: |
       on: push
       jobs:
         build:
           runs-on: ubuntu-latest
           steps:
-            - name: missing action
+            - wait: true
 
 expected:
   exit_code: 1
   stdout: ""
   stderr: |
-    --> {{.Dir}}/step-missing-uses-and-run.yml:6:13
+    --> {{.Dir}}/step-wait-type-mismatch.yml:6:15
     ...
     2 | jobs:
     3 |   build:
     ...
     5 |     steps:
-    6 |       - name: missing action
-      |             ^ "cancel" or "parallel" or "run" or "uses" or "wait" or "wait-all" is required (invalid-workflow)
+    6 |       - wait: true
+      |               ^^^^ "wait" must be a string or sequence, but got boolean (invalid-workflow)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 
     ✗ 1 error found in 1 of 1 file
