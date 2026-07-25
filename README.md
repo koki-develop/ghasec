@@ -5,7 +5,6 @@ ghasec
 <p align="center">
 <a href="https://github.com/koki-develop/ghasec/releases/latest"><img src="https://img.shields.io/github/v/release/koki-develop/ghasec" alt="GitHub Release"></a>
 <a href="https://github.com/koki-develop/ghasec/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/koki-develop/ghasec/ci.yml?branch=main&label=ci" alt="CI"></a>
-<a href="https://goreportcard.com/report/github.com/koki-develop/ghasec"><img src="https://goreportcard.com/badge/github.com/koki-develop/ghasec" alt="Go Report Card"></a>
 <a href="./LICENSE"><img src="https://img.shields.io/github/license/koki-develop/ghasec" alt="LICENSE"></a>
 </p>
 
