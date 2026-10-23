@@ -1,0 +1,31 @@
+args: --format markdown
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: ./.github/actions/build
+expected:
+  exit_code: 1
+  stdout: |
+    ## {{.Dir}}/workflow.yml:8:15
+
+    ```yaml
+          - uses: ./.github/actions/build
+    ```
+
+    - **Rule**: workspace-relative-action
+    - **Message**: "./.github/actions/build" must be referenced as "$/.github/actions/build"
+    - **Why**: A ./ reference runs whatever action is in the runner's workspace, not the repository at the running commit. Any earlier step that changes the workspace, such as checking out pull request code or cloning another repository, controls which code runs, and actions policies never restrict actions on the runner filesystem. In a composite action, ./ resolves against the caller's workspace instead of the action's own repository
+    - **Fix**: Replace ./ with $/ to run the action from the same repository at the running commit. If the action comes from another repository checked out into the workspace, reference it as {owner}/{repo}@{ref} when possible
+    - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/workspace-relative-action/README.md
+
+    ---
+
+    1 error found in 1 of 1 file.
+  stderr: ""

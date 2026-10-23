@@ -29,7 +29,7 @@ actions:
             if: always()
             continue-on-error: true
             name: Run step
-          - uses: ./local-action
+          - uses: ./local-action # ghasec-ignore:workspace-relative-action
             with:
               foo: bar
 

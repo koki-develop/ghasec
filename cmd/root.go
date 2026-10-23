@@ -45,6 +45,7 @@ import (
 	unpinnedcontainer "github.com/koki-develop/ghasec/rules/unpinned-container"
 	unpinnedreusableworkflow "github.com/koki-develop/ghasec/rules/unpinned-reusable-workflow"
 	unpinnedtransitiveaction "github.com/koki-develop/ghasec/rules/unpinned-transitive-action"
+	workspacerelativeaction "github.com/koki-develop/ghasec/rules/workspace-relative-action"
 	"github.com/koki-develop/ghasec/update"
 	"github.com/koki-develop/ghasec/workflow"
 	"github.com/spf13/cobra"
@@ -363,6 +364,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&unpinnedaction.Rule{},
 		&unpinnedcontainer.Rule{},
 		&unpinnedreusableworkflow.Rule{},
+		&workspacerelativeaction.Rule{},
 		&checkoutpersistcredentials.Rule{},
 		&dangerouscheckout.Rule{},
 		&defaultpermissions.Rule{},

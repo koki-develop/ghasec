@@ -1,0 +1,33 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: $/.github/actions/build
+            - uses: $/
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              with:
+                persist-credentials: false
+            - uses: docker://alpine@sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789
+            - run: ./build.sh
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: composite
+        steps:
+          - uses: $/.github/actions/helper
+          - run: ./build.sh
+            shell: bash
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 2 files checked, no errors found

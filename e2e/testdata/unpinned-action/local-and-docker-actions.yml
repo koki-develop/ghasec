@@ -8,7 +8,7 @@ workflows:
           runs-on: ubuntu-latest
           timeout-minutes: 10
           steps:
-            - uses: ./local-action
+            - uses: ./local-action # ghasec-ignore:workspace-relative-action
             - uses: $/local-action
             - run: echo hi
 

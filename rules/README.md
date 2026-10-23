@@ -27,3 +27,4 @@ Rules marked as **Online** require network access (e.g., GitHub API) and are dis
 | [unpinned-reusable-workflow](./unpinned-reusable-workflow/README.md) | Checks that reusable workflow references are pinned to a full-length commit SHA. | |
 | [unpinned-transitive-action](./unpinned-transitive-action/README.md) | Checks that SHA-pinned remote actions do not transitively use unpinned actions or Docker images. | Yes |
 | [unused-ignore](./unused-ignore/README.md) | Reports unused, unknown, or invalid `ghasec-ignore` directives. | |
+| [workspace-relative-action](./workspace-relative-action/README.md) | Checks that same-repository actions are referenced with `$/` instead of a workspace-relative `./` path. | |

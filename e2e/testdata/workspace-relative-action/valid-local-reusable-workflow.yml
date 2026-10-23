@@ -1,0 +1,15 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        call-local:
+          uses: ./.github/workflows/reusable.yml
+        call-self:
+          uses: $/.github/workflows/reusable.yml
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

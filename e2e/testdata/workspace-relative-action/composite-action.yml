@@ -1,0 +1,25 @@
+actions:
+  - name: action.yml
+    content: |
+      name: test
+      description: test
+      runs:
+        using: composite
+        steps:
+          - uses: ./.github/actions/helper
+          - uses: $/.github/actions/other
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/action.yml:6:13
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: ./.github/actions/helper
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^ "./.github/actions/helper" must be referenced as "$/.github/actions/helper" (workspace-relative-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/workspace-relative-action/README.md
+
+    ✗ 1 error found in 1 of 1 file

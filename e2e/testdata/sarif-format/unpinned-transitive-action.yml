@@ -67,6 +67,13 @@ expected:
                   }
                 },
                 {
+                  "id": "workspace-relative-action",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/workspace-relative-action/README.md",
+                  "shortDescription": {
+                    "text": "A ./ reference runs whatever action is in the runner's workspace, not the repository at the running commit. Any earlier step that changes the workspace, such as checking out pull request code or cloning another repository, controls which code runs, and actions policies never restrict actions on the runner filesystem. In a composite action, ./ resolves against the caller's workspace instead of the action's own repository"
+                  }
+                },
+                {
                   "id": "checkout-persist-credentials",
                   "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/checkout-persist-credentials/README.md",
                   "shortDescription": {
@@ -188,7 +195,7 @@ expected:
           "results": [
             {
               "ruleId": "unpinned-transitive-action",
-              "ruleIndex": 24,
+              "ruleIndex": 25,
               "level": "error",
               "message": {
                 "text": "\"owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" uses unpinned action \"other/action-b@v2\""

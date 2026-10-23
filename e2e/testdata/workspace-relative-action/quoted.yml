@@ -1,0 +1,39 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: "./.github/actions/build"
+            - uses: './.github/actions/test'
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:8:16
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - uses: "./.github/actions/build"
+      |                ^^^^^^^^^^^^^^^^^^^^^^^ "./.github/actions/build" must be referenced as "$/.github/actions/build" (workspace-relative-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/workspace-relative-action/README.md
+
+    --> {{.Dir}}/workflow.yml:9:16
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    ...
+    9 |       - uses: './.github/actions/test'
+      |                ^^^^^^^^^^^^^^^^^^^^^^ "./.github/actions/test" must be referenced as "$/.github/actions/test" (workspace-relative-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/workspace-relative-action/README.md
+
+    ✗ 2 errors found in 1 of 1 file
