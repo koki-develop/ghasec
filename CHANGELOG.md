@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.18.0](https://github.com/koki-develop/ghasec/compare/v0.17.0...v0.18.0) (2026-10-23)
+
+
+### Features
+
+* add workspace-relative-action rule ([bca4807](https://github.com/koki-develop/ghasec/commit/bca48077be2f4ad1f32e4f60cb1f5a130835a13a))
+* support self-repository ($/) uses references ([96008ae](https://github.com/koki-develop/ghasec/commit/96008ae6fe49c2c21251c168e617bb1ca8c77788))
+
+
+### Patches
+
+* **unpinned-transitive-action:** check sibling actions in the same repository and commit ([4df36af](https://github.com/koki-develop/ghasec/commit/4df36aff21e0d596ec0df542427f0520ccb58908))
+
 ## [0.17.0](https://github.com/koki-develop/ghasec/compare/v0.16.0...v0.17.0) (2026-06-27)
 
 
