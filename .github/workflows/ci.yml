@@ -23,7 +23,7 @@ jobs:
         with:
           persist-credentials: false
           submodules: true
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
       - run: go test ./...
 
   build:
@@ -36,7 +36,7 @@ jobs:
         with:
           persist-credentials: false
           submodules: true
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
       - run: goreleaser check
       - run: goreleaser release --snapshot --clean
 
@@ -49,5 +49,5 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
       - run: golangci-lint run --verbose ./...
