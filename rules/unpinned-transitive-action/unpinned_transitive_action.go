@@ -78,7 +78,7 @@ func (r *Rule) checkTransitive(
 	visited map[string]bool,
 	path []string,
 ) []*diagnostic.Error {
-	key := fmt.Sprintf("%s/%s@%s", owner, repo, ref)
+	key := actionKey(owner, repo, subPath, ref)
 	if visited[key] {
 		return nil
 	}
@@ -156,6 +156,16 @@ func (r *Rule) checkTransitive(
 	})
 
 	return errs
+}
+
+// actionKey formats an action as it appears in a "uses" value
+// (owner/repo[/subPath]@ref). It identifies an action file, so actions in
+// different subdirectories of the same repository and commit are distinct.
+func actionKey(owner, repo, subPath, ref string) string {
+	if subPath == "" {
+		return fmt.Sprintf("%s/%s@%s", owner, repo, ref)
+	}
+	return fmt.Sprintf("%s/%s/%s@%s", owner, repo, subPath, ref)
 }
 
 func buildMessage(rootRef workflow.ActionRef, unpinnedRef string, path []string, isDocker bool) string {

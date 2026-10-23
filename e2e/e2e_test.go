@@ -484,6 +484,10 @@ func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
 
 				// subdirectory-action: owner/repo/sub/dir -> has unpinned dep
 				"owner/repo/sub/dir@" + shaA: "name: SubDir\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v2\n",
+
+				// sibling-actions: owner/siblings/a -> owner/siblings/b (same repo and commit) -> C@v1
+				"owner/siblings/a@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: owner/siblings/b@" + shaA + "\n",
+				"owner/siblings/b@" + shaA: "name: B\nruns:\n  using: composite\n  steps:\n    - uses: other/action-c@v1\n",
 			}
 
 			if content, ok := actions[key]; ok {
@@ -535,6 +539,7 @@ func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
 				"owner/circular-b":           shaB,
 				"owner/stop-at-unpinned":     shaA,
 				"owner/repo":                 shaA, // for subdirectory-action test
+				"owner/siblings":             shaA,
 			}
 			if sha, ok := knownRepoSHAs[repoKey]; ok {
 				_ = json.NewEncoder(w).Encode([]mockRepoTag{{Name: "v1", Commit: struct {

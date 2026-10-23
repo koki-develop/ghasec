@@ -260,3 +260,18 @@ func TestRule_SubdirectoryAction(t *testing.T) {
 	assert.Contains(t, errs[0].Message, "uses unpinned action")
 	assert.Contains(t, errs[0].Message, "other/action-b@v2")
 }
+
+func TestRule_SiblingActionsInSameRepoAreBothChecked(t *testing.T) {
+	fetcher := &mockFetcher{files: map[string]*ast.File{
+		"owner/repo/a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": parseActionFile(t, "name: A\nruns:\n  using: composite\n  steps:\n    - uses: owner/repo/b@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"),
+		"owner/repo/b@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": parseActionFile(t, "name: B\nruns:\n  using: composite\n  steps:\n    - uses: other/action-c@v1\n"),
+	}}
+	r := &Rule{Fetcher: fetcher}
+	m := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: owner/repo/a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Equal(t,
+		`"owner/repo/a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" uses unpinned action "other/action-c@v1" via "owner/repo/b@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`,
+		errs[0].Message,
+	)
+}
