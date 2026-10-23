@@ -53,7 +53,7 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	if !ok {
 		return nil
 	}
-	if ref.IsLocal() || ref.IsDocker() {
+	if !ref.IsRemote() {
 		return nil
 	}
 	if !ref.Ref().IsFullSHA() {
@@ -125,6 +125,20 @@ func (r *Rule) checkTransitive(
 			return
 		}
 		if innerRef.IsLocal() {
+			return
+		}
+
+		// A self-repository reference resolves to this action's own repository
+		// at the commit being inspected, so it is pinned by construction; its
+		// own dependencies still need to be checked. A "$/...@ref" is rejected
+		// by GitHub Actions and is not a pinning concern.
+		if innerRef.IsSelfRepository() {
+			if strings.Contains(innerRef.String(), "@") {
+				return
+			}
+			errs = append(errs, r.checkTransitive(
+				rootRef, owner, repo, innerRef.SelfRepositoryPath(), ref, visited, childPath,
+			)...)
 			return
 		}
 

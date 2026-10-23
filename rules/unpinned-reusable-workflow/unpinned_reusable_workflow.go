@@ -34,7 +34,7 @@ func checkJob(_ *token.Token, job workflow.JobMapping) *diagnostic.Error {
 	if !ok {
 		return nil
 	}
-	if ref.IsLocal() {
+	if !ref.IsRemote() {
 		return nil
 	}
 	if ref.Ref() == "" {

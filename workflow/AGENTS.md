@@ -21,7 +21,9 @@
 - `Token()` / `RefToken()` — source token for the full value or just the ref portion (after `@`). `RefToken` creates a synthetic token with adjusted column/offset for precise caret placement on the ref.
 - `Ref()` — git reference portion after `@` (as `git.Ref`).
 - `OwnerRepo()` — extracts owner and repo from the action path.
-- `IsLocal()` / `IsDocker()` — type checks for local path (`./`) and Docker (`docker://`) references.
+- `IsLocal()` / `IsSelfRepository()` / `IsDocker()` — type checks for workspace-relative (`./`), self-repository (`$/`), and Docker (`docker://`) references.
+- `IsRemote()` — true when the reference is none of the above, i.e. an `owner/repo[/path]@ref` reference to another repository. `OwnerRepo()` and `SubPath()` return empty strings for non-remote references.
+- `SelfRepositoryPath()` — the path after `$/` (without any `@ref`), used to resolve a `$/` reference against the repository that contains it.
 
 ## Design Notes
 

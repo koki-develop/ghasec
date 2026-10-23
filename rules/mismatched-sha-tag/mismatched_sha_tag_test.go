@@ -2,6 +2,7 @@ package mismatchedshatag_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -133,6 +134,24 @@ func TestRule_NotPinnedToSHA(t *testing.T) {
 			assert.Empty(t, errs)
 		})
 	}
+}
+
+func TestRule_SelfRepositoryReference(t *testing.T) {
+	r := &mismatchedshatag.Rule{Resolver: &mockResolver{err: errors.New("must not be called")}}
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{"step", "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: $/.github/actions/build@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v1.0.0\n"},
+		{"reusable workflow", "on: push\njobs:\n  call:\n    uses: $/.github/workflows/ci.yml@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v1.0.0\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Empty(t, r.CheckWorkflow(parseMapping(t, tt.src)))
+		})
+	}
+	actionSrc := "name: test\ndescription: test\nruns:\n  using: composite\n  steps:\n    - uses: $/.github/actions/build@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v1.0.0\n"
+	assert.Empty(t, r.CheckAction(parseActionMapping(t, actionSrc)))
 }
 
 func TestRule_LocalAndDockerActions(t *testing.T) {

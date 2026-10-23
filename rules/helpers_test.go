@@ -7,6 +7,7 @@ import (
 	yamlparser "github.com/goccy/go-yaml/parser"
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/rules"
+	"github.com/koki-develop/ghasec/workflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -200,4 +201,39 @@ func TestExpressionSpanTokens_MultipleSpans(t *testing.T) {
 	require.Len(t, tokens, 2)
 	assert.Equal(t, "${{ a }}", tokens[0].Value)
 	assert.Equal(t, "${{ b }}", tokens[1].Value)
+}
+
+func TestCheckUsesRef(t *testing.T) {
+	tests := []struct {
+		value   string
+		wantMsg string
+	}{
+		{"actions/checkout@v4", ""},
+		{"org/repo/.github/workflows/reusable.yml@v1", ""},
+		{"actions/checkout", `"actions/checkout" must have a ref`},
+		{"org/repo/.github/workflows/reusable.yml", `"org/repo/.github/workflows/reusable.yml" must have a ref`},
+		{"./my-action", ""},
+		{"./.github/workflows/reusable.yml", ""},
+		{"docker://alpine:3.8", ""},
+		{"$/", ""},
+		{"$/.github/actions/build", ""},
+		{"$/.github/workflows/reusable.yml", ""},
+		{"$/.github/actions/build@v1", `"$/.github/actions/build@v1" must not have a ref`},
+		{"$/.github/workflows/reusable.yml@main", `"$/.github/workflows/reusable.yml@main" must not have a ref`},
+		{"$/.github/actions/build@", `"$/.github/actions/build@" must not have a ref`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			tk := dummyToken()
+			node := &ast.StringNode{BaseNode: &ast.BaseNode{}, Token: tk, Value: tt.value}
+			e := rules.CheckUsesRef(workflow.NewActionRef(tt.value, node))
+			if tt.wantMsg == "" {
+				assert.Nil(t, e)
+				return
+			}
+			require.NotNil(t, e)
+			assert.Equal(t, tt.wantMsg, e.Message)
+			assert.Equal(t, tk, e.Token)
+		})
+	}
 }

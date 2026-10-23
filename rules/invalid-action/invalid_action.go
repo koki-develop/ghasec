@@ -257,15 +257,13 @@ func checkCompositeStepExtensions(seq *ast.SequenceNode) []*diagnostic.Error {
 			}
 		}
 
-		// C1: Remote action ref format
+		// C1: Action ref format
 		if usesKV != nil {
 			stepW := workflow.StepMapping{Mapping: step}
-			ref, ok := stepW.Uses()
-			if ok && !ref.IsLocal() && !ref.IsDocker() && ref.Ref() == "" {
-				errs = append(errs, &diagnostic.Error{
-					Token:   ref.Token(),
-					Message: fmt.Sprintf("%q must have a ref", ref.String()),
-				})
+			if ref, ok := stepW.Uses(); ok {
+				if e := rules.CheckUsesRef(ref); e != nil {
+					errs = append(errs, e)
+				}
 			}
 		}
 	}

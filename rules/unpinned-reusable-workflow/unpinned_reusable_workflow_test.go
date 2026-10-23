@@ -72,6 +72,16 @@ func TestRule_NotPinned(t *testing.T) {
 	}
 }
 
+func TestRule_SelfRepositoryReusableWorkflow(t *testing.T) {
+	r := &unpinnedreusableworkflow.Rule{}
+	for _, uses := range []string{"$/.github/workflows/ci.yml", "$/.github/workflows/ci.yml@v1"} {
+		t.Run(uses, func(t *testing.T) {
+			src := "on: push\njobs:\n  call:\n    uses: " + uses + "\n"
+			assert.Empty(t, r.CheckWorkflow(parseMapping(t, src)))
+		})
+	}
+}
+
 func TestRule_LocalReusableWorkflow(t *testing.T) {
 	r := &unpinnedreusableworkflow.Rule{}
 	src := "on: push\njobs:\n  call:\n    uses: ./.github/workflows/ci.yml\n"

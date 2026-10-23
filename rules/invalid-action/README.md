@@ -21,7 +21,8 @@ This is a **required** rule — if it fails, all other rules are skipped for tha
 ### Composite step validation
 - Each step must have either `run`+`shell` or `uses`, but not both
 - `shell` is required when `run` is present
-- Remote actions (not local `./` or `docker://`) in `uses` must include a `@<ref>`
+- Remote actions (not local `./`, self-repository `$/`, or `docker://`) in `uses` must include a `@<ref>`
+- Self-repository references (`$/`) in `uses` must not include a `@<ref>`
 - Unknown step keys are rejected (only `run`, `shell`, `uses`, `with`, `name`, `id`, `if`, `env`, `continue-on-error`, `working-directory` are allowed)
 
 ### `inputs` validation

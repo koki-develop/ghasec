@@ -41,10 +41,6 @@ func checkStepAction(step workflow.StepMapping) *diagnostic.Error {
 		return nil
 	}
 
-	if ref.IsLocal() {
-		return nil
-	}
-
 	if ref.IsDocker() {
 		if sha256DigestRe.MatchString(ref.String()) {
 			return nil
@@ -57,7 +53,7 @@ func checkStepAction(step workflow.StepMapping) *diagnostic.Error {
 		}
 	}
 
-	if ref.Ref() == "" {
+	if !ref.IsRemote() || ref.Ref() == "" {
 		return nil
 	}
 

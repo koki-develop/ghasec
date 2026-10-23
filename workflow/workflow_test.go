@@ -247,6 +247,64 @@ func TestActionRef_IsDocker(t *testing.T) {
 	assert.False(t, workflow.NewActionRef("actions/checkout@v4", nil).IsDocker())
 }
 
+func TestActionRef_IsSelfRepository(t *testing.T) {
+	tests := []struct {
+		value string
+		want  bool
+	}{
+		{"$/", true},
+		{"$/.github/actions/build", true},
+		{"$/.github/workflows/reusable.yml", true},
+		{"$/actions/foo@v1", true},
+		{"./my-action", false},
+		{"actions/checkout@v4", false},
+		{"docker://alpine:3.8", false},
+		{"${{ matrix.action }}", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			assert.Equal(t, tt.want, workflow.NewActionRef(tt.value, nil).IsSelfRepository())
+		})
+	}
+}
+
+func TestActionRef_IsRemote(t *testing.T) {
+	tests := []struct {
+		value string
+		want  bool
+	}{
+		{"actions/checkout@v4", true},
+		{"org/repo/subpath@abc123", true},
+		{"org/repo/.github/workflows/reusable.yml@v1", true},
+		{"./my-action", false},
+		{"$/my-action", false},
+		{"docker://alpine:3.8", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			assert.Equal(t, tt.want, workflow.NewActionRef(tt.value, nil).IsRemote())
+		})
+	}
+}
+
+func TestActionRef_SelfRepositoryPath(t *testing.T) {
+	tests := []struct {
+		value string
+		want  string
+	}{
+		{"$/", ""},
+		{"$/.github/actions/build", ".github/actions/build"},
+		{"$/actions/foo@v1", "actions/foo"},
+		{"./my-action", ""},
+		{"actions/checkout@v4", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			assert.Equal(t, tt.want, workflow.NewActionRef(tt.value, nil).SelfRepositoryPath())
+		})
+	}
+}
+
 func TestActionRef_Ref(t *testing.T) {
 	ref := workflow.NewActionRef("actions/checkout@abc123", nil)
 	assert.Equal(t, git.Ref("abc123"), ref.Ref())
@@ -383,6 +441,31 @@ func TestActionRef_OwnerRepo_DockerAction(t *testing.T) {
 	owner, repo := ref.OwnerRepo()
 	assert.Equal(t, "", owner)
 	assert.Equal(t, "", repo)
+}
+
+func TestActionRef_OwnerRepo_SelfRepositoryAction(t *testing.T) {
+	ref := workflow.NewActionRef("$/.github/actions/build", nil)
+	owner, repo := ref.OwnerRepo()
+	assert.Equal(t, "", owner)
+	assert.Equal(t, "", repo)
+}
+
+func TestActionRef_SubPath(t *testing.T) {
+	tests := []struct {
+		value string
+		want  string
+	}{
+		{"actions/aws/ec2@v1", "ec2"},
+		{"actions/checkout@v4", ""},
+		{"./my-action/sub", ""},
+		{"$/.github/actions/build", ""},
+		{"docker://alpine:3.8", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			assert.Equal(t, tt.want, workflow.NewActionRef(tt.value, nil).SubPath())
+		})
+	}
 }
 
 func TestWorkflowMapping_EachStep_AnchoredJob(t *testing.T) {

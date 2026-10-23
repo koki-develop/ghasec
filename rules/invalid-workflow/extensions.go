@@ -86,7 +86,8 @@ func checkJobExtensions(jobs *ast.MappingNode) []*diagnostic.Error {
 	return errs
 }
 
-// C2: Reusable workflow ref format — external reusable workflow calls must include @<ref>.
+// C2: Reusable workflow ref format — a job-level "uses" must not be a Docker image,
+// external reusable workflow calls must include @<ref>, and self-repository calls must not.
 func checkJobUsesRef(job workflow.Mapping) []*diagnostic.Error {
 	usesKV := job.FindKey("uses")
 	if usesKV == nil {
@@ -100,11 +101,14 @@ func checkJobUsesRef(job workflow.Mapping) []*diagnostic.Error {
 		return nil
 	}
 	ref := workflow.NewActionRef(sv, usesKV.Value)
-	if !ref.IsLocal() && ref.Ref() == "" {
+	if ref.IsDocker() {
 		return []*diagnostic.Error{{
-			Token:   usesKV.Value.GetToken(),
-			Message: fmt.Sprintf("%q must have a ref", sv),
+			Token:   ref.Token(),
+			Message: "\"uses\" must be a reusable workflow reference, but got a Docker image",
 		}}
+	}
+	if e := rules.CheckUsesRef(ref); e != nil {
+		return []*diagnostic.Error{e}
 	}
 	return nil
 }
@@ -200,15 +204,13 @@ func checkStepExtensions(seq *ast.SequenceNode) []*diagnostic.Error {
 			})
 		}
 
-		// C1: Remote action ref format
+		// C1: Action ref format
 		if usesKV != nil {
 			stepW := workflow.StepMapping{Mapping: step}
-			ref, ok := stepW.Uses()
-			if ok && !ref.IsLocal() && !ref.IsDocker() && ref.Ref() == "" {
-				errs = append(errs, &diagnostic.Error{
-					Token:   ref.Token(),
-					Message: fmt.Sprintf("%q must have a ref", ref.String()),
-				})
+			if ref, ok := stepW.Uses(); ok {
+				if e := rules.CheckUsesRef(ref); e != nil {
+					errs = append(errs, e)
+				}
 			}
 		}
 	}

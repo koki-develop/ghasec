@@ -79,6 +79,18 @@ func TestRule_LocalAction(t *testing.T) {
 	assert.Empty(t, errs)
 }
 
+func TestRule_SelfRepositoryAction(t *testing.T) {
+	r := &unpinnedaction.Rule{}
+	for _, uses := range []string{"$/", "$/.github/actions/build", "$/.github/actions/build@v1"} {
+		t.Run(uses, func(t *testing.T) {
+			src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: " + uses + "\n"
+			assert.Empty(t, r.CheckWorkflow(parseMapping(t, src)))
+			actionSrc := "name: test\ndescription: test\nruns:\n  using: composite\n  steps:\n    - uses: " + uses + "\n"
+			assert.Empty(t, r.CheckAction(parseActionMapping(t, actionSrc)))
+		})
+	}
+}
+
 func TestRule_DockerActionDigestPinned(t *testing.T) {
 	tests := []struct {
 		name string

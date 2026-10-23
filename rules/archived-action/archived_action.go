@@ -46,7 +46,7 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 		return nil
 	}
 
-	if ref.IsLocal() || ref.IsDocker() {
+	if !ref.IsRemote() {
 		return nil
 	}
 

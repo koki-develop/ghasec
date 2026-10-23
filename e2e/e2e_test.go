@@ -485,6 +485,14 @@ func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
 				// subdirectory-action: owner/repo/sub/dir -> has unpinned dep
 				"owner/repo/sub/dir@" + shaA: "name: SubDir\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v2\n",
 
+				// self-repository-in-transitive: A -> $/internal/helper (same repo and commit) -> B@v2
+				"owner/self-ref-action@" + shaA:                 "name: A\nruns:\n  using: composite\n  steps:\n    - uses: $/internal/helper\n",
+				"owner/self-ref-action/internal/helper@" + shaA: "name: Helper\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v2\n",
+
+				// valid-self-repository-in-transitive: A -> $/internal/helper (node24)
+				"owner/self-ref-pinned@" + shaA:                 "name: A\nruns:\n  using: composite\n  steps:\n    - uses: $/internal/helper\n",
+				"owner/self-ref-pinned/internal/helper@" + shaA: "name: Helper\nruns:\n  using: node24\n  main: index.js\n",
+
 				// sibling-actions: owner/siblings/a -> owner/siblings/b (same repo and commit) -> C@v1
 				"owner/siblings/a@" + shaA: "name: A\nruns:\n  using: composite\n  steps:\n    - uses: owner/siblings/b@" + shaA + "\n",
 				"owner/siblings/b@" + shaA: "name: B\nruns:\n  using: composite\n  steps:\n    - uses: other/action-c@v1\n",
@@ -539,6 +547,8 @@ func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
 				"owner/circular-b":           shaB,
 				"owner/stop-at-unpinned":     shaA,
 				"owner/repo":                 shaA, // for subdirectory-action test
+				"owner/self-ref-action":      shaA,
+				"owner/self-ref-pinned":      shaA,
 				"owner/siblings":             shaA,
 			}
 			if sha, ok := knownRepoSHAs[repoKey]; ok {

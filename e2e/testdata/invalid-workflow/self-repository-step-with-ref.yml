@@ -1,0 +1,26 @@
+workflows:
+  - name: workflow.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: $/.github/actions/build@v1
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/workflow.yml:8:15
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     steps:
+    8 |       - uses: $/.github/actions/build@v1
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^^ "$/.github/actions/build@v1" must not have a ref (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 1 error found in 1 of 1 file

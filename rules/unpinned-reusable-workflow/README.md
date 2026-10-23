@@ -30,4 +30,4 @@ jobs:
     uses: octo-org/example-repo/.github/workflows/reusable.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v1.0.0
 ```
 
-Pin reusable workflow references to the full 40-character commit SHA. Add the version or tag as a comment to keep the reference human-readable. Local reusable workflow calls (`./.github/workflows/...`) are exempt because they always resolve to the calling workflow's own commit.
+Pin reusable workflow references to the full 40-character commit SHA. Add the version or tag as a comment to keep the reference human-readable. Same-repository reusable workflow calls (`$/.github/workflows/...` and `./.github/workflows/...`) are exempt because they always resolve to the calling workflow's own commit.

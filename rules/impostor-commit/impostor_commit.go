@@ -63,7 +63,7 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 }
 
 func (r *Rule) check(ref workflow.ActionRef) []*diagnostic.Error {
-	if ref.IsLocal() || ref.IsDocker() {
+	if !ref.IsRemote() {
 		return nil
 	}
 

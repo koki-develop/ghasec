@@ -114,6 +114,14 @@ func TestRule_NotFullSHA(t *testing.T) {
 	}
 }
 
+func TestRule_SelfRepositoryReference(t *testing.T) {
+	r := &missingsharefcomment.Rule{}
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: $/.github/actions/build@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+	assert.Empty(t, r.CheckWorkflow(parseMapping(t, src)))
+	actionSrc := "name: test\ndescription: test\nruns:\n  using: composite\n  steps:\n    - uses: $/.github/actions/build@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+	assert.Empty(t, r.CheckAction(parseActionMapping(t, actionSrc)))
+}
+
 func TestRule_LocalAndDockerActions(t *testing.T) {
 	r := &missingsharefcomment.Rule{}
 	tests := []struct {

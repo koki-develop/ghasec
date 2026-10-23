@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/goccy/go-yaml/ast"
@@ -314,4 +315,23 @@ func CollectJobError(eachJob func(func(*token.Token, workflow.JobMapping)), chec
 		}
 	})
 	return errs
+}
+
+// CheckUsesRef validates the "@ref" suffix of a "uses" value: a remote
+// reference must have one, and a self-repository reference ("$/...") must
+// not, because it always resolves to the running commit.
+func CheckUsesRef(ref workflow.ActionRef) *diagnostic.Error {
+	switch {
+	case ref.IsRemote() && ref.Ref() == "":
+		return &diagnostic.Error{
+			Token:   ref.Token(),
+			Message: fmt.Sprintf("%q must have a ref", ref.String()),
+		}
+	case ref.IsSelfRepository() && strings.Contains(ref.String(), "@"):
+		return &diagnostic.Error{
+			Token:   ref.Token(),
+			Message: fmt.Sprintf("%q must not have a ref", ref.String()),
+		}
+	}
+	return nil
 }

@@ -261,6 +261,68 @@ func TestRule_SubdirectoryAction(t *testing.T) {
 	assert.Contains(t, errs[0].Message, "other/action-b@v2")
 }
 
+func TestRule_SkipsSelfRepository(t *testing.T) {
+	r := &Rule{Fetcher: &mockFetcher{err: fmt.Errorf("must not be called")}}
+	m := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: $/.github/actions/build\n")
+	assert.Empty(t, r.CheckWorkflow(m))
+}
+
+func TestRule_SelfRepositoryInTransitiveResolvesToParent(t *testing.T) {
+	fetcher := &mockFetcher{files: map[string]*ast.File{
+		"owner/action-a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa":                 parseActionFile(t, "name: A\nruns:\n  using: composite\n  steps:\n    - uses: $/internal/helper\n"),
+		"owner/action-a/internal/helper@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": parseActionFile(t, "name: Helper\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v2\n"),
+	}}
+	r := &Rule{Fetcher: fetcher}
+	m := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: owner/action-a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Equal(t,
+		`"owner/action-a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" uses unpinned action "other/action-b@v2" via "owner/action-a/internal/helper@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`,
+		errs[0].Message,
+	)
+}
+
+func TestRule_SelfRepositoryInTransitivePinned(t *testing.T) {
+	fetcher := &mockFetcher{files: map[string]*ast.File{
+		"owner/action-a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa":                 parseActionFile(t, "name: A\nruns:\n  using: composite\n  steps:\n    - uses: $/internal/helper\n"),
+		"owner/action-a/internal/helper@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": parseActionFile(t, "name: Helper\nruns:\n  using: node20\n  main: index.js\n"),
+	}}
+	r := &Rule{Fetcher: fetcher}
+	m := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: owner/action-a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
+	assert.Empty(t, r.CheckWorkflow(m))
+}
+
+func TestRule_SelfRepositoryRootInTransitive(t *testing.T) {
+	fetcher := &mockFetcher{files: map[string]*ast.File{
+		"owner/repo/sub@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": parseActionFile(t, "name: Sub\nruns:\n  using: composite\n  steps:\n    - uses: $/\n"),
+		"owner/repo@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa":     parseActionFile(t, "name: Root\nruns:\n  using: composite\n  steps:\n    - uses: other/action-b@v2\n"),
+	}}
+	r := &Rule{Fetcher: fetcher}
+	m := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: owner/repo/sub@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
+	errs := r.CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, `via "owner/repo@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`)
+}
+
+func TestRule_SelfRepositoryCycleInTransitive(t *testing.T) {
+	fetcher := &mockFetcher{files: map[string]*ast.File{
+		"owner/repo/a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": parseActionFile(t, "name: A\nruns:\n  using: composite\n  steps:\n    - uses: $/b\n"),
+		"owner/repo/b@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": parseActionFile(t, "name: B\nruns:\n  using: composite\n  steps:\n    - uses: $/a\n"),
+	}}
+	r := &Rule{Fetcher: fetcher}
+	m := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: owner/repo/a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
+	assert.Empty(t, r.CheckWorkflow(m))
+}
+
+func TestRule_SelfRepositoryWithRefInTransitiveSkipped(t *testing.T) {
+	fetcher := &mockFetcher{files: map[string]*ast.File{
+		"owner/action-a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": parseActionFile(t, "name: A\nruns:\n  using: composite\n  steps:\n    - uses: $/internal/helper@v1\n"),
+	}}
+	r := &Rule{Fetcher: fetcher}
+	m := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: owner/action-a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
+	assert.Empty(t, r.CheckWorkflow(m))
+}
+
 func TestRule_SiblingActionsInSameRepoAreBothChecked(t *testing.T) {
 	fetcher := &mockFetcher{files: map[string]*ast.File{
 		"owner/repo/a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": parseActionFile(t, "name: A\nruns:\n  using: composite\n  steps:\n    - uses: owner/repo/b@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"),

@@ -366,6 +366,36 @@ func (a ActionRef) IsLocal() bool { return strings.HasPrefix(a.value, "./") }
 // IsDocker reports whether the action is a Docker reference (starts with "docker://").
 func (a ActionRef) IsDocker() bool { return strings.HasPrefix(a.value, "docker://") }
 
+// SelfRepositoryPrefix is the prefix of a self-repository reference, which
+// resolves to the repository of the file containing it at the running commit.
+const SelfRepositoryPrefix = "$/"
+
+// IsSelfRepository reports whether the action is a self-repository reference
+// (starts with "$/").
+func (a ActionRef) IsSelfRepository() bool {
+	return strings.HasPrefix(a.value, SelfRepositoryPrefix)
+}
+
+// IsRemote reports whether the action is a reference to another repository
+// in the owner/repo[/path]@ref form, i.e. neither a local path, a
+// self-repository reference, nor a Docker reference.
+func (a ActionRef) IsRemote() bool {
+	return !a.IsLocal() && !a.IsSelfRepository() && !a.IsDocker()
+}
+
+// SelfRepositoryPath returns the path after "$/" (and before any "@") for a
+// self-repository reference. Returns an empty string for other references.
+func (a ActionRef) SelfRepositoryPath() string {
+	if !a.IsSelfRepository() {
+		return ""
+	}
+	v := strings.TrimPrefix(a.value, SelfRepositoryPrefix)
+	if idx := strings.LastIndex(v, "@"); idx != -1 {
+		v = v[:idx]
+	}
+	return v
+}
+
 // Ref returns the git reference portion after the last "@".
 // Returns an empty Ref if there is no "@".
 func (a ActionRef) Ref() git.Ref {
@@ -377,10 +407,10 @@ func (a ActionRef) Ref() git.Ref {
 }
 
 // OwnerRepo extracts the owner and repo from the action path (before "@").
-// Returns empty strings for local actions, Docker actions, or paths that
+// Returns empty strings for non-remote actions (see IsRemote) or paths that
 // do not contain at least owner/repo.
 func (a ActionRef) OwnerRepo() (string, string) {
-	if a.IsLocal() || a.IsDocker() {
+	if !a.IsRemote() {
 		return "", ""
 	}
 	v := a.value
@@ -396,9 +426,10 @@ func (a ActionRef) OwnerRepo() (string, string) {
 
 // SubPath returns the subdirectory path within the repo for actions that use
 // the owner/repo/path@ref format (e.g., "actions/aws/ec2@v1" returns "ec2").
-// Returns an empty string if there is no subdirectory component.
+// Returns an empty string for non-remote actions (see IsRemote) or if there
+// is no subdirectory component.
 func (a ActionRef) SubPath() string {
-	if a.IsLocal() || a.IsDocker() {
+	if !a.IsRemote() {
 		return ""
 	}
 	v := a.value

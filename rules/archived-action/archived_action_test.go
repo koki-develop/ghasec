@@ -2,6 +2,7 @@ package archivedaction_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -104,6 +105,14 @@ func TestRule_LocalAction(t *testing.T) {
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: ./local-action\n"
 	errs := r.CheckWorkflow(parseMapping(t, src))
 	assert.Empty(t, errs)
+}
+
+func TestRule_SelfRepositoryAction(t *testing.T) {
+	r := &archivedaction.Rule{Checker: &mockChecker{err: errors.New("must not be called")}}
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: $/.github/actions/build\n"
+	assert.Empty(t, r.CheckWorkflow(parseMapping(t, src)))
+	actionSrc := "name: test\ndescription: test\nruns:\n  using: composite\n  steps:\n    - uses: $/.github/actions/build\n"
+	assert.Empty(t, r.CheckAction(parseActionMapping(t, actionSrc)))
 }
 
 func TestRule_DockerAction(t *testing.T) {

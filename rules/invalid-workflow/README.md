@@ -37,12 +37,15 @@ This is a **required** rule — if it fails, all other rules are skipped.
 - `runs-on` must be a string, sequence, or mapping
 - `steps` must be a sequence
 - `uses` (reusable workflow) must be a string
+- `uses` (reusable workflow) must not be a Docker image (`docker://`)
+- Remote reusable workflows in `uses` must include a `@<ref>`, and self-repository references (`$/`) must not
 - `strategy` must have a `matrix` key
 - Unknown job keys are rejected (allowed keys differ for normal jobs vs. reusable workflow jobs)
 
 ### Step validation
 - Each step must have either `uses` or `run`, but not both
-- Remote actions (not local `./` or `docker://`) in `uses` must include a `@<ref>`
+- Remote actions (not local `./`, self-repository `$/`, or `docker://`) in `uses` must include a `@<ref>`
+- Self-repository references (`$/`) in `uses` must not include a `@<ref>`
 - Unknown step keys are rejected
 
 ## Examples
@@ -176,6 +179,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout
+```
+
+```yaml
+# Self-repository reference with a ref
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: $/.github/actions/build@v1
 ```
 
 ```yaml

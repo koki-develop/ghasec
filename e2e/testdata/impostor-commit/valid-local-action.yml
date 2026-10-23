@@ -10,6 +10,7 @@ workflows:
           timeout-minutes: 10
           steps:
             - uses: ./local-action
+            - uses: $/local-action
 
 expected:
   exit_code: 0

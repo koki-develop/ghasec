@@ -6,7 +6,7 @@ Checks that SHA-pinned remote actions do not transitively use unpinned actions o
 
 Even when your workflow pins an action to a commit SHA, that action may internally reference other actions using mutable tags or branches. A compromised transitive dependency undermines the security of your entire pinning strategy. This attack surface is invisible during code review because the vulnerable reference lives inside a remote repository, not in your workflow file.
 
-The check is fully recursive: if action A uses pinned action B, and B uses pinned action C that has an unpinned dependency, it will be detected.
+The check is fully recursive: if action A uses pinned action B, and B uses pinned action C that has an unpinned dependency, it will be detected. A self-repository reference (`$/...`) inside a remote action resolves to that action's own repository at the same commit, so it is treated as pinned and its dependencies are checked in turn.
 
 ## Examples
 

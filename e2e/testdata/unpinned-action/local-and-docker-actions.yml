@@ -9,6 +9,7 @@ workflows:
           timeout-minutes: 10
           steps:
             - uses: ./local-action
+            - uses: $/local-action
             - run: echo hi
 
 expected:
