@@ -5,3 +5,6 @@ go = "1.26.4"
 "aqua:goreleaser/goreleaser" = "2.15.4"
 "aqua:hadolint/hadolint" = "2.14.0"
 "aqua:betterleaks/betterleaks" = "1.10.1"
+
+[tasks.bootstrap]
+run = ["lefthook install"]
