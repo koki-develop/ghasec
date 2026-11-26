@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/goccy/go-yaml/ast"
 	yamlparser "github.com/goccy/go-yaml/parser"
+	"github.com/koki-develop/ghasec/github"
 	mismatchedshatag "github.com/koki-develop/ghasec/rules/mismatched-sha-tag"
 	"github.com/koki-develop/ghasec/workflow"
 	"github.com/stretchr/testify/assert"
@@ -25,8 +27,17 @@ func parseMapping(t *testing.T, src string) workflow.WorkflowMapping {
 }
 
 type mockResolver struct {
-	shas map[string]string // "owner/repo@tag" -> sha
-	err  error
+	shas              map[string]string // "owner/repo@tag" -> sha
+	err               error
+	branches          map[string]bool // "owner/repo@branch" -> exists
+	branchErr         error
+	branchCallCount   int
+	onBranch          map[string]bool // "owner/repo@branch...sha" -> sha is on branch
+	onBranchErr       error
+	onBranchCallCount int
+	missingRepos      map[string]bool // "owner/repo" -> not found or not accessible
+	repoErr           error
+	repoCallCount     int
 }
 
 func (m *mockResolver) ResolveTagSHA(ctx context.Context, owner, repo, tag string) (string, error) {
@@ -36,9 +47,33 @@ func (m *mockResolver) ResolveTagSHA(ctx context.Context, owner, repo, tag strin
 	key := fmt.Sprintf("%s/%s@%s", owner, repo, tag)
 	sha, ok := m.shas[key]
 	if !ok {
-		return "", fmt.Errorf("tag %q not found", tag)
+		return "", fmt.Errorf("tag %q not found: %w", tag, &github.APIError{StatusCode: http.StatusNotFound})
 	}
 	return sha, nil
+}
+
+func (m *mockResolver) BranchExists(ctx context.Context, owner, repo, branch string) (bool, error) {
+	m.branchCallCount++
+	if m.branchErr != nil {
+		return false, m.branchErr
+	}
+	return m.branches[fmt.Sprintf("%s/%s@%s", owner, repo, branch)], nil
+}
+
+func (m *mockResolver) BranchContainsCommit(ctx context.Context, owner, repo, branch, sha string) (bool, error) {
+	m.onBranchCallCount++
+	if m.onBranchErr != nil {
+		return false, m.onBranchErr
+	}
+	return m.onBranch[fmt.Sprintf("%s/%s@%s...%s", owner, repo, branch, sha)], nil
+}
+
+func (m *mockResolver) RepoExists(ctx context.Context, owner, repo string) (bool, error) {
+	m.repoCallCount++
+	if m.repoErr != nil {
+		return false, m.repoErr
+	}
+	return !m.missingRepos[owner+"/"+repo], nil
 }
 
 func parseActionMapping(t *testing.T, src string) workflow.ActionMapping {
@@ -185,30 +220,139 @@ func TestRule_Reusable_NonSHARefSkipped(t *testing.T) {
 }
 
 func TestRule_ResolverError(t *testing.T) {
-	r := &mismatchedshatag.Rule{
-		Resolver: &mockResolver{
-			err: fmt.Errorf("network error"),
-		},
+	resolver := &mockResolver{
+		err:      fmt.Errorf("network error"),
+		branches: map[string]bool{"actions/checkout@v4": true},
 	}
+	r := &mismatchedshatag.Rule{Resolver: resolver}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4\n"
 	m := parseMapping(t, src)
 	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "failed to resolve tag")
 	assert.Contains(t, errs[0].Message, "network error")
+	assert.Zero(t, resolver.branchCallCount, "non-404 tag errors must not fall back to a branch lookup")
+	assert.Zero(t, resolver.repoCallCount)
 }
 
 func TestRule_TagNotFound(t *testing.T) {
-	r := &mismatchedshatag.Rule{
-		Resolver: &mockResolver{
-			shas: map[string]string{},
-		},
-	}
+	resolver := &mockResolver{shas: map[string]string{}}
+	r := &mismatchedshatag.Rule{Resolver: resolver}
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v999\n"
 	m := parseMapping(t, src)
 	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "failed to resolve tag")
+	assert.Equal(t, `comment "v999" must name an existing tag or branch of actions/checkout`, errs[0].Message)
+	assert.Equal(t, "v999", errs[0].Token.Value)
+	assert.Equal(t, 1, resolver.repoCallCount)
+	assert.Zero(t, resolver.onBranchCallCount)
+}
+
+func TestRule_RepoNotAccessible(t *testing.T) {
+	// GitHub answers HTTP 404 for a private repository the credentials cannot
+	// see, so a missing tag and branch must not be reported as a bad comment.
+	resolver := &mockResolver{missingRepos: map[string]bool{"octo-org/private-action": true}}
+	r := &mismatchedshatag.Rule{Resolver: resolver}
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: octo-org/private-action@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v1\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 1)
+	assert.Equal(t, `failed to resolve "v1" for "octo-org/private-action@de0fac2e4500dabe0009e67214ff5f5447ce83dd": repository octo-org/private-action was not found or is not accessible`, errs[0].Message)
+	assert.Equal(t, "v1", errs[0].Token.Value)
+}
+
+func TestRule_RepoLookupError(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{repoErr: fmt.Errorf("network error")},
+	}
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v999\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 1)
+	assert.Equal(t, `failed to resolve "v999" for "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd": network error`, errs[0].Message)
+}
+
+func TestRule_BranchComment(t *testing.T) {
+	const sha = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	resolver := &mockResolver{
+		branches: map[string]bool{
+			"actions/checkout@main":             true,
+			"octo-org/reusable-repo@release/v1": true,
+		},
+		onBranch: map[string]bool{
+			"actions/checkout@main..." + sha:             true,
+			"octo-org/reusable-repo@release/v1..." + sha: true,
+		},
+	}
+	r := &mismatchedshatag.Rule{Resolver: resolver}
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{"step", "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # main\n"},
+		{"reusable workflow with slash in branch", "on: push\njobs:\n  call:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd # release/v1\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Empty(t, r.CheckWorkflow(parseMapping(t, tt.src)))
+		})
+	}
+	actionSrc := "name: My Action\nruns:\n  using: composite\n  steps:\n    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # main\n"
+	assert.Empty(t, r.CheckAction(parseActionMapping(t, actionSrc)))
+	assert.Equal(t, 3, resolver.branchCallCount)
+	assert.Equal(t, 3, resolver.onBranchCallCount)
+	assert.Zero(t, resolver.repoCallCount)
+}
+
+func TestRule_CommitNotOnBranch(t *testing.T) {
+	resolver := &mockResolver{
+		branches: map[string]bool{"actions/checkout@main": true},
+		onBranch: map[string]bool{},
+	}
+	r := &mismatchedshatag.Rule{Resolver: resolver}
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # main\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 1)
+	assert.Equal(t, `commit must belong to branch "main" of actions/checkout`, errs[0].Message)
+	assert.Equal(t, "main", errs[0].Token.Value)
+	assert.Zero(t, resolver.repoCallCount)
+}
+
+func TestRule_BranchCompareError(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{
+			branches:    map[string]bool{"actions/checkout@main": true},
+			onBranchErr: fmt.Errorf("network error"),
+		},
+	}
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # main\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 1)
+	assert.Equal(t, `failed to verify branch "main" for "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd": network error`, errs[0].Message)
+}
+
+func TestRule_TagTakesPrecedenceOverBranch(t *testing.T) {
+	resolver := &mockResolver{
+		shas:     map[string]string{"actions/checkout@v4": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+		branches: map[string]bool{"actions/checkout@v4": true},
+	}
+	r := &mismatchedshatag.Rule{Resolver: resolver}
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, `"v4" points to commit "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", not the pinned commit`)
+	assert.Zero(t, resolver.branchCallCount)
+	assert.Zero(t, resolver.onBranchCallCount)
+}
+
+func TestRule_BranchLookupError(t *testing.T) {
+	r := &mismatchedshatag.Rule{
+		Resolver: &mockResolver{branchErr: fmt.Errorf("network error")},
+	}
+	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # main\n"
+	errs := r.CheckWorkflow(parseMapping(t, src))
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, `failed to resolve branch "main"`)
+	assert.Contains(t, errs[0].Message, "network error")
+	assert.Equal(t, "main", errs[0].Token.Value)
 }
 
 func TestRule_TokenPosition(t *testing.T) {

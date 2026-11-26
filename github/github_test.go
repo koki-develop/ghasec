@@ -3,6 +3,8 @@ package github
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -809,4 +811,385 @@ func TestParseLinkNext(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestBranchExists_Found(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/repos/actions/checkout/git/ref/heads/main", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(refJSON("commit", "de0fac2e4500dabe0009e67214ff5f5447ce83dd"))
+	})
+
+	got, err := c.BranchExists(context.Background(), "actions", "checkout", "main")
+	require.NoError(t, err)
+	assert.True(t, got)
+}
+
+func TestBranchExists_BranchWithSlash(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/repos/actions/checkout/git/ref/heads/release/v1", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(refJSON("commit", "de0fac2e4500dabe0009e67214ff5f5447ce83dd"))
+	})
+
+	got, err := c.BranchExists(context.Background(), "actions", "checkout", "release/v1")
+	require.NoError(t, err)
+	assert.True(t, got)
+}
+
+func TestBranchExists_404(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	})
+
+	got, err := c.BranchExists(context.Background(), "actions", "checkout", "nonexistent")
+	require.NoError(t, err)
+	assert.False(t, got)
+}
+
+func TestBranchExists_APIError(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+	})
+
+	_, err := c.BranchExists(context.Background(), "actions", "checkout", "main")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `failed to resolve branch "main" on actions/checkout`)
+	assert.Contains(t, err.Error(), "HTTP 500")
+}
+
+func TestBranchExists_RateLimit(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+	})
+
+	_, err := c.BranchExists(context.Background(), "actions", "checkout", "main")
+	require.Error(t, err)
+	assert.True(t, c.RateLimitHit())
+}
+
+func TestBranchExists_Cache(t *testing.T) {
+	var callCount atomic.Int32
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		callCount.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	})
+
+	ctx := context.Background()
+	for range 2 {
+		got, err := c.BranchExists(ctx, "actions", "checkout", "main")
+		require.NoError(t, err)
+		assert.False(t, got)
+	}
+	assert.Equal(t, int32(1), callCount.Load(), "second call should hit cache")
+}
+
+func TestBranchExists_Singleflight(t *testing.T) {
+	var callCount atomic.Int32
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		callCount.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(refJSON("commit", "de0fac2e4500dabe0009e67214ff5f5447ce83dd"))
+	})
+
+	ctx := context.Background()
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Go(func() {
+			got, err := c.BranchExists(ctx, "actions", "checkout", "main")
+			assert.NoError(t, err)
+			assert.True(t, got)
+		})
+	}
+	wg.Wait()
+
+	assert.LessOrEqual(t, callCount.Load(), int32(2), "singleflight should deduplicate concurrent calls")
+}
+
+func TestIsNotFound(t *testing.T) {
+	assert.True(t, IsNotFound(&APIError{StatusCode: http.StatusNotFound}))
+	assert.True(t, IsNotFound(fmt.Errorf("wrapped: %w", &APIError{StatusCode: http.StatusNotFound})))
+	assert.False(t, IsNotFound(&APIError{StatusCode: http.StatusInternalServerError}))
+	assert.False(t, IsNotFound(errors.New("network error")))
+	assert.False(t, IsNotFound(nil))
+}
+
+func TestResolveTagSHA_DereferenceTag404IsNotTagNotFound(t *testing.T) {
+	tagObjectSHA := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/actions/checkout/git/ref/tags/v4":
+			_, _ = w.Write(refJSON("tag", tagObjectSHA))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+		}
+	})
+
+	_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v4")
+	require.Error(t, err)
+	assert.False(t, IsNotFound(err), "an existing tag whose tag object is missing must not be reported as a missing tag")
+	assert.Contains(t, err.Error(), "missing tag object")
+	assert.Contains(t, err.Error(), "HTTP 404")
+}
+
+// --- Request URL escaping tests ---
+
+func TestRequestPaths_EscapeReservedCharacters(t *testing.T) {
+	const sha = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	tests := []struct {
+		name        string
+		call        func(c *Client) error
+		wantPath    string
+		wantRawPath string
+		wantQuery   map[string]string
+	}{
+		{
+			name: "tag with hash",
+			call: func(c *Client) error {
+				_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v1#x")
+				return err
+			},
+			wantPath:    "/repos/actions/checkout/git/ref/tags/v1#x",
+			wantRawPath: "/repos/actions/checkout/git/ref/tags/v1%23x",
+		},
+		{
+			name: "branch with hash and slash",
+			call: func(c *Client) error {
+				_, err := c.BranchExists(context.Background(), "actions", "checkout", "release/main#x")
+				return err
+			},
+			wantPath:    "/repos/actions/checkout/git/ref/heads/release/main#x",
+			wantRawPath: "/repos/actions/checkout/git/ref/heads/release/main%23x",
+		},
+		{
+			name: "branch with percent",
+			call: func(c *Client) error {
+				_, err := c.BranchExists(context.Background(), "actions", "checkout", "feat%zz")
+				return err
+			},
+			wantPath:    "/repos/actions/checkout/git/ref/heads/feat%zz",
+			wantRawPath: "/repos/actions/checkout/git/ref/heads/feat%25zz",
+		},
+		{
+			name: "compare base with hash and slash",
+			call: func(c *Client) error {
+				_, err := c.BranchContainsCommit(context.Background(), "actions", "checkout", "release/main#x", sha)
+				return err
+			},
+			wantPath:    "/repos/actions/checkout/compare/release/main#x..." + sha,
+			wantRawPath: "/repos/actions/checkout/compare/release/main%23x..." + sha,
+			wantQuery:   map[string]string{"per_page": "1"},
+		},
+		{
+			name: "contents ref with plus and ampersand",
+			call: func(c *Client) error {
+				_, err := c.FetchActionFile(context.Background(), "actions", "checkout", "sub dir", "v1.0.0+build&x=1")
+				return err
+			},
+			wantPath:    "/repos/actions/checkout/contents/sub dir/action.yml",
+			wantRawPath: "/repos/actions/checkout/contents/sub%20dir/action.yml",
+			wantQuery:   map[string]string{"ref": "v1.0.0+build&x=1"},
+		},
+		{
+			name: "owner and repo",
+			call: func(c *Client) error {
+				_, err := c.IsArchived(context.Background(), "a#b", "c%d")
+				return err
+			},
+			wantPath:    "/repos/a#b/c%d",
+			wantRawPath: "/repos/a%23b/c%25d",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var called atomic.Bool
+			c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+				called.Store(true)
+				assert.Equal(t, tt.wantPath, r.URL.Path)
+				assert.Equal(t, tt.wantRawPath, r.URL.EscapedPath())
+				for k, v := range tt.wantQuery {
+					assert.Equal(t, v, r.URL.Query().Get(k))
+				}
+				assert.Len(t, r.URL.Query(), len(tt.wantQuery))
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(map[string]string{"message": "stop"})
+			})
+			require.Error(t, tt.call(c))
+			assert.True(t, called.Load(), "the request must reach the server")
+		})
+	}
+}
+
+// --- RepoExists tests ---
+
+func TestRepoExists_Found(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/repos/actions/checkout", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"archived": false})
+	})
+
+	got, err := c.RepoExists(context.Background(), "actions", "checkout")
+	require.NoError(t, err)
+	assert.True(t, got)
+}
+
+func TestRepoExists_404(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	})
+
+	got, err := c.RepoExists(context.Background(), "octo-org", "private-action")
+	require.NoError(t, err)
+	assert.False(t, got)
+}
+
+func TestRepoExists_APIError(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+	})
+
+	_, err := c.RepoExists(context.Background(), "actions", "checkout")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to fetch repository metadata for actions/checkout")
+	assert.Contains(t, err.Error(), "HTTP 500")
+}
+
+func TestRepoExists_SharesCacheWithIsArchived(t *testing.T) {
+	var callCount atomic.Int32
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		callCount.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"archived": true})
+	})
+
+	ctx := context.Background()
+	exists, err := c.RepoExists(ctx, "actions", "checkout")
+	require.NoError(t, err)
+	assert.True(t, exists)
+	archived, err := c.IsArchived(ctx, "actions", "checkout")
+	require.NoError(t, err)
+	assert.True(t, archived)
+	assert.Equal(t, int32(1), callCount.Load())
+}
+
+func TestIsArchived_404(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	})
+
+	_, err := c.IsArchived(context.Background(), "actions", "checkout")
+	require.Error(t, err)
+	assert.True(t, IsNotFound(err))
+}
+
+// --- BranchContainsCommit tests ---
+
+func TestBranchContainsCommit_Status(t *testing.T) {
+	const sha = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+	tests := []struct {
+		status string
+		want   bool
+	}{
+		{"behind", true},
+		{"identical", true},
+		{"ahead", false},
+		{"diverged", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.status, func(t *testing.T) {
+			c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "/repos/actions/checkout/compare/main..."+sha, r.URL.Path)
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(map[string]string{"status": tt.status})
+			})
+
+			got, err := c.BranchContainsCommit(context.Background(), "actions", "checkout", "main", sha)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestBranchContainsCommit_404(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	})
+
+	got, err := c.BranchContainsCommit(context.Background(), "actions", "checkout", "main", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	require.NoError(t, err)
+	assert.False(t, got)
+}
+
+func TestBranchContainsCommit_APIError(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+	})
+
+	_, err := c.BranchContainsCommit(context.Background(), "actions", "checkout", "main", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "HTTP 500")
+}
+
+func TestBranchContainsCommit_Cache(t *testing.T) {
+	var callCount atomic.Int32
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		callCount.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "behind"})
+	})
+
+	ctx := context.Background()
+	for range 3 {
+		got, err := c.BranchContainsCommit(ctx, "actions", "checkout", "main", "de0fac2e4500dabe0009e67214ff5f5447ce83dd")
+		require.NoError(t, err)
+		assert.True(t, got)
+	}
+	assert.Equal(t, int32(1), callCount.Load())
+
+	_, err := c.BranchContainsCommit(ctx, "actions", "checkout", "main", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	require.NoError(t, err)
+	assert.Equal(t, int32(2), callCount.Load(), "a different commit must not reuse the cached result")
+}
+
+func TestBranchContainsCommit_Singleflight(t *testing.T) {
+	var callCount atomic.Int32
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		callCount.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "identical"})
+	})
+
+	ctx := context.Background()
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Go(func() {
+			got, err := c.BranchContainsCommit(ctx, "actions", "checkout", "main", "de0fac2e4500dabe0009e67214ff5f5447ce83dd")
+			assert.NoError(t, err)
+			assert.True(t, got)
+		})
+	}
+	wg.Wait()
+
+	assert.LessOrEqual(t, callCount.Load(), int32(2), "singleflight should deduplicate concurrent calls")
 }
