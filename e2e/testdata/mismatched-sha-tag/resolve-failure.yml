@@ -26,7 +26,7 @@ expected:
     7 |     steps:
     ...
     9 |       - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v999
-      |                                                                           ^^^^ failed to resolve tag "v999" for "actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": failed to resolve tag "v999" on actions/checkout: HTTP 404: Not Found (mismatched-sha-tag)
+      |                                                                           ^^^^ comment "v999" must name an existing tag or branch of actions/checkout (mismatched-sha-tag)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
 

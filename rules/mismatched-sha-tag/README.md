@@ -1,6 +1,6 @@
 # mismatched-sha-tag
 
-Checks that a commit SHA pinned in an action reference matches the tag written in its inline comment.
+Checks that a commit SHA pinned in an action reference matches the tag written in its inline comment. When the comment names a branch instead of a tag, it checks that the commit is on that branch.
 
 ## Risk
 
@@ -27,3 +27,15 @@ steps:
 ```
 
 Pin to the full 40-character commit SHA and add the corresponding tag as an inline comment. This rule resolves the tag via the GitHub API and verifies that the two stay in sync. It checks step-level `uses:` in both workflow files and action metadata files (composite action steps), and job-level `uses:` for reusable workflow references in workflow files.
+
+## Branch comments
+
+If the comment does not name an existing tag, the rule checks whether it names an existing branch. A branch moves, so its current head is expected to drift from the pinned SHA over time. The rule therefore accepts any commit that is the branch head or one of its ancestors, and reports a commit that is not on the branch.
+
+```yaml
+steps:
+  # Not reported: the SHA is on the "main" branch of actions/checkout.
+  - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # main
+```
+
+If the comment names neither an existing tag nor an existing branch (for example, a typo such as a nonexistent `# v6.0.3`), the rule reports it. When the repository itself cannot be found, which is also the case for a private repository that the configured token cannot read, the rule reports that the repository was not found or is not accessible.

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -32,8 +33,12 @@ type Client struct {
 	verifyFlight     singleflight.Group
 	branchCache      sync.Map // key: "owner/repo", value: branchCacheEntry
 	branchFlight     singleflight.Group
-	archiveCache     sync.Map // key: "owner/repo", value: archiveCacheEntry
-	archiveFlight    singleflight.Group
+	branchRefCache   sync.Map // key: "owner/repo@branch", value: branchRefCacheEntry
+	branchRefFlight  singleflight.Group
+	onBranchCache    sync.Map // key: "owner/repo@branch...sha", value: onBranchCacheEntry
+	onBranchFlight   singleflight.Group
+	repoCache        sync.Map // key: "owner/repo", value: repoCacheEntry
+	repoFlight       singleflight.Group
 	actionFileCache  sync.Map // key: "owner/repo@ref", value: actionFileCacheEntry
 	actionFileFlight singleflight.Group
 }
@@ -108,9 +113,19 @@ type branchCacheEntry struct {
 	err      error
 }
 
-type archiveCacheEntry struct {
-	archived bool
+type branchRefCacheEntry struct {
+	exists bool
+	err    error
+}
+
+type onBranchCacheEntry struct {
+	onBranch bool
 	err      error
+}
+
+type repoCacheEntry struct {
+	repo *repoResponse
+	err  error
 }
 
 type repoResponse struct {
@@ -157,7 +172,14 @@ func (c *Client) resolveTagSHA(ctx context.Context, owner, repo, tag string) (st
 	case "commit":
 		return ref.Object.SHA, nil
 	case "tag":
-		return c.dereferenceTag(ctx, owner, repo, ref.Object.SHA)
+		sha, err := c.dereferenceTag(ctx, owner, repo, ref.Object.SHA)
+		if IsNotFound(err) {
+			// The tag ref exists, so a missing tag object is a resolution
+			// failure, not a missing tag. Format with %v so that callers
+			// checking IsNotFound do not mistake it for a missing tag.
+			return "", fmt.Errorf("tag %q on %s/%s points to a missing tag object: %v", tag, owner, repo, err)
+		}
+		return sha, err
 	default:
 		return "", fmt.Errorf("unexpected ref object type %q", ref.Object.Type)
 	}
@@ -189,8 +211,28 @@ func (c *Client) doGet(ctx context.Context, path string, result any, errContext 
 	return nil
 }
 
+// repoPath returns the API path of a repository, "/repos/{owner}/{repo}",
+// followed by the given already-escaped suffix. owner and repo come from
+// workflow files, so they are escaped like every other user-supplied value
+// in a request URL.
+func repoPath(owner, repo, suffix string) string {
+	return "/repos/" + url.PathEscape(owner) + "/" + url.PathEscape(repo) + suffix
+}
+
+// escapeSegments escapes each slash-separated segment of s for use in a URL
+// path and keeps the slashes. Git ref names ("release/v1") and file paths are
+// sent to the GitHub API with their slashes as path separators, but any other
+// reserved character (such as "#", "%" or "+") must not change the request.
+func escapeSegments(s string) string {
+	segments := strings.Split(s, "/")
+	for i, seg := range segments {
+		segments[i] = url.PathEscape(seg)
+	}
+	return strings.Join(segments, "/")
+}
+
 func (c *Client) getRef(ctx context.Context, owner, repo, tag string) (*gitRef, error) {
-	path := fmt.Sprintf("/repos/%s/%s/git/ref/tags/%s", owner, repo, tag)
+	path := repoPath(owner, repo, "/git/ref/tags/"+escapeSegments(tag))
 	var ref gitRef
 	if err := c.doGet(ctx, path, &ref, fmt.Sprintf("failed to resolve tag %q on %s/%s", tag, owner, repo)); err != nil {
 		return nil, err
@@ -199,7 +241,7 @@ func (c *Client) getRef(ctx context.Context, owner, repo, tag string) (*gitRef, 
 }
 
 func (c *Client) dereferenceTag(ctx context.Context, owner, repo, tagSHA string) (string, error) {
-	path := fmt.Sprintf("/repos/%s/%s/git/tags/%s", owner, repo, tagSHA)
+	path := repoPath(owner, repo, "/git/tags/"+url.PathEscape(tagSHA))
 	var ref gitRef
 	if err := c.doGet(ctx, path, &ref, fmt.Sprintf("failed to dereference tag object %q on %s/%s", tagSHA, owner, repo)); err != nil {
 		return "", err
@@ -211,9 +253,73 @@ func (c *Client) dereferenceTag(ctx context.Context, owner, repo, tagSHA string)
 	return ref.Object.SHA, nil
 }
 
+// BranchExists reports whether a branch with the given name exists in the
+// repository. A missing branch (HTTP 404) is reported as (false, nil); other
+// API failures are returned as errors. Results are cached.
+func (c *Client) BranchExists(ctx context.Context, owner, repo, branch string) (bool, error) {
+	key := fmt.Sprintf("%s/%s@%s", owner, repo, branch)
+	if v, ok := c.branchRefCache.Load(key); ok {
+		entry := v.(branchRefCacheEntry)
+		return entry.exists, entry.err
+	}
+
+	v, err, _ := c.branchRefFlight.Do(key, func() (any, error) {
+		exists, err := c.branchExists(ctx, owner, repo, branch)
+		c.branchRefCache.Store(key, branchRefCacheEntry{exists: exists, err: err})
+		return exists, err
+	})
+	if err != nil {
+		return false, err
+	}
+	return v.(bool), nil
+}
+
+func (c *Client) branchExists(ctx context.Context, owner, repo, branch string) (bool, error) {
+	path := repoPath(owner, repo, "/git/ref/heads/"+escapeSegments(branch))
+	var ref gitRef
+	err := c.doGet(ctx, path, &ref, fmt.Sprintf("failed to resolve branch %q on %s/%s", branch, owner, repo))
+	if err == nil {
+		return true, nil
+	}
+	if IsNotFound(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+// BranchContainsCommit reports whether the commit sha is the head of the
+// branch or one of its ancestors. The caller must already know that the
+// branch exists: the compare API answers HTTP 404 both for a missing branch
+// and for a commit that shares no history with it, and both are reported as
+// (false, nil). Results are cached.
+func (c *Client) BranchContainsCommit(ctx context.Context, owner, repo, branch, sha string) (bool, error) {
+	key := fmt.Sprintf("%s/%s@%s...%s", owner, repo, branch, sha)
+	if v, ok := c.onBranchCache.Load(key); ok {
+		entry := v.(onBranchCacheEntry)
+		return entry.onBranch, entry.err
+	}
+
+	v, err, _ := c.onBranchFlight.Do(key, func() (any, error) {
+		status, err := c.compareCommit(ctx, owner, repo, branch, sha)
+		onBranch := err == nil && isReachableStatus(status)
+		c.onBranchCache.Store(key, onBranchCacheEntry{onBranch: onBranch, err: err})
+		return onBranch, err
+	})
+	if err != nil {
+		return false, err
+	}
+	return v.(bool), nil
+}
+
+// isReachableStatus reports whether a compare status for base...head means
+// that head is base itself or one of its ancestors.
+func isReachableStatus(status string) bool {
+	return status == "behind" || status == "identical"
+}
+
 // LatestRelease fetches the latest release tag name for the given repository.
 func (c *Client) LatestRelease(ctx context.Context, owner, repo string) (string, error) {
-	path := fmt.Sprintf("/repos/%s/%s/releases/latest", owner, repo)
+	path := repoPath(owner, repo, "/releases/latest")
 	var rel release
 	if err := c.doGet(ctx, path, &rel, fmt.Sprintf("failed to fetch latest release for %s/%s", owner, repo)); err != nil {
 		return "", err
@@ -235,6 +341,12 @@ type APIError struct {
 }
 
 func (e *APIError) Error() string { return e.msg }
+
+// IsNotFound reports whether err is (or wraps) a GitHub API error with HTTP 404.
+func IsNotFound(err error) bool {
+	var ae *APIError
+	return errors.As(err, &ae) && ae.StatusCode == http.StatusNotFound
+}
 
 // apiError builds an error from a non-200 GitHub API response,
 // including the error message from the response body when available.
@@ -287,30 +399,55 @@ func (c *Client) HasToken() bool {
 
 // IsArchived checks whether a repository is archived. Results are cached.
 func (c *Client) IsArchived(ctx context.Context, owner, repo string) (bool, error) {
-	key := fmt.Sprintf("%s/%s", owner, repo)
-	if v, ok := c.archiveCache.Load(key); ok {
-		entry := v.(archiveCacheEntry)
-		return entry.archived, entry.err
-	}
-
-	v, err, _ := c.archiveFlight.Do(key, func() (any, error) {
-		archived, err := c.isArchived(ctx, owner, repo)
-		c.archiveCache.Store(key, archiveCacheEntry{archived: archived, err: err})
-		return archived, err
-	})
+	r, err := c.repository(ctx, owner, repo)
 	if err != nil {
 		return false, err
 	}
-	return v.(bool), nil
+	return r.Archived, nil
 }
 
-func (c *Client) isArchived(ctx context.Context, owner, repo string) (bool, error) {
-	path := fmt.Sprintf("/repos/%s/%s", owner, repo)
+// RepoExists reports whether the repository exists and is visible to the
+// client's credentials. GitHub answers HTTP 404, not 403, for a private
+// repository the credentials cannot see, so a missing repository and an
+// inaccessible one are both reported as (false, nil); other API failures are
+// returned as errors. Results are cached and shared with IsArchived.
+func (c *Client) RepoExists(ctx context.Context, owner, repo string) (bool, error) {
+	_, err := c.repository(ctx, owner, repo)
+	if err == nil {
+		return true, nil
+	}
+	if IsNotFound(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+// repository fetches the repository metadata. Results are cached.
+func (c *Client) repository(ctx context.Context, owner, repo string) (*repoResponse, error) {
+	key := fmt.Sprintf("%s/%s", owner, repo)
+	if v, ok := c.repoCache.Load(key); ok {
+		entry := v.(repoCacheEntry)
+		return entry.repo, entry.err
+	}
+
+	v, err, _ := c.repoFlight.Do(key, func() (any, error) {
+		r, err := c.fetchRepository(ctx, owner, repo)
+		c.repoCache.Store(key, repoCacheEntry{repo: r, err: err})
+		return r, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.(*repoResponse), nil
+}
+
+func (c *Client) fetchRepository(ctx context.Context, owner, repo string) (*repoResponse, error) {
+	path := repoPath(owner, repo, "")
 	var r repoResponse
 	if err := c.doGet(ctx, path, &r, fmt.Sprintf("failed to fetch repository metadata for %s/%s", owner, repo)); err != nil {
-		return false, err
+		return nil, err
 	}
-	return r.Archived, nil
+	return &r, nil
 }
 
 // FetchActionFile fetches and parses the action.yml (or action.yaml) for a
@@ -357,7 +494,7 @@ func (c *Client) fetchContent(ctx context.Context, owner, repo, subPath, ref, fi
 	if subPath != "" {
 		contentPath = subPath + "/" + filename
 	}
-	apiPath := fmt.Sprintf("/repos/%s/%s/contents/%s?ref=%s", owner, repo, contentPath, ref)
+	apiPath := repoPath(owner, repo, "/contents/"+escapeSegments(contentPath)+"?"+url.Values{"ref": {ref}}.Encode())
 	var resp contentResponse
 	if err := c.doGet(ctx, apiPath, &resp, fmt.Sprintf("failed to fetch %s for %s/%s@%s", contentPath, owner, repo, ref)); err != nil {
 		return nil, err
@@ -431,7 +568,7 @@ func (c *Client) verifyCommit(ctx context.Context, owner, repo, sha string) (boo
 				results <- result{err: err}
 				return
 			}
-			reachable := status == "behind" || status == "identical"
+			reachable := isReachableStatus(status)
 			if reachable {
 				cancel()
 			}
@@ -456,7 +593,7 @@ func (c *Client) verifyCommit(ctx context.Context, owner, repo, sha string) (boo
 }
 
 func (c *Client) checkTagsPaginated(ctx context.Context, owner, repo, sha string) (bool, error) {
-	path := fmt.Sprintf("/repos/%s/%s/tags", owner, repo)
+	path := repoPath(owner, repo, "/tags")
 	for path != "" {
 		var page []repoTag
 		nextPath, err := c.doGetPaginated(ctx, path, &page,
@@ -501,7 +638,7 @@ func (c *Client) cachedListBranches(ctx context.Context, owner, repo string) ([]
 
 func (c *Client) listBranches(ctx context.Context, owner, repo string) ([]branch, error) {
 	var all []branch
-	path := fmt.Sprintf("/repos/%s/%s/branches", owner, repo)
+	path := repoPath(owner, repo, "/branches")
 	for path != "" {
 		var page []branch
 		nextPath, err := c.doGetPaginated(ctx, path, &page,
@@ -516,7 +653,7 @@ func (c *Client) listBranches(ctx context.Context, owner, repo string) ([]branch
 }
 
 func (c *Client) compareCommit(ctx context.Context, owner, repo, base, sha string) (string, error) {
-	path := fmt.Sprintf("/repos/%s/%s/compare/%s...%s?per_page=1", owner, repo, base, sha)
+	path := repoPath(owner, repo, "/compare/"+escapeSegments(base)+"..."+url.PathEscape(sha)+"?per_page=1")
 	url := c.baseURL + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

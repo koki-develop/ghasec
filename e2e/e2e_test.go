@@ -183,6 +183,7 @@ func mismatchedSHATagHandler(w http.ResponseWriter, r *http.Request) {
 
 	const (
 		validSHA             = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+		offBranchSHA         = "4444444444444444444444444444444444444444"
 		reusableReachableSHA = "1111111111111111111111111111111111111111"
 		reusableV2SHA        = "3333333333333333333333333333333333333333"
 	)
@@ -194,6 +195,30 @@ func mismatchedSHATagHandler(w http.ResponseWriter, r *http.Request) {
 			Ref:    "refs/tags/v4",
 			Object: mockGitObject{Type: "commit", SHA: validSHA},
 		})
+	// Branch resolution for mismatched-sha-tag (comment is a branch, not a tag)
+	case "/repos/actions/checkout/git/ref/heads/main":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref:    "refs/heads/main",
+			Object: mockGitObject{Type: "commit", SHA: validSHA},
+		})
+	case "/repos/actions/checkout/git/ref/heads/broken":
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+		return
+	case "/repos/actions/checkout/git/ref/heads/flaky":
+		_ = json.NewEncoder(w).Encode(mockGitRef{
+			Ref:    "refs/heads/flaky",
+			Object: mockGitObject{Type: "commit", SHA: validSHA},
+		})
+	// Branch membership for mismatched-sha-tag (is the pinned commit on the branch?)
+	case "/repos/actions/checkout/compare/main..." + validSHA:
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "identical"})
+	case "/repos/actions/checkout/compare/main..." + offBranchSHA:
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "diverged"})
+	case "/repos/actions/checkout/compare/flaky..." + validSHA:
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
+		return
 	// Tag listing — needed because impostor-commit rule also runs during mismatched-sha-tag tests
 	case "/repos/actions/checkout/tags":
 		_ = json.NewEncoder(w).Encode([]mockRepoTag{

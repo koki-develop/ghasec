@@ -179,7 +179,7 @@ expected:
                   "id": "mismatched-sha-tag",
                   "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md",
                   "shortDescription": {
-                    "text": "If the SHA and tag comment drift apart, the comment becomes a false assertion. A reviewer may approve the workflow believing a vetted release is in use while a different commit runs"
+                    "text": "If the SHA and the tag or branch in its comment drift apart, the comment becomes a false assertion. A reviewer may approve the workflow believing a vetted release is in use while a different commit runs"
                   }
                 },
                 {

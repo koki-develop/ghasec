@@ -16,7 +16,7 @@ Rules marked as **Online** require network access (e.g., GitHub API) and are dis
 | [impostor-commit](./impostor-commit/README.md) | Checks that a commit SHA pinned in an action reference is reachable from a branch or tag in the referenced repository. | Yes |
 | [job-all-permissions](./job-all-permissions/README.md) | Checks that job-level `permissions` does not use `read-all` or `write-all`. | |
 | [job-timeout-minutes](./job-timeout-minutes/README.md) | Checks that every job explicitly sets `timeout-minutes`. | |
-| [mismatched-sha-tag](./mismatched-sha-tag/README.md) | Checks that a commit SHA pinned in an action reference matches the tag in its inline comment. | Yes |
+| [mismatched-sha-tag](./mismatched-sha-tag/README.md) | Checks that a commit SHA pinned in an action reference matches the tag or branch in its inline comment. | Yes |
 | [missing-app-token-permissions](./missing-app-token-permissions/README.md) | Checks that `actions/create-github-app-token` specifies at least one `permission-*` input. | |
 | [missing-sha-ref-comment](./missing-sha-ref-comment/README.md) | Checks that actions pinned to a full-length commit SHA have an inline comment containing a valid git ref. | |
 | [script-injection](./script-injection/README.md) | Checks that `run:` steps and `actions/github-script`'s `script:` input do not contain `${{ }}` expressions. | |
