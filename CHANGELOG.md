@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.18.1](https://github.com/koki-develop/ghasec/compare/v0.18.0...v0.18.1) (2026-11-27)
+
+
+### Patches
+
+* **mismatched-sha-tag:** accept branch names in SHA pin comments ([#82](https://github.com/koki-develop/ghasec/issues/82)) ([5cc5ff2](https://github.com/koki-develop/ghasec/commit/5cc5ff2f5b3679e6889e8d94f7d9a8c1b565a445)), closes [#80](https://github.com/koki-develop/ghasec/issues/80)
+* stop repeating the request in GitHub API error messages ([#84](https://github.com/koki-develop/ghasec/issues/84)) ([9aece7c](https://github.com/koki-develop/ghasec/commit/9aece7ca806f9aa0a7dc5ecaa1e16341f7a57f26))
+
 ## [0.18.0](https://github.com/koki-develop/ghasec/compare/v0.17.0...v0.18.0) (2026-10-23)
 
 
