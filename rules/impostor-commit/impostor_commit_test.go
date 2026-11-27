@@ -96,8 +96,7 @@ func TestRule_VerifierError(t *testing.T) {
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd\n"
 	errs := r.CheckWorkflow(parseMapping(t, src))
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "failed to verify commit")
-	assert.Contains(t, errs[0].Message, "network error")
+	assert.Equal(t, "network error", errs[0].Message, "verifier errors must be reported as they are")
 }
 
 func TestRule_NotPinnedToSHA(t *testing.T) {
@@ -196,8 +195,7 @@ func TestRule_Reusable_VerifierError(t *testing.T) {
 	src := "on: push\njobs:\n  call:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
 	errs := r.CheckWorkflow(parseMapping(t, src))
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "failed to verify commit")
-	assert.Contains(t, errs[0].Message, "network error")
+	assert.Equal(t, "network error", errs[0].Message, "verifier errors must be reported as they are")
 }
 
 func TestRule_Reusable_NotPinned(t *testing.T) {

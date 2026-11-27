@@ -18,7 +18,9 @@ var sha256DigestRe = regexp.MustCompile(`@sha256:[0-9a-f]{64}$`)
 
 // ActionFileFetcher fetches a remote action's parsed action.yml/action.yaml file.
 // subPath is the subdirectory within the repo (e.g., "ec2/deploy" for
-// "actions/aws/ec2/deploy@ref"). It is empty for root-level actions.
+// "actions/aws/ec2/deploy@ref"). It is empty for root-level actions. The rule
+// reports its errors to the user as they are, so each error must describe the
+// request that failed, including the action.
 type ActionFileFetcher interface {
 	FetchActionFile(ctx context.Context, owner, repo, subPath, ref string) (*ast.File, error)
 }
@@ -98,7 +100,7 @@ func (r *Rule) checkTransitive(
 	if err != nil {
 		return []*diagnostic.Error{{
 			Token:   rootRef.Token(),
-			Message: fmt.Sprintf("failed to fetch action.yml for %q: %v", key, err),
+			Message: err.Error(),
 		}}
 	}
 

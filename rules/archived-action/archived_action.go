@@ -11,7 +11,9 @@ import (
 
 const id = "archived-action"
 
-// ArchiveChecker checks whether a repository is archived.
+// ArchiveChecker checks whether a repository is archived. The rule reports
+// its errors to the user as they are, so each error must describe the request
+// that failed, including the repository.
 type ArchiveChecker interface {
 	IsArchived(ctx context.Context, owner, repo string) (bool, error)
 }
@@ -59,7 +61,7 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	if err != nil {
 		return []*diagnostic.Error{{
 			Token:   ref.Token(),
-			Message: fmt.Sprintf("failed to check archive status for %q: %v", owner+"/"+repo, err),
+			Message: err.Error(),
 		}}
 	}
 

@@ -17,6 +17,8 @@ import (
 const id = "mismatched-sha-tag"
 
 // RefResolver resolves the git ref written in a SHA pin's comment via the GitHub API.
+// The rule reports its errors to the user as they are, so each error must
+// describe the request that failed, including the repository.
 type RefResolver interface {
 	// ResolveTagSHA resolves a git tag to its commit SHA. The returned SHA must
 	// be a full 40-character lowercase hexadecimal commit hash. When the tag
@@ -125,7 +127,7 @@ func (r *Rule) check(ref workflow.ActionRef) []*diagnostic.Error {
 	if err != nil {
 		return []*diagnostic.Error{{
 			Token:   tagTk,
-			Message: fmt.Sprintf("failed to resolve tag %q for %q: %v", tag, ref.String(), err),
+			Message: err.Error(),
 		}}
 	}
 
@@ -149,7 +151,7 @@ func (r *Rule) checkNonTag(ctx context.Context, ref workflow.ActionRef, owner, r
 	if err != nil {
 		return []*diagnostic.Error{{
 			Token:   tk,
-			Message: fmt.Sprintf("failed to resolve branch %q for %q: %v", name, ref.String(), err),
+			Message: err.Error(),
 		}}
 	}
 
@@ -158,7 +160,7 @@ func (r *Rule) checkNonTag(ctx context.Context, ref workflow.ActionRef, owner, r
 		if err != nil {
 			return []*diagnostic.Error{{
 				Token:   tk,
-				Message: fmt.Sprintf("failed to verify branch %q for %q: %v", name, ref.String(), err),
+				Message: err.Error(),
 			}}
 		}
 		if !onBranch {
@@ -177,13 +179,13 @@ func (r *Rule) checkNonTag(ctx context.Context, ref workflow.ActionRef, owner, r
 	if err != nil {
 		return []*diagnostic.Error{{
 			Token:   tk,
-			Message: fmt.Sprintf("failed to resolve %q for %q: %v", name, ref.String(), err),
+			Message: err.Error(),
 		}}
 	}
 	if !exists {
 		return []*diagnostic.Error{{
 			Token:   tk,
-			Message: fmt.Sprintf("failed to resolve %q for %q: repository %s/%s was not found or is not accessible", name, ref.String(), owner, repo),
+			Message: fmt.Sprintf("failed to resolve %q: repository %s/%s was not found or is not accessible", name, owner, repo),
 		}}
 	}
 

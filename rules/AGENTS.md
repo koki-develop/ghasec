@@ -62,6 +62,7 @@ Messages use **key-path subject style** — the YAML key or structural term is t
 - Cycle: `jobs must not have circular dependencies: a -> b -> a`
 - Expression in static position: `"<key>" must not contain expressions`
 - Expression syntax error: `invalid expression syntax: <parser message>`
+- GitHub API failure (online rules): the error as is (`Message: err.Error()`). Errors from the `github` package already say what was requested from which repository and why it failed, so a rule-side prefix such as `failed to resolve tag "<tag>" for "<uses>": ` only repeats them. The location of the diagnostic shows which `uses` it is about, and the error names the repository or action that was requested.
 
 **Tone:** Use `must` for all messages. Required rules enforce structural correctness; lint rules enforce security policy that the user opted into by running ghasec. `should` is too weak for either.
 
