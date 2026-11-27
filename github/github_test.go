@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -74,7 +75,7 @@ func TestResolveTagSHA_UnexpectedRefType(t *testing.T) {
 
 	_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v4")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `unexpected ref object type "blob"`)
+	assert.Equal(t, `tag "v4" on actions/checkout points to a blob object, not a commit or tag object`, err.Error())
 }
 
 func TestResolveTagSHA_AnnotatedTagNotPointingToCommit(t *testing.T) {
@@ -92,7 +93,7 @@ func TestResolveTagSHA_AnnotatedTagNotPointingToCommit(t *testing.T) {
 
 	_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v4")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `expected tag to point to commit, got "tree"`)
+	assert.Equal(t, `tag "v4" on actions/checkout points to a tag object that points to a tree object, not a commit`, err.Error())
 }
 
 func TestResolveTagSHA_404(t *testing.T) {
@@ -937,8 +938,7 @@ func TestResolveTagSHA_DereferenceTag404IsNotTagNotFound(t *testing.T) {
 	_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v4")
 	require.Error(t, err)
 	assert.False(t, IsNotFound(err), "an existing tag whose tag object is missing must not be reported as a missing tag")
-	assert.Contains(t, err.Error(), "missing tag object")
-	assert.Contains(t, err.Error(), "HTTP 404")
+	assert.Equal(t, `tag "v4" on actions/checkout points to a missing tag object "`+tagObjectSHA+`": HTTP 404: Not Found`, err.Error())
 }
 
 // --- Request URL escaping tests ---
@@ -1192,4 +1192,192 @@ func TestBranchContainsCommit_Singleflight(t *testing.T) {
 	wg.Wait()
 
 	assert.LessOrEqual(t, callCount.Load(), int32(2), "singleflight should deduplicate concurrent calls")
+}
+
+// TestErrorsDescribeTheFailedRequest checks that every error a Client method
+// returns says what was requested from which repository, because the online
+// rules show these errors to the user as they are.
+func TestErrorsDescribeTheFailedRequest(t *testing.T) {
+	const sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	tests := []struct {
+		name string
+		// failPath is the request path that fails; every other request
+		// succeeds with an empty page or a commit ref.
+		failPath string
+		call     func(c *Client) error
+		want     string
+	}{
+		{
+			name:     "resolve tag",
+			failPath: "/repos/actions/checkout/git/ref/tags/v1",
+			call: func(c *Client) error {
+				_, err := c.ResolveTagSHA(context.Background(), "actions", "checkout", "v1")
+				return err
+			},
+			want: `failed to resolve tag "v1" on actions/checkout`,
+		},
+		{
+			name:     "resolve branch",
+			failPath: "/repos/actions/checkout/git/ref/heads/main",
+			call: func(c *Client) error {
+				_, err := c.BranchExists(context.Background(), "actions", "checkout", "main")
+				return err
+			},
+			want: `failed to resolve branch "main" on actions/checkout`,
+		},
+		{
+			name:     "compare branch",
+			failPath: "/repos/actions/checkout/compare/main..." + sha,
+			call: func(c *Client) error {
+				_, err := c.BranchContainsCommit(context.Background(), "actions", "checkout", "main", sha)
+				return err
+			},
+			want: "failed to compare main..." + sha + " on actions/checkout",
+		},
+		{
+			name:     "repository metadata",
+			failPath: "/repos/actions/checkout",
+			call: func(c *Client) error {
+				_, err := c.IsArchived(context.Background(), "actions", "checkout")
+				return err
+			},
+			want: "failed to fetch repository metadata for actions/checkout",
+		},
+		{
+			name:     "action file",
+			failPath: "/repos/actions/checkout/contents/action.yml",
+			call: func(c *Client) error {
+				_, err := c.FetchActionFile(context.Background(), "actions", "checkout", "", sha)
+				return err
+			},
+			want: "failed to fetch action.yml for actions/checkout@" + sha,
+		},
+		{
+			name:     "action file in a subdirectory",
+			failPath: "/repos/actions/aws/contents/ec2/deploy/action.yml",
+			call: func(c *Client) error {
+				_, err := c.FetchActionFile(context.Background(), "actions", "aws", "ec2/deploy", sha)
+				return err
+			},
+			want: "failed to fetch action.yml for actions/aws/ec2/deploy@" + sha,
+		},
+		{
+			name:     "list tags",
+			failPath: "/repos/actions/checkout/tags",
+			call: func(c *Client) error {
+				_, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+				return err
+			},
+			want: "failed to list tags on actions/checkout",
+		},
+		{
+			name:     "list branches",
+			failPath: "/repos/actions/checkout/branches",
+			call: func(c *Client) error {
+				_, err := c.VerifyCommit(context.Background(), "actions", "checkout", sha)
+				return err
+			},
+			want: "failed to list branches on actions/checkout",
+		},
+		{
+			name:     "latest release",
+			failPath: "/repos/actions/checkout/releases/latest",
+			call: func(c *Client) error {
+				_, err := c.LatestRelease(context.Background(), "actions", "checkout")
+				return err
+			},
+			want: "failed to fetch latest release for actions/checkout",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+"/HTTP error", func(t *testing.T) {
+			c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if r.URL.Path == tt.failPath {
+					w.WriteHeader(http.StatusInternalServerError)
+					_ = json.NewEncoder(w).Encode(map[string]string{"message": "boom"})
+					return
+				}
+				_, _ = w.Write([]byte("[]"))
+			})
+			err := tt.call(c)
+			require.Error(t, err)
+			assert.Equal(t, tt.want+": HTTP 500: boom", err.Error())
+		})
+	}
+
+	t.Run("transport error", func(t *testing.T) {
+		// The first request of each call fails, so only cases whose failing
+		// request is the first one apply.
+		for _, tt := range tests {
+			if tt.name == "list branches" {
+				continue
+			}
+			t.Run(tt.name, func(t *testing.T) {
+				srv := httptest.NewServer(http.NotFoundHandler())
+				srv.Close()
+				c := NewClient(WithBaseURL(srv.URL), WithToken(""))
+				err := tt.call(c)
+				require.Error(t, err)
+				assert.True(t, strings.HasPrefix(err.Error(), tt.want+": "), "error %q must start with %q", err.Error(), tt.want)
+				assert.NotContains(t, err.Error(), srv.URL, "the request must not be described twice")
+			})
+		}
+	})
+}
+
+func TestTransportErrorKeepsCause(t *testing.T) {
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Error("a request with a canceled context must not reach the server")
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := c.ResolveTagSHA(ctx, "actions", "checkout", "v1")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
+	assert.True(t, strings.HasPrefix(err.Error(), `failed to resolve tag "v1" on actions/checkout: `), err.Error())
+}
+
+func TestFetchActionFile_NeitherFileExists(t *testing.T) {
+	const sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	var paths []string
+	var mu sync.Mutex
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		paths = append(paths, r.URL.Path)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+	})
+
+	_, err := c.FetchActionFile(context.Background(), "actions", "aws", "ec2/deploy", sha)
+	require.Error(t, err)
+	assert.Equal(t, "failed to fetch action.yml or action.yaml for actions/aws/ec2/deploy@"+sha+": HTTP 404: Not Found", err.Error())
+	assert.True(t, IsNotFound(err))
+	assert.Equal(t, []string{
+		"/repos/actions/aws/contents/ec2/deploy/action.yml",
+		"/repos/actions/aws/contents/ec2/deploy/action.yaml",
+	}, paths)
+}
+
+func TestFetchActionFile_FallbackFails(t *testing.T) {
+	const sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/repos/actions/checkout/contents/action.yml" {
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "boom"})
+	})
+
+	_, err := c.FetchActionFile(context.Background(), "actions", "checkout", "", sha)
+	require.Error(t, err)
+	assert.Equal(t, "failed to fetch action.yaml for actions/checkout@"+sha+" (action.yml was not found): HTTP 500: boom", err.Error())
+	assert.False(t, IsNotFound(err))
 }

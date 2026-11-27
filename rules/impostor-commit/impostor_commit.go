@@ -14,7 +14,9 @@ import (
 const id = "impostor-commit"
 
 // CommitVerifier checks whether a commit SHA is reachable from any branch or
-// tag in the given repository.
+// tag in the given repository. The rule reports its errors to the user as they
+// are, so each error must describe the request that failed, including the
+// repository.
 type CommitVerifier interface {
 	VerifyCommit(ctx context.Context, owner, repo, sha string) (bool, error)
 }
@@ -81,7 +83,7 @@ func (r *Rule) check(ref workflow.ActionRef) []*diagnostic.Error {
 	if err != nil {
 		return []*diagnostic.Error{{
 			Token:   ref.RefToken(),
-			Message: fmt.Sprintf("failed to verify commit for %q: %v", ref.String(), err),
+			Message: err.Error(),
 		}}
 	}
 

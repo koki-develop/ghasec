@@ -24,7 +24,7 @@ expected:
     ...
     7 |     steps:
     8 |       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # broken
-      |                                                                           ^^^^^^ failed to resolve branch "broken" for "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd": failed to resolve branch "broken" on actions/checkout: HTTP 500: Internal Server Error (mismatched-sha-tag)
+      |                                                                           ^^^^^^ failed to resolve branch "broken" on actions/checkout: HTTP 500: Internal Server Error (mismatched-sha-tag)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
 

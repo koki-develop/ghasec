@@ -147,7 +147,7 @@ func TestRule_FetchError(t *testing.T) {
 	m := parseWorkflow(t, "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: owner/action-a@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
 	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "failed to fetch action.yml")
+	assert.Equal(t, "HTTP 500: Internal Server Error", errs[0].Message, "fetcher errors must be reported as they are")
 }
 
 func TestRule_DockerUnpinnedInTransitive(t *testing.T) {

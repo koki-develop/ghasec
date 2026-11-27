@@ -229,8 +229,7 @@ func TestRule_ResolverError(t *testing.T) {
 	m := parseMapping(t, src)
 	errs := r.CheckWorkflow(m)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "failed to resolve tag")
-	assert.Contains(t, errs[0].Message, "network error")
+	assert.Equal(t, "network error", errs[0].Message, "resolver errors must be reported as they are")
 	assert.Zero(t, resolver.branchCallCount, "non-404 tag errors must not fall back to a branch lookup")
 	assert.Zero(t, resolver.repoCallCount)
 }
@@ -256,7 +255,7 @@ func TestRule_RepoNotAccessible(t *testing.T) {
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: octo-org/private-action@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v1\n"
 	errs := r.CheckWorkflow(parseMapping(t, src))
 	require.Len(t, errs, 1)
-	assert.Equal(t, `failed to resolve "v1" for "octo-org/private-action@de0fac2e4500dabe0009e67214ff5f5447ce83dd": repository octo-org/private-action was not found or is not accessible`, errs[0].Message)
+	assert.Equal(t, `failed to resolve "v1": repository octo-org/private-action was not found or is not accessible`, errs[0].Message)
 	assert.Equal(t, "v1", errs[0].Token.Value)
 }
 
@@ -267,7 +266,7 @@ func TestRule_RepoLookupError(t *testing.T) {
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v999\n"
 	errs := r.CheckWorkflow(parseMapping(t, src))
 	require.Len(t, errs, 1)
-	assert.Equal(t, `failed to resolve "v999" for "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd": network error`, errs[0].Message)
+	assert.Equal(t, "network error", errs[0].Message, "resolver errors must be reported as they are")
 }
 
 func TestRule_BranchComment(t *testing.T) {
@@ -326,7 +325,7 @@ func TestRule_BranchCompareError(t *testing.T) {
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # main\n"
 	errs := r.CheckWorkflow(parseMapping(t, src))
 	require.Len(t, errs, 1)
-	assert.Equal(t, `failed to verify branch "main" for "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd": network error`, errs[0].Message)
+	assert.Equal(t, "network error", errs[0].Message, "resolver errors must be reported as they are")
 }
 
 func TestRule_TagTakesPrecedenceOverBranch(t *testing.T) {
@@ -350,8 +349,7 @@ func TestRule_BranchLookupError(t *testing.T) {
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # main\n"
 	errs := r.CheckWorkflow(parseMapping(t, src))
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, `failed to resolve branch "main"`)
-	assert.Contains(t, errs[0].Message, "network error")
+	assert.Equal(t, "network error", errs[0].Message, "resolver errors must be reported as they are")
 	assert.Equal(t, "main", errs[0].Token.Value)
 }
 
@@ -453,8 +451,7 @@ func TestRule_Reusable_ResolverError(t *testing.T) {
 	src := "on: push\njobs:\n  call:\n    uses: octo-org/reusable-repo/.github/workflows/ci.yml@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v1\n"
 	errs := r.CheckWorkflow(parseMapping(t, src))
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "failed to resolve tag")
-	assert.Contains(t, errs[0].Message, "network error")
+	assert.Equal(t, "network error", errs[0].Message, "resolver errors must be reported as they are")
 }
 
 func TestRule_Reusable_LocalSkipped(t *testing.T) {

@@ -26,7 +26,7 @@ expected:
     7 |     steps:
     ...
     9 |       - uses: octo-org/private-action@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v1
-      |                                                                                  ^^ failed to resolve "v1" for "octo-org/private-action@de0fac2e4500dabe0009e67214ff5f5447ce83dd": repository octo-org/private-action was not found or is not accessible (mismatched-sha-tag)
+      |                                                                                  ^^ failed to resolve "v1": repository octo-org/private-action was not found or is not accessible (mismatched-sha-tag)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/mismatched-sha-tag/README.md
 

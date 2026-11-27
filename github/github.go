@@ -22,6 +22,12 @@ import (
 
 const defaultBaseURL = "https://api.github.com"
 
+// Client is a GitHub REST API client.
+//
+// Every error returned by a Client method describes the request that failed:
+// what was requested and from which repository, followed by the cause (an
+// HTTP status, a transport error, or a decoding error). The online rules show
+// these errors to the user as they are, without adding context of their own.
 type Client struct {
 	httpClient       *http.Client
 	baseURL          string
@@ -39,7 +45,7 @@ type Client struct {
 	onBranchFlight   singleflight.Group
 	repoCache        sync.Map // key: "owner/repo", value: repoCacheEntry
 	repoFlight       singleflight.Group
-	actionFileCache  sync.Map // key: "owner/repo@ref", value: actionFileCacheEntry
+	actionFileCache  sync.Map // key: actionKey(owner, repo, subPath, ref), value: actionFileCacheEntry
 	actionFileFlight singleflight.Group
 }
 
@@ -172,16 +178,17 @@ func (c *Client) resolveTagSHA(ctx context.Context, owner, repo, tag string) (st
 	case "commit":
 		return ref.Object.SHA, nil
 	case "tag":
-		sha, err := c.dereferenceTag(ctx, owner, repo, ref.Object.SHA)
-		if IsNotFound(err) {
+		sha, err := c.dereferenceTag(ctx, owner, repo, tag, ref.Object.SHA)
+		var ae *APIError
+		if errors.As(err, &ae) && ae.StatusCode == http.StatusNotFound {
 			// The tag ref exists, so a missing tag object is a resolution
-			// failure, not a missing tag. Format with %v so that callers
+			// failure, not a missing tag. Do not wrap err, so that callers
 			// checking IsNotFound do not mistake it for a missing tag.
-			return "", fmt.Errorf("tag %q on %s/%s points to a missing tag object: %v", tag, owner, repo, err)
+			return "", fmt.Errorf("tag %q on %s/%s points to a missing tag object %q: %s", tag, owner, repo, ref.Object.SHA, ae.status)
 		}
 		return sha, err
 	default:
-		return "", fmt.Errorf("unexpected ref object type %q", ref.Object.Type)
+		return "", fmt.Errorf("tag %q on %s/%s points to a %s object, not a commit or tag object", tag, owner, repo, ref.Object.Type)
 	}
 }
 
@@ -191,13 +198,13 @@ func (c *Client) doGet(ctx context.Context, path string, result any, errContext 
 	url := c.baseURL + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return err
+		return requestError(errContext, err)
 	}
 	c.setHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return requestError(errContext, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -209,6 +216,18 @@ func (c *Client) doGet(ctx context.Context, path string, result any, errContext 
 		return fmt.Errorf("%s: %w", errContext, err)
 	}
 	return nil
+}
+
+// requestError wraps an error that ended a request before any response
+// arrived. The *url.Error returned by net/http repeats the request method and
+// URL, which errContext already describes, so only its cause is kept. The
+// cause stays wrapped, so errors.Is still matches context.Canceled.
+func requestError(errContext string, err error) error {
+	var ue *url.Error
+	if errors.As(err, &ue) {
+		err = ue.Err
+	}
+	return fmt.Errorf("%s: %w", errContext, err)
 }
 
 // repoPath returns the API path of a repository, "/repos/{owner}/{repo}",
@@ -240,7 +259,7 @@ func (c *Client) getRef(ctx context.Context, owner, repo, tag string) (*gitRef, 
 	return &ref, nil
 }
 
-func (c *Client) dereferenceTag(ctx context.Context, owner, repo, tagSHA string) (string, error) {
+func (c *Client) dereferenceTag(ctx context.Context, owner, repo, tag, tagSHA string) (string, error) {
 	path := repoPath(owner, repo, "/git/tags/"+url.PathEscape(tagSHA))
 	var ref gitRef
 	if err := c.doGet(ctx, path, &ref, fmt.Sprintf("failed to dereference tag object %q on %s/%s", tagSHA, owner, repo)); err != nil {
@@ -248,7 +267,7 @@ func (c *Client) dereferenceTag(ctx context.Context, owner, repo, tagSHA string)
 	}
 
 	if ref.Object.Type != "commit" {
-		return "", fmt.Errorf("expected tag to point to commit, got %q", ref.Object.Type)
+		return "", fmt.Errorf("tag %q on %s/%s points to a tag object that points to a %s object, not a commit", tag, owner, repo, ref.Object.Type)
 	}
 	return ref.Object.SHA, nil
 }
@@ -337,10 +356,19 @@ func (c *Client) setHeaders(req *http.Request) {
 // APIError represents an error from a GitHub API response with the HTTP status code.
 type APIError struct {
 	StatusCode int
-	msg        string
+	// status is the response part of the message: the HTTP status code and,
+	// when the response body has one, GitHub's error message.
+	status string
+	msg    string
 }
 
 func (e *APIError) Error() string { return e.msg }
+
+// withContext returns a copy of e whose message describes the failed request
+// with errContext instead.
+func (e *APIError) withContext(errContext string) *APIError {
+	return &APIError{StatusCode: e.StatusCode, status: e.status, msg: errContext + ": " + e.status}
+}
 
 // IsNotFound reports whether err is (or wraps) a GitHub API error with HTTP 404.
 func IsNotFound(err error) bool {
@@ -363,13 +391,11 @@ func (c *Client) apiError(resp *http.Response, errContext string) error {
 		c.rateLimitHit.Store(true)
 	}
 
-	ae := &APIError{StatusCode: resp.StatusCode}
+	status := fmt.Sprintf("HTTP %d", resp.StatusCode)
 	if body.Message != "" {
-		ae.msg = fmt.Sprintf("%s: HTTP %d: %s", errContext, resp.StatusCode, body.Message)
-	} else {
-		ae.msg = fmt.Sprintf("%s: HTTP %d", errContext, resp.StatusCode)
+		status += ": " + body.Message
 	}
-	return ae
+	return &APIError{StatusCode: resp.StatusCode, status: status, msg: errContext + ": " + status}
 }
 
 func (c *Client) isRateLimited(resp *http.Response, message string) bool {
@@ -455,10 +481,7 @@ func (c *Client) fetchRepository(ctx context.Context, owner, repo string) (*repo
 // (e.g., "ec2/deploy" for "actions/aws/ec2/deploy@ref"); pass "" for root-level
 // actions. Results are cached.
 func (c *Client) FetchActionFile(ctx context.Context, owner, repo, subPath, ref string) (*ast.File, error) {
-	key := fmt.Sprintf("%s/%s@%s", owner, repo, ref)
-	if subPath != "" {
-		key = fmt.Sprintf("%s/%s/%s@%s", owner, repo, subPath, ref)
-	}
+	key := actionKey(owner, repo, subPath, ref)
 	if v, ok := c.actionFileCache.Load(key); ok {
 		entry := v.(actionFileCacheEntry)
 		return entry.file, entry.err
@@ -475,39 +498,58 @@ func (c *Client) FetchActionFile(ctx context.Context, owner, repo, subPath, ref 
 	return v.(*ast.File), nil
 }
 
+// actionKey returns the action reference as written in a "uses" value:
+// "owner/repo@ref", or "owner/repo/subPath@ref" for an action in a
+// subdirectory.
+func actionKey(owner, repo, subPath, ref string) string {
+	if subPath != "" {
+		return fmt.Sprintf("%s/%s/%s@%s", owner, repo, subPath, ref)
+	}
+	return fmt.Sprintf("%s/%s@%s", owner, repo, ref)
+}
+
 func (c *Client) fetchActionFile(ctx context.Context, owner, repo, subPath, ref string) (*ast.File, error) {
-	f, err := c.fetchContent(ctx, owner, repo, subPath, ref, "action.yml")
+	key := actionKey(owner, repo, subPath, ref)
+	f, err := c.fetchContent(ctx, owner, repo, subPath, ref, "action.yml", key)
 	if err == nil {
 		return f, nil
 	}
 	// Only fall back to action.yaml when action.yml does not exist (404).
 	// Other errors (500, 429, network, etc.) should propagate immediately.
-	var ae *APIError
-	if !errors.As(err, &ae) || ae.StatusCode != http.StatusNotFound {
+	if !IsNotFound(err) {
 		return nil, err
 	}
-	return c.fetchContent(ctx, owner, repo, subPath, ref, "action.yaml")
+	// Errors about action.yaml also say that action.yml was not found, so
+	// that they do not suggest action.yml was never looked for.
+	f, err = c.fetchContent(ctx, owner, repo, subPath, ref, "action.yaml", key+" (action.yml was not found)")
+	var ae *APIError
+	if errors.As(err, &ae) && ae.StatusCode == http.StatusNotFound {
+		return nil, ae.withContext(fmt.Sprintf("failed to fetch action.yml or action.yaml for %s", key))
+	}
+	return f, err
 }
 
-func (c *Client) fetchContent(ctx context.Context, owner, repo, subPath, ref, filename string) (*ast.File, error) {
+// fetchContent fetches and parses filename in the action's directory. subject
+// names the action in error messages.
+func (c *Client) fetchContent(ctx context.Context, owner, repo, subPath, ref, filename, subject string) (*ast.File, error) {
 	contentPath := filename
 	if subPath != "" {
 		contentPath = subPath + "/" + filename
 	}
 	apiPath := repoPath(owner, repo, "/contents/"+escapeSegments(contentPath)+"?"+url.Values{"ref": {ref}}.Encode())
 	var resp contentResponse
-	if err := c.doGet(ctx, apiPath, &resp, fmt.Sprintf("failed to fetch %s for %s/%s@%s", contentPath, owner, repo, ref)); err != nil {
+	if err := c.doGet(ctx, apiPath, &resp, fmt.Sprintf("failed to fetch %s for %s", filename, subject)); err != nil {
 		return nil, err
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(resp.Content)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode %s for %s/%s@%s: %w", contentPath, owner, repo, ref, err)
+		return nil, fmt.Errorf("failed to decode %s for %s: %w", filename, subject, err)
 	}
 
 	f, err := yamlparser.ParseBytes(decoded, 0)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse %s for %s/%s@%s: %w", contentPath, owner, repo, ref, err)
+		return nil, fmt.Errorf("failed to parse %s for %s: %w", filename, subject, err)
 	}
 	return f, nil
 }
@@ -654,16 +696,17 @@ func (c *Client) listBranches(ctx context.Context, owner, repo string) ([]branch
 
 func (c *Client) compareCommit(ctx context.Context, owner, repo, base, sha string) (string, error) {
 	path := repoPath(owner, repo, "/compare/"+escapeSegments(base)+"..."+url.PathEscape(sha)+"?per_page=1")
+	errContext := fmt.Sprintf("failed to compare %s...%s on %s/%s", base, sha, owner, repo)
 	url := c.baseURL + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", err
+		return "", requestError(errContext, err)
 	}
 	c.setHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", requestError(errContext, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -674,12 +717,12 @@ func (c *Client) compareCommit(ctx context.Context, owner, repo, base, sha strin
 		return "", nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", c.apiError(resp, fmt.Sprintf("failed to compare %s...%s on %s/%s", base, sha, owner, repo))
+		return "", c.apiError(resp, errContext)
 	}
 
 	var cr compareResponse
 	if err := json.NewDecoder(resp.Body).Decode(&cr); err != nil {
-		return "", fmt.Errorf("failed to compare %s...%s on %s/%s: %w", base, sha, owner, repo, err)
+		return "", fmt.Errorf("%s: %w", errContext, err)
 	}
 	return cr.Status, nil
 }
@@ -688,13 +731,13 @@ func (c *Client) doGetPaginated(ctx context.Context, path string, result any, er
 	url := c.baseURL + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", err
+		return "", requestError(errContext, err)
 	}
 	c.setHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", requestError(errContext, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 

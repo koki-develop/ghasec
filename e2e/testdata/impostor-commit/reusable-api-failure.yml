@@ -17,7 +17,7 @@ expected:
     3 | jobs:
     4 |   call:
     5 |     uses: octo-org/evil-reusable/.github/workflows/ci.yml@2222222222222222222222222222222222222222
-      |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ failed to verify commit for "octo-org/evil-reusable/.github/workflows/ci.yml@2222222222222222222222222222222222222222": failed to list tags on octo-org/evil-reusable: HTTP 500: Internal Server Error (impostor-commit)
+      |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ failed to list tags on octo-org/evil-reusable: HTTP 500: Internal Server Error (impostor-commit)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/impostor-commit/README.md
 
     ✗ 1 error found in 1 of 1 file

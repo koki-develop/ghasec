@@ -96,8 +96,7 @@ func TestRule_CheckerError(t *testing.T) {
 	src := "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: some-org/some-repo@v1\n"
 	errs := r.CheckWorkflow(parseMapping(t, src))
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Message, "failed to check archive status")
-	assert.Contains(t, errs[0].Message, "network error")
+	assert.Equal(t, "network error", errs[0].Message, "checker errors must be reported as they are")
 }
 
 func TestRule_LocalAction(t *testing.T) {
