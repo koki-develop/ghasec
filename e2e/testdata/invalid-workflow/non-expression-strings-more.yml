@@ -1,0 +1,90 @@
+workflows:
+  - name: non-expression-strings-more.yml
+    content: |
+      on: push
+      permissions: {}
+      env: production
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: "10"
+          continue-on-error: "true"
+          container:
+            image: node:20@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1
+            env: production
+          services:
+            db:
+              image: postgres@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1
+              env: production
+          steps:
+            - run: echo hi
+        call:
+          uses: ./.github/workflows/reusable.yml
+          with: production
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/non-expression-strings-more.yml:3:6
+    ...
+    3 | env: production
+      |      ^^^^^^^^^^ "env" must be a mapping, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings-more.yml:7:23
+    ...
+    4 | jobs:
+    5 |   build:
+    ...
+    7 |     timeout-minutes: "10"
+      |                       ^^ "timeout-minutes" must be a number, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings-more.yml:8:25
+    ...
+    4 | jobs:
+    5 |   build:
+    ...
+    8 |     continue-on-error: "true"
+      |                         ^^^^ "continue-on-error" must be a boolean, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings-more.yml:11:12
+    ...
+     4 | jobs:
+     5 |   build:
+    ...
+     9 |     container:
+    ...
+    11 |       env: production
+       |            ^^^^^^^^^^ "env" must be a mapping, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings-more.yml:15:14
+    ...
+     4 | jobs:
+     5 |   build:
+    ...
+    12 |     services:
+    13 |       db:
+    ...
+    15 |         env: production
+       |              ^^^^^^^^^^ "env" must be a mapping, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings-more.yml:20:11
+    ...
+     4 | jobs:
+    ...
+    18 |   call:
+    ...
+    20 |     with: production
+       |           ^^^^^^^^^^ "with" must be a mapping, but got string (invalid-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 6 errors found in 1 of 1 file

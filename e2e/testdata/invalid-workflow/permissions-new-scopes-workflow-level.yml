@@ -1,0 +1,50 @@
+workflows:
+  - name: permissions-new-scopes-workflow-level.yml
+    content: |
+      on: push
+      permissions:
+        contents: read
+        copilot-requests: write
+        vulnerability-alerts: read
+      jobs:
+        agent:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: permissions-new-scopes-workflow-level-none.yml
+    content: |
+      on: push
+      permissions:
+        copilot-requests: none
+        vulnerability-alerts: none
+      jobs:
+        agent:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/permissions-new-scopes-workflow-level-none.yml:2:1
+    ...
+    2 | permissions:
+      | ^^^^^^^^^^^ "permissions" must be {}; grant permissions per job instead (default-permissions)
+    3 |   copilot-requests: none
+    4 |   vulnerability-alerts: none
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
+
+    --> {{.Dir}}/permissions-new-scopes-workflow-level.yml:2:1
+    ...
+    2 | permissions:
+      | ^^^^^^^^^^^ "permissions" must be {}; grant permissions per job instead (default-permissions)
+    3 |   contents: read
+    4 |   copilot-requests: write
+    5 |   vulnerability-alerts: read
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/default-permissions/README.md
+
+    ✗ 2 errors found in 2 of 2 files

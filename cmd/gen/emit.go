@@ -1339,9 +1339,19 @@ func (e *emitter) emitAnyOf(valueExpr string, branches []*Node, errsVar string, 
 
 	e.emitTypeCheck(valueExpr, merged, errsVar, keyName)
 
+	// A mapping only has to satisfy one of the branches that accept a
+	// mapping, so a branch's mapping checks are applied on their own only
+	// when it is the only such branch.
+	mappingBranches := 0
+	for _, b := range branches {
+		if acceptsMapping(b) {
+			mappingBranches++
+		}
+	}
+
 	// For each branch that has sub-constraints, emit them guarded by type.
 	for _, b := range branches {
-		if nodeHasChildMappingChecks(b) {
+		if mappingBranches <= 1 && nodeHasChildMappingChecks(b) {
 			id := e.nextID()
 			subVar := fmt.Sprintf("_anyOfM%d", id)
 			e.line("if %s, _ok := rules.UnwrapNode(%s).(*ast.MappingNode); _ok {", subVar, valueExpr)
@@ -1369,6 +1379,36 @@ func (e *emitter) emitAnyOf(valueExpr string, branches []*Node, errsVar string, 
 			e.line("}")
 		}
 	}
+}
+
+// acceptsMapping reports whether n can accept a mapping.
+func acceptsMapping(n *Node) bool {
+	if n == nil {
+		return false
+	}
+	if len(n.Types) > 0 {
+		return slices.Contains(n.Types, "mapping")
+	}
+	for _, b := range n.OneOf {
+		if acceptsMapping(b) {
+			return true
+		}
+	}
+	for _, b := range n.AnyOf {
+		if acceptsMapping(b) {
+			return true
+		}
+	}
+	if len(n.AllOf) > 0 {
+		for _, b := range n.AllOf {
+			if !acceptsMapping(b) {
+				return false
+			}
+		}
+		return true
+	}
+	// No type constraint at all.
+	return len(n.OneOf) == 0 && len(n.AnyOf) == 0
 }
 
 // emitIfThenElse emits conditional validation based on if/then/else schema.

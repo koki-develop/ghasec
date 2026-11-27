@@ -1,0 +1,60 @@
+workflows:
+  - name: image-version-null.yml
+    content: |
+      on:
+        image_version:
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: image-version-sequences.yml
+    content: |
+      on:
+        image_version:
+          names: [my-image, "org/*"]
+          versions: ["1.*"]
+          types: [created, ready, deleted]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: image-version-strings.yml
+    content: |
+      on:
+        image_version:
+          names: my-image
+          versions: "2.*"
+          types: ready
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: image-version-scalars.yml
+    content: |
+      on:
+        image_version:
+          names: [1, true]
+          versions: 1.0
+          types: ready
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 4 files checked, no errors found

@@ -9,7 +9,7 @@ This is a **required** rule — if it fails, all other rules are skipped.
 ### Top-level structure
 - `on` key must exist and be a string, sequence, or mapping
 - `jobs` key must exist, be non-empty, and be a mapping
-- Unknown top-level keys are rejected (only `name`, `run-name`, `on`, `permissions`, `env`, `defaults`, `concurrency`, `jobs` are allowed)
+- Unknown top-level keys are rejected (only `name`, `run-name`, `on`, `permissions`, `env`, `defaults`, `concurrency`, `cache-mode`, `jobs` are allowed)
 
 ### Event validation (`on`)
 - Unknown event names are rejected (e.g., `invalid_event`)
@@ -21,7 +21,7 @@ This is a **required** rule — if it fails, all other rules are skipped.
 - `permissions` (workflow-level and job-level) must be a string or mapping
 - String values must be `read-all` or `write-all`
 - Mapping keys must be known scopes (e.g., `contents`, `issues`, `actions`, etc.)
-- Scope values must be `read`, `write`, or `none`
+- Scope values must be `read`, `write`, or `none`, except for scopes that accept only some of them: `id-token` and `copilot-requests` accept `write` or `none`, and `models` and `vulnerability-alerts` accept `read` or `none`
 
 ### Defaults validation
 - `defaults` (workflow-level and job-level) only allows the `run` key

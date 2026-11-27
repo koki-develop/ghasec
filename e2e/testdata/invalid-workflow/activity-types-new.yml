@@ -1,0 +1,21 @@
+workflows:
+  - name: activity-types-new.yml
+    content: |
+      on:
+        issues:
+          types: [typed, untyped, field_added, field_removed, status_changed]
+        pull_request_target:
+          types: [milestoned, demilestoned, enqueued, dequeued]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

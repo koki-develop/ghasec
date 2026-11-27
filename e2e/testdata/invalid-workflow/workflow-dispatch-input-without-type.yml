@@ -1,0 +1,28 @@
+workflows:
+  - name: workflow-dispatch-input-without-type.yml
+    content: |
+      on:
+        workflow_dispatch:
+          inputs:
+            version:
+              description: version to release
+              required: true
+            dry_run:
+              default: false
+            count:
+              default: 3
+            target:
+              options: [staging, production]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

@@ -1,0 +1,29 @@
+workflows:
+  - name: permissions-id-token-read.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          permissions:
+            id-token: read
+          steps:
+            - run: echo hi
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/permissions-id-token-read.yml:8:17
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     permissions:
+    8 |       id-token: read
+      |                 ^^^^ "permissions" scope "id-token" must be "write" or "none", but got "read" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 1 error found in 1 of 1 file

@@ -8,7 +8,7 @@ import (
 )
 
 func TestConvert_WorkflowTopLevel(t *testing.T) {
-	schema, err := loadSchema("../../schemastore/src/schemas/json/github-workflow.json")
+	schema, err := loadSchema("../../schemastore/src/schemas/json/github-workflow.json", workflowOverrides)
 	require.NoError(t, err)
 
 	node := convert(schema, "")
@@ -28,7 +28,7 @@ func TestConvert_WorkflowTopLevel(t *testing.T) {
 }
 
 func TestConvert_ActionTopLevel(t *testing.T) {
-	schema, err := loadSchema("../../schemastore/src/schemas/json/github-action.json")
+	schema, err := loadSchema("../../schemastore/src/schemas/json/github-action.json", actionOverrides)
 	require.NoError(t, err)
 
 	node := convert(schema, "")
@@ -49,7 +49,7 @@ func TestConvert_ActionTopLevel(t *testing.T) {
 }
 
 func TestConvert_EnumExtraction(t *testing.T) {
-	schema, err := loadSchema("../../schemastore/src/schemas/json/github-action.json")
+	schema, err := loadSchema("../../schemastore/src/schemas/json/github-action.json", actionOverrides)
 	require.NoError(t, err)
 
 	node := convert(schema, "")
@@ -69,7 +69,7 @@ func TestConvert_EnumExtraction(t *testing.T) {
 }
 
 func TestConvert_ActionRunsOneOf(t *testing.T) {
-	schema, err := loadSchema("../../schemastore/src/schemas/json/github-action.json")
+	schema, err := loadSchema("../../schemastore/src/schemas/json/github-action.json", actionOverrides)
 	require.NoError(t, err)
 
 	node := convert(schema, "")
@@ -103,4 +103,38 @@ func TestConvert_TypeMapping(t *testing.T) {
 	for _, tc := range cases {
 		assert.Equal(t, tc.yamlType, jsonTypeToYAML(tc.jsonType))
 	}
+}
+
+// TestConvert_DropsExpressionOnlyBranches checks that a oneOf/anyOf branch
+// that only accepts a `${{ }}` expression string is dropped. Values
+// containing `${{` are skipped by the generated code anyway, and keeping the
+// branch would make any plain string pass.
+func TestConvert_DropsExpressionOnlyBranches(t *testing.T) {
+	path := writeSchema(t, `{
+		"$schema": "http://json-schema.org/draft-07/schema#",
+		"definitions": {
+			"expr": {"type": "string", "pattern": "^\\$\\{\\{(.|[\\r\\n])*\\}\\}$"},
+			"containsExpr": {"type": "string", "pattern": "^.*\\$\\{\\{(.|[\\r\\n])*\\}\\}.*$"}
+		},
+		"type": "object",
+		"properties": {
+			"env": {"oneOf": [{"type": "object"}, {"$ref": "#/definitions/containsExpr"}]},
+			"timeout": {"anyOf": [{"type": "number"}, {"$ref": "#/definitions/expr"}]},
+			"name": {"oneOf": [{"type": "string"}, {"type": "number"}]}
+		}
+	}`)
+	s, err := loadSchema(path, nil)
+	require.NoError(t, err)
+	root := convert(s, "")
+
+	env := root.Properties["env"]
+	require.Len(t, env.OneOf, 1)
+	assert.Equal(t, []string{"mapping"}, env.OneOf[0].Types)
+
+	timeout := root.Properties["timeout"]
+	require.Len(t, timeout.AnyOf, 1)
+	assert.Equal(t, []string{"number"}, timeout.AnyOf[0].Types)
+
+	// Plain string branches are kept.
+	assert.Len(t, root.Properties["name"].OneOf, 2)
 }

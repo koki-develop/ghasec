@@ -1,0 +1,27 @@
+workflows:
+  - name: cache-mode-invalid.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          cache-mode: foo
+          steps:
+            - run: echo hi
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/cache-mode-invalid.yml:7:17
+    ...
+    3 | jobs:
+    4 |   build:
+    ...
+    7 |     cache-mode: foo
+      |                 ^^^ "cache-mode" has unknown value "foo" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 1 error found in 1 of 1 file
