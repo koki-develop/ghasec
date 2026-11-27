@@ -118,6 +118,8 @@ var workflowOverrides = []schemaOverride{
 	{"workflow_dispatch input type is optional", overrideDispatchInputType},
 	{"event types accept a single string", overrideEventTypesString},
 	{"image_version accepts types and single strings", overrideImageVersion},
+	{"branch, tag and path filters accept a single value", overrideFilterSingleValue},
+	{"workflow_run workflows accepts a single value", overrideWorkflowRunWorkflowsSingleValue},
 	{"copilot-requests accepts none", overrideCopilotRequestsNone},
 	{"workflow_call secret accepts null", overrideWorkflowCallSecretNull},
 }
@@ -250,6 +252,16 @@ func overrideEventTypesString(doc map[string]any) error {
 	return nil
 }
 
+// filterValueOneOf is the oneOf of an event filter value: one non-empty
+// value, or a sequence of them, where numbers and booleans are accepted
+// because GitHub reads them as strings (one-of non-empty-string and
+// sequence-of-non-empty-string in actions/languageservices). The sequence
+// keeps upstream's minItems 1, which languageservices does not have.
+const filterValueOneOf = `[
+	{"type": ["string", "number", "boolean"], "minLength": 1},
+	{"type": "array", "items": {"type": ["string", "number", "boolean"], "minLength": 1}, "minItems": 1}
+]`
+
 // overrideImageVersion: upstream lists only "names" and "versions" as
 // sequences of strings. GitHub also accepts "types" (created, ready,
 // deleted), a single value for each of the three, and numbers and booleans
@@ -281,14 +293,8 @@ func overrideImageVersion(doc map[string]any) error {
 	branches[1] = mustParse(`{
 		"type": "object",
 		"properties": {
-			"names": {"oneOf": [
-				{"type": ["string", "number", "boolean"]},
-				{"type": "array", "items": {"type": ["string", "number", "boolean"]}, "minItems": 1}
-			]},
-			"versions": {"oneOf": [
-				{"type": ["string", "number", "boolean"]},
-				{"type": "array", "items": {"type": ["string", "number", "boolean"]}, "minItems": 1}
-			]},
+			"names": {"oneOf": ` + filterValueOneOf + `},
+			"versions": {"oneOf": ` + filterValueOneOf + `},
 			"types": {"oneOf": [
 				{"type": "string", "enum": ["created", "ready", "deleted"]},
 				{"type": "array", "items": {"type": "string", "enum": ["created", "ready", "deleted"]}}
@@ -296,6 +302,52 @@ func overrideImageVersion(doc map[string]any) error {
 		},
 		"additionalProperties": false
 	}`)
+	return nil
+}
+
+// overrideFilterSingleValue: upstream defines the branches, tags and paths
+// filters of push, pull_request and pull_request_target (and their -ignore
+// forms) as #/definitions/branch and #/definitions/path, both a $ref to
+// #/definitions/globs, a sequence of non-empty strings. GitHub also accepts a
+// single value and reads numbers and booleans as strings. The two
+// definitions are rewritten rather than globs, so that anything else that
+// refers to globs keeps its upstream meaning.
+func overrideFilterSingleValue(doc map[string]any) error {
+	defs, err := lookupMap(doc, "definitions")
+	if err != nil {
+		return err
+	}
+	if !jsonEqual(defs["globs"], `{"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}`) {
+		return fmt.Errorf("definitions.globs: expected a sequence of non-empty strings")
+	}
+	for _, k := range []string{"branch", "path"} {
+		def, ok := defs[k].(map[string]any)
+		if !ok || def["$ref"] != "#/definitions/globs" {
+			return fmt.Errorf("definitions.%s: expected $ref #/definitions/globs", k)
+		}
+		for key := range def {
+			if key != "$ref" && !annotationKeys[key] {
+				return fmt.Errorf("definitions.%s.%s: unexpected", k, key)
+			}
+		}
+		delete(def, "$ref")
+		def["oneOf"] = mustParse(filterValueOneOf)
+	}
+	return nil
+}
+
+// overrideWorkflowRunWorkflowsSingleValue: upstream allows only a sequence of
+// strings for on.workflow_run.workflows. GitHub also accepts a single value,
+// reads numbers and booleans as strings, and rejects empty names.
+func overrideWorkflowRunWorkflowsSingleValue(doc map[string]any) error {
+	props, err := lookupMap(doc, "properties", "on", "oneOf", 2, "properties", "workflow_run", "oneOf", 1, "properties")
+	if err != nil {
+		return err
+	}
+	if !jsonEqual(props["workflows"], `{"type": "array", "items": {"type": "string"}, "minItems": 1}`) {
+		return fmt.Errorf("workflow_run.workflows: expected a sequence of strings")
+	}
+	props["workflows"] = map[string]any{"oneOf": mustParse(filterValueOneOf)}
 	return nil
 }
 

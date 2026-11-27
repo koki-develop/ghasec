@@ -5713,41 +5713,44 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											// Property: "branches"
 											if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM52}).FindKey("branches"); _kvbranches != nil {
 												if !rules.IsExpressionNode(_kvbranches.Value) {
-													if !rules.IsSequence(_kvbranches.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request.branches",
-															Key:     "branches",
-															Got:     rules.NodeTypeName(_kvbranches.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvbranches.Value.GetToken(),
-														})
-													}
-													if _branchesSeq, _branchesSeqOk := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _branchesSeqOk {
-														if len(_branchesSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request.branches",
-																Key:     "branches",
-																Got:     fmt.Sprintf("%d", len(_branchesSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvbranches.Value.GetToken(),
-															})
-														}
-														for _, _item := range _branchesSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request.branches.*",
-																		Key:     "branches[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=53)
+													if rules.IsBoolean(_kvbranches.Value) || rules.IsNumber(_kvbranches.Value) || rules.IsString(_kvbranches.Value) {
+													} else if rules.IsSequence(_kvbranches.Value) {
+														if _oneOfSeq53, _ok := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq53.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request.branches",
+																	Key:     "branches",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq53.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvbranches.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq53.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request.branches.*",
+																			Key:     "branches[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvbranches.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "branches",
+															Key:     "branches",
+															Got:     rules.NodeTypeName(_kvbranches.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvbranches.Value.GetToken(),
+														})
 													}
 												}
 											}
@@ -5755,41 +5758,44 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											// Property: "branches-ignore"
 											if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM52}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
 												if !rules.IsExpressionNode(_kvbranches_ignore.Value) {
-													if !rules.IsSequence(_kvbranches_ignore.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request.branches-ignore",
-															Key:     "branches-ignore",
-															Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvbranches_ignore.Value.GetToken(),
-														})
-													}
-													if _branches_ignoreSeq, _branches_ignoreSeqOk := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _branches_ignoreSeqOk {
-														if len(_branches_ignoreSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request.branches-ignore",
-																Key:     "branches-ignore",
-																Got:     fmt.Sprintf("%d", len(_branches_ignoreSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvbranches_ignore.Value.GetToken(),
-															})
-														}
-														for _, _item := range _branches_ignoreSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request.branches-ignore.*",
-																		Key:     "branches-ignore[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=54)
+													if rules.IsBoolean(_kvbranches_ignore.Value) || rules.IsNumber(_kvbranches_ignore.Value) || rules.IsString(_kvbranches_ignore.Value) {
+													} else if rules.IsSequence(_kvbranches_ignore.Value) {
+														if _oneOfSeq54, _ok := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq54.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request.branches-ignore",
+																	Key:     "branches-ignore",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq54.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvbranches_ignore.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq54.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request.branches-ignore.*",
+																			Key:     "branches-ignore[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvbranches_ignore.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "branches-ignore",
+															Key:     "branches-ignore",
+															Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvbranches_ignore.Value.GetToken(),
+														})
 													}
 												}
 											}
@@ -5797,41 +5803,44 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											// Property: "paths"
 											if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM52}).FindKey("paths"); _kvpaths != nil {
 												if !rules.IsExpressionNode(_kvpaths.Value) {
-													if !rules.IsSequence(_kvpaths.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request.paths",
-															Key:     "paths",
-															Got:     rules.NodeTypeName(_kvpaths.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvpaths.Value.GetToken(),
-														})
-													}
-													if _pathsSeq, _pathsSeqOk := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _pathsSeqOk {
-														if len(_pathsSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request.paths",
-																Key:     "paths",
-																Got:     fmt.Sprintf("%d", len(_pathsSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvpaths.Value.GetToken(),
-															})
-														}
-														for _, _item := range _pathsSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request.paths.*",
-																		Key:     "paths[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=55)
+													if rules.IsBoolean(_kvpaths.Value) || rules.IsNumber(_kvpaths.Value) || rules.IsString(_kvpaths.Value) {
+													} else if rules.IsSequence(_kvpaths.Value) {
+														if _oneOfSeq55, _ok := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq55.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request.paths",
+																	Key:     "paths",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq55.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvpaths.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq55.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request.paths.*",
+																			Key:     "paths[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvpaths.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "paths",
+															Key:     "paths",
+															Got:     rules.NodeTypeName(_kvpaths.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvpaths.Value.GetToken(),
+														})
 													}
 												}
 											}
@@ -5839,41 +5848,44 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											// Property: "paths-ignore"
 											if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM52}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
 												if !rules.IsExpressionNode(_kvpaths_ignore.Value) {
-													if !rules.IsSequence(_kvpaths_ignore.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request.paths-ignore",
-															Key:     "paths-ignore",
-															Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvpaths_ignore.Value.GetToken(),
-														})
-													}
-													if _paths_ignoreSeq, _paths_ignoreSeqOk := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _paths_ignoreSeqOk {
-														if len(_paths_ignoreSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request.paths-ignore",
-																Key:     "paths-ignore",
-																Got:     fmt.Sprintf("%d", len(_paths_ignoreSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvpaths_ignore.Value.GetToken(),
-															})
-														}
-														for _, _item := range _paths_ignoreSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request.paths-ignore.*",
-																		Key:     "paths-ignore[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=56)
+													if rules.IsBoolean(_kvpaths_ignore.Value) || rules.IsNumber(_kvpaths_ignore.Value) || rules.IsString(_kvpaths_ignore.Value) {
+													} else if rules.IsSequence(_kvpaths_ignore.Value) {
+														if _oneOfSeq56, _ok := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq56.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request.paths-ignore",
+																	Key:     "paths-ignore",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq56.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvpaths_ignore.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq56.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request.paths-ignore.*",
+																			Key:     "paths-ignore[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvpaths_ignore.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "paths-ignore",
+															Key:     "paths-ignore",
+															Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvpaths_ignore.Value.GetToken(),
+														})
 													}
 												}
 											}
@@ -5881,41 +5893,44 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											// Property: "tags"
 											if _kvtags := (workflow.Mapping{MappingNode: _oneOfM52}).FindKey("tags"); _kvtags != nil {
 												if !rules.IsExpressionNode(_kvtags.Value) {
-													if !rules.IsSequence(_kvtags.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request.tags",
-															Key:     "tags",
-															Got:     rules.NodeTypeName(_kvtags.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvtags.Value.GetToken(),
-														})
-													}
-													if _tagsSeq, _tagsSeqOk := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _tagsSeqOk {
-														if len(_tagsSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request.tags",
-																Key:     "tags",
-																Got:     fmt.Sprintf("%d", len(_tagsSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvtags.Value.GetToken(),
-															})
-														}
-														for _, _item := range _tagsSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request.tags.*",
-																		Key:     "tags[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=57)
+													if rules.IsBoolean(_kvtags.Value) || rules.IsNumber(_kvtags.Value) || rules.IsString(_kvtags.Value) {
+													} else if rules.IsSequence(_kvtags.Value) {
+														if _oneOfSeq57, _ok := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq57.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request.tags",
+																	Key:     "tags",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq57.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvtags.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq57.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request.tags.*",
+																			Key:     "tags[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvtags.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "tags",
+															Key:     "tags",
+															Got:     rules.NodeTypeName(_kvtags.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvtags.Value.GetToken(),
+														})
 													}
 												}
 											}
@@ -5923,41 +5938,44 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											// Property: "tags-ignore"
 											if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM52}).FindKey("tags-ignore"); _kvtags_ignore != nil {
 												if !rules.IsExpressionNode(_kvtags_ignore.Value) {
-													if !rules.IsSequence(_kvtags_ignore.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request.tags-ignore",
-															Key:     "tags-ignore",
-															Got:     rules.NodeTypeName(_kvtags_ignore.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvtags_ignore.Value.GetToken(),
-														})
-													}
-													if _tags_ignoreSeq, _tags_ignoreSeqOk := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _tags_ignoreSeqOk {
-														if len(_tags_ignoreSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request.tags-ignore",
-																Key:     "tags-ignore",
-																Got:     fmt.Sprintf("%d", len(_tags_ignoreSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvtags_ignore.Value.GetToken(),
-															})
-														}
-														for _, _item := range _tags_ignoreSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request.tags-ignore.*",
-																		Key:     "tags-ignore[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=58)
+													if rules.IsBoolean(_kvtags_ignore.Value) || rules.IsNumber(_kvtags_ignore.Value) || rules.IsString(_kvtags_ignore.Value) {
+													} else if rules.IsSequence(_kvtags_ignore.Value) {
+														if _oneOfSeq58, _ok := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq58.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request.tags-ignore",
+																	Key:     "tags-ignore",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq58.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvtags_ignore.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq58.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request.tags-ignore.*",
+																			Key:     "tags-ignore[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvtags_ignore.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "tags-ignore",
+															Key:     "tags-ignore",
+															Got:     rules.NodeTypeName(_kvtags_ignore.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvtags_ignore.Value.GetToken(),
+														})
 													}
 												}
 											}
@@ -6046,12 +6064,12 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							// Property: "pull_request_review"
 							if _kvpull_request_review := (workflow.Mapping{MappingNode: _oneOfM34}).FindKey("pull_request_review"); _kvpull_request_review != nil {
 								if !rules.IsExpressionNode(_kvpull_request_review.Value) {
-									// oneOf type branching (id=53)
+									// oneOf type branching (id=59)
 									if rules.IsNull(_kvpull_request_review.Value) {
 									} else if rules.IsMapping(_kvpull_request_review.Value) {
-										if _oneOfM53, _ok := rules.UnwrapNode(_kvpull_request_review.Value).(*ast.MappingNode); _ok {
+										if _oneOfM59, _ok := rules.UnwrapNode(_kvpull_request_review.Value).(*ast.MappingNode); _ok {
 											// Property: "types"
-											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM53}).FindKey("types"); _kvtypes != nil {
+											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM59}).FindKey("types"); _kvtypes != nil {
 												if !rules.IsExpressionNode(_kvtypes.Value) {
 													if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 														for _, _item := range _typesSeq.Values {
@@ -6126,12 +6144,12 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							// Property: "pull_request_review_comment"
 							if _kvpull_request_review_comment := (workflow.Mapping{MappingNode: _oneOfM34}).FindKey("pull_request_review_comment"); _kvpull_request_review_comment != nil {
 								if !rules.IsExpressionNode(_kvpull_request_review_comment.Value) {
-									// oneOf type branching (id=54)
+									// oneOf type branching (id=60)
 									if rules.IsNull(_kvpull_request_review_comment.Value) {
 									} else if rules.IsMapping(_kvpull_request_review_comment.Value) {
-										if _oneOfM54, _ok := rules.UnwrapNode(_kvpull_request_review_comment.Value).(*ast.MappingNode); _ok {
+										if _oneOfM60, _ok := rules.UnwrapNode(_kvpull_request_review_comment.Value).(*ast.MappingNode); _ok {
 											// Property: "types"
-											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM54}).FindKey("types"); _kvtypes != nil {
+											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM60}).FindKey("types"); _kvtypes != nil {
 												if !rules.IsExpressionNode(_kvtypes.Value) {
 													if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 														for _, _item := range _typesSeq.Values {
@@ -6206,10 +6224,10 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							// Property: "pull_request_target"
 							if _kvpull_request_target := (workflow.Mapping{MappingNode: _oneOfM34}).FindKey("pull_request_target"); _kvpull_request_target != nil {
 								if !rules.IsExpressionNode(_kvpull_request_target.Value) {
-									// oneOf type branching (id=55)
+									// oneOf type branching (id=61)
 									if rules.IsNull(_kvpull_request_target.Value) {
 									} else if rules.IsMapping(_kvpull_request_target.Value) {
-										if _oneOfM55, _ok := rules.UnwrapNode(_kvpull_request_target.Value).(*ast.MappingNode); _ok {
+										if _oneOfM61, _ok := rules.UnwrapNode(_kvpull_request_target.Value).(*ast.MappingNode); _ok {
 											// Unknown key detection
 											_knownKeyson_pull_request_target := map[string]bool{
 												"branches":        true,
@@ -6220,7 +6238,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 												"tags-ignore":     true,
 												"types":           true,
 											}
-											for _, _entry := range _oneOfM55.Values {
+											for _, _entry := range _oneOfM61.Values {
 												_key := _entry.Key.GetToken().Value
 												if !(_knownKeyson_pull_request_target[_key]) {
 													errs = append(errs, rules.ValidationError{
@@ -6234,259 +6252,277 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											}
 
 											// Property: "branches"
-											if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM55}).FindKey("branches"); _kvbranches != nil {
+											if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM61}).FindKey("branches"); _kvbranches != nil {
 												if !rules.IsExpressionNode(_kvbranches.Value) {
-													if !rules.IsSequence(_kvbranches.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request_target.branches",
-															Key:     "branches",
-															Got:     rules.NodeTypeName(_kvbranches.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvbranches.Value.GetToken(),
-														})
-													}
-													if _branchesSeq, _branchesSeqOk := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _branchesSeqOk {
-														if len(_branchesSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request_target.branches",
-																Key:     "branches",
-																Got:     fmt.Sprintf("%d", len(_branchesSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvbranches.Value.GetToken(),
-															})
-														}
-														for _, _item := range _branchesSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request_target.branches.*",
-																		Key:     "branches[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=62)
+													if rules.IsBoolean(_kvbranches.Value) || rules.IsNumber(_kvbranches.Value) || rules.IsString(_kvbranches.Value) {
+													} else if rules.IsSequence(_kvbranches.Value) {
+														if _oneOfSeq62, _ok := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq62.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request_target.branches",
+																	Key:     "branches",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq62.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvbranches.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq62.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request_target.branches.*",
+																			Key:     "branches[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvbranches.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "branches",
+															Key:     "branches",
+															Got:     rules.NodeTypeName(_kvbranches.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvbranches.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "branches-ignore"
-											if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM55}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
+											if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM61}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
 												if !rules.IsExpressionNode(_kvbranches_ignore.Value) {
-													if !rules.IsSequence(_kvbranches_ignore.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request_target.branches-ignore",
-															Key:     "branches-ignore",
-															Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvbranches_ignore.Value.GetToken(),
-														})
-													}
-													if _branches_ignoreSeq, _branches_ignoreSeqOk := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _branches_ignoreSeqOk {
-														if len(_branches_ignoreSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request_target.branches-ignore",
-																Key:     "branches-ignore",
-																Got:     fmt.Sprintf("%d", len(_branches_ignoreSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvbranches_ignore.Value.GetToken(),
-															})
-														}
-														for _, _item := range _branches_ignoreSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request_target.branches-ignore.*",
-																		Key:     "branches-ignore[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=63)
+													if rules.IsBoolean(_kvbranches_ignore.Value) || rules.IsNumber(_kvbranches_ignore.Value) || rules.IsString(_kvbranches_ignore.Value) {
+													} else if rules.IsSequence(_kvbranches_ignore.Value) {
+														if _oneOfSeq63, _ok := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq63.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request_target.branches-ignore",
+																	Key:     "branches-ignore",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq63.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvbranches_ignore.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq63.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request_target.branches-ignore.*",
+																			Key:     "branches-ignore[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvbranches_ignore.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "branches-ignore",
+															Key:     "branches-ignore",
+															Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvbranches_ignore.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "paths"
-											if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM55}).FindKey("paths"); _kvpaths != nil {
+											if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM61}).FindKey("paths"); _kvpaths != nil {
 												if !rules.IsExpressionNode(_kvpaths.Value) {
-													if !rules.IsSequence(_kvpaths.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request_target.paths",
-															Key:     "paths",
-															Got:     rules.NodeTypeName(_kvpaths.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvpaths.Value.GetToken(),
-														})
-													}
-													if _pathsSeq, _pathsSeqOk := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _pathsSeqOk {
-														if len(_pathsSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request_target.paths",
-																Key:     "paths",
-																Got:     fmt.Sprintf("%d", len(_pathsSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvpaths.Value.GetToken(),
-															})
-														}
-														for _, _item := range _pathsSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request_target.paths.*",
-																		Key:     "paths[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=64)
+													if rules.IsBoolean(_kvpaths.Value) || rules.IsNumber(_kvpaths.Value) || rules.IsString(_kvpaths.Value) {
+													} else if rules.IsSequence(_kvpaths.Value) {
+														if _oneOfSeq64, _ok := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq64.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request_target.paths",
+																	Key:     "paths",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq64.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvpaths.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq64.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request_target.paths.*",
+																			Key:     "paths[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvpaths.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "paths",
+															Key:     "paths",
+															Got:     rules.NodeTypeName(_kvpaths.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvpaths.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "paths-ignore"
-											if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM55}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
+											if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM61}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
 												if !rules.IsExpressionNode(_kvpaths_ignore.Value) {
-													if !rules.IsSequence(_kvpaths_ignore.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request_target.paths-ignore",
-															Key:     "paths-ignore",
-															Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvpaths_ignore.Value.GetToken(),
-														})
-													}
-													if _paths_ignoreSeq, _paths_ignoreSeqOk := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _paths_ignoreSeqOk {
-														if len(_paths_ignoreSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request_target.paths-ignore",
-																Key:     "paths-ignore",
-																Got:     fmt.Sprintf("%d", len(_paths_ignoreSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvpaths_ignore.Value.GetToken(),
-															})
-														}
-														for _, _item := range _paths_ignoreSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request_target.paths-ignore.*",
-																		Key:     "paths-ignore[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=65)
+													if rules.IsBoolean(_kvpaths_ignore.Value) || rules.IsNumber(_kvpaths_ignore.Value) || rules.IsString(_kvpaths_ignore.Value) {
+													} else if rules.IsSequence(_kvpaths_ignore.Value) {
+														if _oneOfSeq65, _ok := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq65.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request_target.paths-ignore",
+																	Key:     "paths-ignore",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq65.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvpaths_ignore.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq65.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request_target.paths-ignore.*",
+																			Key:     "paths-ignore[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvpaths_ignore.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "paths-ignore",
+															Key:     "paths-ignore",
+															Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvpaths_ignore.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "tags"
-											if _kvtags := (workflow.Mapping{MappingNode: _oneOfM55}).FindKey("tags"); _kvtags != nil {
+											if _kvtags := (workflow.Mapping{MappingNode: _oneOfM61}).FindKey("tags"); _kvtags != nil {
 												if !rules.IsExpressionNode(_kvtags.Value) {
-													if !rules.IsSequence(_kvtags.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request_target.tags",
-															Key:     "tags",
-															Got:     rules.NodeTypeName(_kvtags.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvtags.Value.GetToken(),
-														})
-													}
-													if _tagsSeq, _tagsSeqOk := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _tagsSeqOk {
-														if len(_tagsSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request_target.tags",
-																Key:     "tags",
-																Got:     fmt.Sprintf("%d", len(_tagsSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvtags.Value.GetToken(),
-															})
-														}
-														for _, _item := range _tagsSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request_target.tags.*",
-																		Key:     "tags[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=66)
+													if rules.IsBoolean(_kvtags.Value) || rules.IsNumber(_kvtags.Value) || rules.IsString(_kvtags.Value) {
+													} else if rules.IsSequence(_kvtags.Value) {
+														if _oneOfSeq66, _ok := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq66.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request_target.tags",
+																	Key:     "tags",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq66.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvtags.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq66.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request_target.tags.*",
+																			Key:     "tags[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvtags.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "tags",
+															Key:     "tags",
+															Got:     rules.NodeTypeName(_kvtags.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvtags.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "tags-ignore"
-											if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM55}).FindKey("tags-ignore"); _kvtags_ignore != nil {
+											if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM61}).FindKey("tags-ignore"); _kvtags_ignore != nil {
 												if !rules.IsExpressionNode(_kvtags_ignore.Value) {
-													if !rules.IsSequence(_kvtags_ignore.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.pull_request_target.tags-ignore",
-															Key:     "tags-ignore",
-															Got:     rules.NodeTypeName(_kvtags_ignore.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvtags_ignore.Value.GetToken(),
-														})
-													}
-													if _tags_ignoreSeq, _tags_ignoreSeqOk := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _tags_ignoreSeqOk {
-														if len(_tags_ignoreSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.pull_request_target.tags-ignore",
-																Key:     "tags-ignore",
-																Got:     fmt.Sprintf("%d", len(_tags_ignoreSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvtags_ignore.Value.GetToken(),
-															})
-														}
-														for _, _item := range _tags_ignoreSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.pull_request_target.tags-ignore.*",
-																		Key:     "tags-ignore[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=67)
+													if rules.IsBoolean(_kvtags_ignore.Value) || rules.IsNumber(_kvtags_ignore.Value) || rules.IsString(_kvtags_ignore.Value) {
+													} else if rules.IsSequence(_kvtags_ignore.Value) {
+														if _oneOfSeq67, _ok := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq67.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.pull_request_target.tags-ignore",
+																	Key:     "tags-ignore",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq67.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvtags_ignore.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq67.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.pull_request_target.tags-ignore.*",
+																			Key:     "tags-ignore[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvtags_ignore.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "tags-ignore",
+															Key:     "tags-ignore",
+															Got:     rules.NodeTypeName(_kvtags_ignore.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvtags_ignore.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "types"
-											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM55}).FindKey("types"); _kvtypes != nil {
+											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM61}).FindKey("types"); _kvtypes != nil {
 												if !rules.IsExpressionNode(_kvtypes.Value) {
 													if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 														for _, _item := range _typesSeq.Values {
@@ -6569,10 +6605,10 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							// Property: "push"
 							if _kvpush := (workflow.Mapping{MappingNode: _oneOfM34}).FindKey("push"); _kvpush != nil {
 								if !rules.IsExpressionNode(_kvpush.Value) {
-									// oneOf type branching (id=56)
+									// oneOf type branching (id=68)
 									if rules.IsNull(_kvpush.Value) {
 									} else if rules.IsMapping(_kvpush.Value) {
-										if _oneOfM56, _ok := rules.UnwrapNode(_kvpush.Value).(*ast.MappingNode); _ok {
+										if _oneOfM68, _ok := rules.UnwrapNode(_kvpush.Value).(*ast.MappingNode); _ok {
 											// Unknown key detection
 											_knownKeyson_push := map[string]bool{
 												"branches":        true,
@@ -6582,7 +6618,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 												"tags":            true,
 												"tags-ignore":     true,
 											}
-											for _, _entry := range _oneOfM56.Values {
+											for _, _entry := range _oneOfM68.Values {
 												_key := _entry.Key.GetToken().Value
 												if !(_knownKeyson_push[_key]) {
 													errs = append(errs, rules.ValidationError{
@@ -6596,253 +6632,271 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											}
 
 											// Property: "branches"
-											if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM56}).FindKey("branches"); _kvbranches != nil {
+											if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM68}).FindKey("branches"); _kvbranches != nil {
 												if !rules.IsExpressionNode(_kvbranches.Value) {
-													if !rules.IsSequence(_kvbranches.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.push.branches",
-															Key:     "branches",
-															Got:     rules.NodeTypeName(_kvbranches.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvbranches.Value.GetToken(),
-														})
-													}
-													if _branchesSeq, _branchesSeqOk := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _branchesSeqOk {
-														if len(_branchesSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.push.branches",
-																Key:     "branches",
-																Got:     fmt.Sprintf("%d", len(_branchesSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvbranches.Value.GetToken(),
-															})
-														}
-														for _, _item := range _branchesSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.push.branches.*",
-																		Key:     "branches[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=69)
+													if rules.IsBoolean(_kvbranches.Value) || rules.IsNumber(_kvbranches.Value) || rules.IsString(_kvbranches.Value) {
+													} else if rules.IsSequence(_kvbranches.Value) {
+														if _oneOfSeq69, _ok := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq69.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.push.branches",
+																	Key:     "branches",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq69.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvbranches.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq69.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.push.branches.*",
+																			Key:     "branches[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvbranches.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "branches",
+															Key:     "branches",
+															Got:     rules.NodeTypeName(_kvbranches.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvbranches.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "branches-ignore"
-											if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM56}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
+											if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM68}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
 												if !rules.IsExpressionNode(_kvbranches_ignore.Value) {
-													if !rules.IsSequence(_kvbranches_ignore.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.push.branches-ignore",
-															Key:     "branches-ignore",
-															Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvbranches_ignore.Value.GetToken(),
-														})
-													}
-													if _branches_ignoreSeq, _branches_ignoreSeqOk := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _branches_ignoreSeqOk {
-														if len(_branches_ignoreSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.push.branches-ignore",
-																Key:     "branches-ignore",
-																Got:     fmt.Sprintf("%d", len(_branches_ignoreSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvbranches_ignore.Value.GetToken(),
-															})
-														}
-														for _, _item := range _branches_ignoreSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.push.branches-ignore.*",
-																		Key:     "branches-ignore[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=70)
+													if rules.IsBoolean(_kvbranches_ignore.Value) || rules.IsNumber(_kvbranches_ignore.Value) || rules.IsString(_kvbranches_ignore.Value) {
+													} else if rules.IsSequence(_kvbranches_ignore.Value) {
+														if _oneOfSeq70, _ok := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq70.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.push.branches-ignore",
+																	Key:     "branches-ignore",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq70.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvbranches_ignore.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq70.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.push.branches-ignore.*",
+																			Key:     "branches-ignore[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvbranches_ignore.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "branches-ignore",
+															Key:     "branches-ignore",
+															Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvbranches_ignore.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "paths"
-											if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM56}).FindKey("paths"); _kvpaths != nil {
+											if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM68}).FindKey("paths"); _kvpaths != nil {
 												if !rules.IsExpressionNode(_kvpaths.Value) {
-													if !rules.IsSequence(_kvpaths.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.push.paths",
-															Key:     "paths",
-															Got:     rules.NodeTypeName(_kvpaths.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvpaths.Value.GetToken(),
-														})
-													}
-													if _pathsSeq, _pathsSeqOk := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _pathsSeqOk {
-														if len(_pathsSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.push.paths",
-																Key:     "paths",
-																Got:     fmt.Sprintf("%d", len(_pathsSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvpaths.Value.GetToken(),
-															})
-														}
-														for _, _item := range _pathsSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.push.paths.*",
-																		Key:     "paths[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=71)
+													if rules.IsBoolean(_kvpaths.Value) || rules.IsNumber(_kvpaths.Value) || rules.IsString(_kvpaths.Value) {
+													} else if rules.IsSequence(_kvpaths.Value) {
+														if _oneOfSeq71, _ok := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq71.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.push.paths",
+																	Key:     "paths",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq71.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvpaths.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq71.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.push.paths.*",
+																			Key:     "paths[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvpaths.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "paths",
+															Key:     "paths",
+															Got:     rules.NodeTypeName(_kvpaths.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvpaths.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "paths-ignore"
-											if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM56}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
+											if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM68}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
 												if !rules.IsExpressionNode(_kvpaths_ignore.Value) {
-													if !rules.IsSequence(_kvpaths_ignore.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.push.paths-ignore",
-															Key:     "paths-ignore",
-															Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvpaths_ignore.Value.GetToken(),
-														})
-													}
-													if _paths_ignoreSeq, _paths_ignoreSeqOk := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _paths_ignoreSeqOk {
-														if len(_paths_ignoreSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.push.paths-ignore",
-																Key:     "paths-ignore",
-																Got:     fmt.Sprintf("%d", len(_paths_ignoreSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvpaths_ignore.Value.GetToken(),
-															})
-														}
-														for _, _item := range _paths_ignoreSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.push.paths-ignore.*",
-																		Key:     "paths-ignore[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=72)
+													if rules.IsBoolean(_kvpaths_ignore.Value) || rules.IsNumber(_kvpaths_ignore.Value) || rules.IsString(_kvpaths_ignore.Value) {
+													} else if rules.IsSequence(_kvpaths_ignore.Value) {
+														if _oneOfSeq72, _ok := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq72.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.push.paths-ignore",
+																	Key:     "paths-ignore",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq72.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvpaths_ignore.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq72.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.push.paths-ignore.*",
+																			Key:     "paths-ignore[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvpaths_ignore.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "paths-ignore",
+															Key:     "paths-ignore",
+															Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvpaths_ignore.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "tags"
-											if _kvtags := (workflow.Mapping{MappingNode: _oneOfM56}).FindKey("tags"); _kvtags != nil {
+											if _kvtags := (workflow.Mapping{MappingNode: _oneOfM68}).FindKey("tags"); _kvtags != nil {
 												if !rules.IsExpressionNode(_kvtags.Value) {
-													if !rules.IsSequence(_kvtags.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.push.tags",
-															Key:     "tags",
-															Got:     rules.NodeTypeName(_kvtags.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvtags.Value.GetToken(),
-														})
-													}
-													if _tagsSeq, _tagsSeqOk := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _tagsSeqOk {
-														if len(_tagsSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.push.tags",
-																Key:     "tags",
-																Got:     fmt.Sprintf("%d", len(_tagsSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvtags.Value.GetToken(),
-															})
-														}
-														for _, _item := range _tagsSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.push.tags.*",
-																		Key:     "tags[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=73)
+													if rules.IsBoolean(_kvtags.Value) || rules.IsNumber(_kvtags.Value) || rules.IsString(_kvtags.Value) {
+													} else if rules.IsSequence(_kvtags.Value) {
+														if _oneOfSeq73, _ok := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq73.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.push.tags",
+																	Key:     "tags",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq73.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvtags.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq73.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.push.tags.*",
+																			Key:     "tags[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvtags.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "tags",
+															Key:     "tags",
+															Got:     rules.NodeTypeName(_kvtags.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvtags.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// Property: "tags-ignore"
-											if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM56}).FindKey("tags-ignore"); _kvtags_ignore != nil {
+											if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM68}).FindKey("tags-ignore"); _kvtags_ignore != nil {
 												if !rules.IsExpressionNode(_kvtags_ignore.Value) {
-													if !rules.IsSequence(_kvtags_ignore.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.push.tags-ignore",
-															Key:     "tags-ignore",
-															Got:     rules.NodeTypeName(_kvtags_ignore.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvtags_ignore.Value.GetToken(),
-														})
-													}
-													if _tags_ignoreSeq, _tags_ignoreSeqOk := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _tags_ignoreSeqOk {
-														if len(_tags_ignoreSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.push.tags-ignore",
-																Key:     "tags-ignore",
-																Got:     fmt.Sprintf("%d", len(_tags_ignoreSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvtags_ignore.Value.GetToken(),
-															})
-														}
-														for _, _item := range _tags_ignoreSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.push.tags-ignore.*",
-																		Key:     "tags-ignore[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=74)
+													if rules.IsBoolean(_kvtags_ignore.Value) || rules.IsNumber(_kvtags_ignore.Value) || rules.IsString(_kvtags_ignore.Value) {
+													} else if rules.IsSequence(_kvtags_ignore.Value) {
+														if _oneOfSeq74, _ok := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq74.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.push.tags-ignore",
+																	Key:     "tags-ignore",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq74.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvtags_ignore.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq74.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.push.tags-ignore.*",
+																			Key:     "tags-ignore[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvtags_ignore.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "tags-ignore",
+															Key:     "tags-ignore",
+															Got:     rules.NodeTypeName(_kvtags_ignore.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvtags_ignore.Value.GetToken(),
+														})
 													}
 												}
 											}
@@ -6864,12 +6918,12 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							// Property: "registry_package"
 							if _kvregistry_package := (workflow.Mapping{MappingNode: _oneOfM34}).FindKey("registry_package"); _kvregistry_package != nil {
 								if !rules.IsExpressionNode(_kvregistry_package.Value) {
-									// oneOf type branching (id=57)
+									// oneOf type branching (id=75)
 									if rules.IsNull(_kvregistry_package.Value) {
 									} else if rules.IsMapping(_kvregistry_package.Value) {
-										if _oneOfM57, _ok := rules.UnwrapNode(_kvregistry_package.Value).(*ast.MappingNode); _ok {
+										if _oneOfM75, _ok := rules.UnwrapNode(_kvregistry_package.Value).(*ast.MappingNode); _ok {
 											// Property: "types"
-											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM57}).FindKey("types"); _kvtypes != nil {
+											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM75}).FindKey("types"); _kvtypes != nil {
 												if !rules.IsExpressionNode(_kvtypes.Value) {
 													if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 														for _, _item := range _typesSeq.Values {
@@ -6943,12 +6997,12 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							// Property: "release"
 							if _kvrelease := (workflow.Mapping{MappingNode: _oneOfM34}).FindKey("release"); _kvrelease != nil {
 								if !rules.IsExpressionNode(_kvrelease.Value) {
-									// oneOf type branching (id=58)
+									// oneOf type branching (id=76)
 									if rules.IsNull(_kvrelease.Value) {
 									} else if rules.IsMapping(_kvrelease.Value) {
-										if _oneOfM58, _ok := rules.UnwrapNode(_kvrelease.Value).(*ast.MappingNode); _ok {
+										if _oneOfM76, _ok := rules.UnwrapNode(_kvrelease.Value).(*ast.MappingNode); _ok {
 											// Property: "types"
-											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM58}).FindKey("types"); _kvtypes != nil {
+											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM76}).FindKey("types"); _kvtypes != nil {
 												if !rules.IsExpressionNode(_kvtypes.Value) {
 													if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 														for _, _item := range _typesSeq.Values {
@@ -7179,12 +7233,12 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							// Property: "workflow_call"
 							if _kvworkflow_call := (workflow.Mapping{MappingNode: _oneOfM34}).FindKey("workflow_call"); _kvworkflow_call != nil {
 								if !rules.IsExpressionNode(_kvworkflow_call.Value) {
-									// oneOf type branching (id=59)
+									// oneOf type branching (id=77)
 									if rules.IsNull(_kvworkflow_call.Value) {
 									} else if rules.IsMapping(_kvworkflow_call.Value) {
-										if _oneOfM59, _ok := rules.UnwrapNode(_kvworkflow_call.Value).(*ast.MappingNode); _ok {
+										if _oneOfM77, _ok := rules.UnwrapNode(_kvworkflow_call.Value).(*ast.MappingNode); _ok {
 											// Property: "inputs"
-											if _kvinputs := (workflow.Mapping{MappingNode: _oneOfM59}).FindKey("inputs"); _kvinputs != nil {
+											if _kvinputs := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("inputs"); _kvinputs != nil {
 												if !rules.IsExpressionNode(_kvinputs.Value) {
 													if !rules.IsMapping(_kvinputs.Value) {
 														errs = append(errs, rules.ValidationError{
@@ -7349,7 +7403,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											}
 
 											// Property: "outputs"
-											if _kvoutputs := (workflow.Mapping{MappingNode: _oneOfM59}).FindKey("outputs"); _kvoutputs != nil {
+											if _kvoutputs := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("outputs"); _kvoutputs != nil {
 												if !rules.IsExpressionNode(_kvoutputs.Value) {
 													if !rules.IsMapping(_kvoutputs.Value) {
 														errs = append(errs, rules.ValidationError{
@@ -7463,7 +7517,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											}
 
 											// Property: "secrets"
-											if _kvsecrets := (workflow.Mapping{MappingNode: _oneOfM59}).FindKey("secrets"); _kvsecrets != nil {
+											if _kvsecrets := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("secrets"); _kvsecrets != nil {
 												if !rules.IsExpressionNode(_kvsecrets.Value) {
 													if !rules.IsMapping(_kvsecrets.Value) {
 														errs = append(errs, rules.ValidationError{
@@ -7582,15 +7636,15 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							// Property: "workflow_dispatch"
 							if _kvworkflow_dispatch := (workflow.Mapping{MappingNode: _oneOfM34}).FindKey("workflow_dispatch"); _kvworkflow_dispatch != nil {
 								if !rules.IsExpressionNode(_kvworkflow_dispatch.Value) {
-									// oneOf type branching (id=60)
+									// oneOf type branching (id=78)
 									if rules.IsNull(_kvworkflow_dispatch.Value) {
 									} else if rules.IsMapping(_kvworkflow_dispatch.Value) {
-										if _oneOfM60, _ok := rules.UnwrapNode(_kvworkflow_dispatch.Value).(*ast.MappingNode); _ok {
+										if _oneOfM78, _ok := rules.UnwrapNode(_kvworkflow_dispatch.Value).(*ast.MappingNode); _ok {
 											// Unknown key detection
 											_knownKeyson_workflow_dispatch := map[string]bool{
 												"inputs": true,
 											}
-											for _, _entry := range _oneOfM60.Values {
+											for _, _entry := range _oneOfM78.Values {
 												_key := _entry.Key.GetToken().Value
 												if !(_knownKeyson_workflow_dispatch[_key]) {
 													errs = append(errs, rules.ValidationError{
@@ -7604,7 +7658,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											}
 
 											// Property: "inputs"
-											if _kvinputs := (workflow.Mapping{MappingNode: _oneOfM60}).FindKey("inputs"); _kvinputs != nil {
+											if _kvinputs := (workflow.Mapping{MappingNode: _oneOfM78}).FindKey("inputs"); _kvinputs != nil {
 												if !rules.IsExpressionNode(_kvinputs.Value) {
 													if !rules.IsMapping(_kvinputs.Value) {
 														errs = append(errs, rules.ValidationError{
@@ -7795,13 +7849,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																		}
 
 																	}
-																	// if/then/else on "type" == "string" (id=61)
-																	if _ifM61, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-																		if _kv := (workflow.Mapping{MappingNode: _ifM61}).FindKey("type"); _kv != nil {
-																			_ifCV61 := rules.StringValue(_kv.Value)
-																			if _ifCV61 == "string" {
+																	// if/then/else on "type" == "string" (id=79)
+																	if _ifM79, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+																		if _kv := (workflow.Mapping{MappingNode: _ifM79}).FindKey("type"); _kv != nil {
+																			_ifCV79 := rules.StringValue(_kv.Value)
+																			if _ifCV79 == "string" {
 																				// Property: "default"
-																				if _kvdefault := (workflow.Mapping{MappingNode: _ifM61}).FindKey("default"); _kvdefault != nil {
+																				if _kvdefault := (workflow.Mapping{MappingNode: _ifM79}).FindKey("default"); _kvdefault != nil {
 																					if !rules.IsExpressionNode(_kvdefault.Value) {
 																						if !rules.IsString(_kvdefault.Value) {
 																							errs = append(errs, rules.ValidationError{
@@ -7819,13 +7873,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																			}
 																		}
 																	}
-																	// if/then/else on "type" == "boolean" (id=62)
-																	if _ifM62, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-																		if _kv := (workflow.Mapping{MappingNode: _ifM62}).FindKey("type"); _kv != nil {
-																			_ifCV62 := rules.StringValue(_kv.Value)
-																			if _ifCV62 == "boolean" {
+																	// if/then/else on "type" == "boolean" (id=80)
+																	if _ifM80, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+																		if _kv := (workflow.Mapping{MappingNode: _ifM80}).FindKey("type"); _kv != nil {
+																			_ifCV80 := rules.StringValue(_kv.Value)
+																			if _ifCV80 == "boolean" {
 																				// Property: "default"
-																				if _kvdefault := (workflow.Mapping{MappingNode: _ifM62}).FindKey("default"); _kvdefault != nil {
+																				if _kvdefault := (workflow.Mapping{MappingNode: _ifM80}).FindKey("default"); _kvdefault != nil {
 																					if !rules.IsExpressionNode(_kvdefault.Value) {
 																						if !rules.IsBoolean(_kvdefault.Value) {
 																							errs = append(errs, rules.ValidationError{
@@ -7843,13 +7897,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																			}
 																		}
 																	}
-																	// if/then/else on "type" == "number" (id=63)
-																	if _ifM63, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-																		if _kv := (workflow.Mapping{MappingNode: _ifM63}).FindKey("type"); _kv != nil {
-																			_ifCV63 := rules.StringValue(_kv.Value)
-																			if _ifCV63 == "number" {
+																	// if/then/else on "type" == "number" (id=81)
+																	if _ifM81, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+																		if _kv := (workflow.Mapping{MappingNode: _ifM81}).FindKey("type"); _kv != nil {
+																			_ifCV81 := rules.StringValue(_kv.Value)
+																			if _ifCV81 == "number" {
 																				// Property: "default"
-																				if _kvdefault := (workflow.Mapping{MappingNode: _ifM63}).FindKey("default"); _kvdefault != nil {
+																				if _kvdefault := (workflow.Mapping{MappingNode: _ifM81}).FindKey("default"); _kvdefault != nil {
 																					if !rules.IsExpressionNode(_kvdefault.Value) {
 																						if !rules.IsNumber(_kvdefault.Value) {
 																							errs = append(errs, rules.ValidationError{
@@ -7867,13 +7921,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																			}
 																		}
 																	}
-																	// if/then/else on "type" == "environment" (id=64)
-																	if _ifM64, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-																		if _kv := (workflow.Mapping{MappingNode: _ifM64}).FindKey("type"); _kv != nil {
-																			_ifCV64 := rules.StringValue(_kv.Value)
-																			if _ifCV64 == "environment" {
+																	// if/then/else on "type" == "environment" (id=82)
+																	if _ifM82, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+																		if _kv := (workflow.Mapping{MappingNode: _ifM82}).FindKey("type"); _kv != nil {
+																			_ifCV82 := rules.StringValue(_kv.Value)
+																			if _ifCV82 == "environment" {
 																				// Property: "default"
-																				if _kvdefault := (workflow.Mapping{MappingNode: _ifM64}).FindKey("default"); _kvdefault != nil {
+																				if _kvdefault := (workflow.Mapping{MappingNode: _ifM82}).FindKey("default"); _kvdefault != nil {
 																					if !rules.IsExpressionNode(_kvdefault.Value) {
 																						if !rules.IsString(_kvdefault.Value) {
 																							errs = append(errs, rules.ValidationError{
@@ -7891,13 +7945,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																			}
 																		}
 																	}
-																	// if/then/else on "type" == "choice" (id=65)
-																	if _ifM65, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-																		if _kv := (workflow.Mapping{MappingNode: _ifM65}).FindKey("type"); _kv != nil {
-																			_ifCV65 := rules.StringValue(_kv.Value)
-																			if _ifCV65 == "choice" {
+																	// if/then/else on "type" == "choice" (id=83)
+																	if _ifM83, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+																		if _kv := (workflow.Mapping{MappingNode: _ifM83}).FindKey("type"); _kv != nil {
+																			_ifCV83 := rules.StringValue(_kv.Value)
+																			if _ifCV83 == "choice" {
 																				// Required key checks
-																				_mWrapon_workflow_dispatch_inputs__ := workflow.Mapping{MappingNode: _ifM65}
+																				_mWrapon_workflow_dispatch_inputs__ := workflow.Mapping{MappingNode: _ifM83}
 																				if _mWrapon_workflow_dispatch_inputs__.FindKey("options") == nil {
 																					errs = append(errs, rules.ValidationError{
 																						Kind:  rules.KindRequiredKey,
@@ -7945,12 +7999,12 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							// Property: "workflow_run"
 							if _kvworkflow_run := (workflow.Mapping{MappingNode: _oneOfM34}).FindKey("workflow_run"); _kvworkflow_run != nil {
 								if !rules.IsExpressionNode(_kvworkflow_run.Value) {
-									// oneOf type branching (id=66)
+									// oneOf type branching (id=84)
 									if rules.IsNull(_kvworkflow_run.Value) {
 									} else if rules.IsMapping(_kvworkflow_run.Value) {
-										if _oneOfM66, _ok := rules.UnwrapNode(_kvworkflow_run.Value).(*ast.MappingNode); _ok {
+										if _oneOfM84, _ok := rules.UnwrapNode(_kvworkflow_run.Value).(*ast.MappingNode); _ok {
 											// Property: "types"
-											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM66}).FindKey("types"); _kvtypes != nil {
+											if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM84}).FindKey("types"); _kvtypes != nil {
 												if !rules.IsExpressionNode(_kvtypes.Value) {
 													if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 														for _, _item := range _typesSeq.Values {
@@ -7999,49 +8053,52 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 											}
 
 											// Property: "workflows"
-											if _kvworkflows := (workflow.Mapping{MappingNode: _oneOfM66}).FindKey("workflows"); _kvworkflows != nil {
+											if _kvworkflows := (workflow.Mapping{MappingNode: _oneOfM84}).FindKey("workflows"); _kvworkflows != nil {
 												if !rules.IsExpressionNode(_kvworkflows.Value) {
-													if !rules.IsSequence(_kvworkflows.Value) {
-														errs = append(errs, rules.ValidationError{
-															Kind:    rules.KindTypeMismatch,
-															Path:    "on.workflow_run.workflows",
-															Key:     "workflows",
-															Got:     rules.NodeTypeName(_kvworkflows.Value),
-															Allowed: []string{"sequence"},
-															Token:   _kvworkflows.Value.GetToken(),
-														})
-													}
-													if _workflowsSeq, _workflowsSeqOk := rules.UnwrapNode(_kvworkflows.Value).(*ast.SequenceNode); _workflowsSeqOk {
-														if len(_workflowsSeq.Values) < 1 {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindMinItems,
-																Path:    "on.workflow_run.workflows",
-																Key:     "workflows",
-																Got:     fmt.Sprintf("%d", len(_workflowsSeq.Values)),
-																Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																Token:   _kvworkflows.Value.GetToken(),
-															})
-														}
-														for _, _item := range _workflowsSeq.Values {
-															if !rules.IsExpressionNode(_item) {
-																if !rules.IsString(_item) {
-																	errs = append(errs, rules.ValidationError{
-																		Kind:    rules.KindTypeMismatch,
-																		Path:    "on.workflow_run.workflows.*",
-																		Key:     "workflows[]",
-																		Got:     rules.NodeTypeName(_item),
-																		Allowed: []string{"string"},
-																		Token:   _item.GetToken(),
-																	})
+													// oneOf type branching (id=85)
+													if rules.IsBoolean(_kvworkflows.Value) || rules.IsNumber(_kvworkflows.Value) || rules.IsString(_kvworkflows.Value) {
+													} else if rules.IsSequence(_kvworkflows.Value) {
+														if _oneOfSeq85, _ok := rules.UnwrapNode(_kvworkflows.Value).(*ast.SequenceNode); _ok {
+															if len(_oneOfSeq85.Values) < 1 {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindMinItems,
+																	Path:    "on.workflow_run.workflows",
+																	Key:     "workflows",
+																	Got:     fmt.Sprintf("%d", len(_oneOfSeq85.Values)),
+																	Allowed: []string{fmt.Sprintf("at least %d", 1)},
+																	Token:   _kvworkflows.Value.GetToken(),
+																})
+															}
+															for _, _item := range _oneOfSeq85.Values {
+																if !rules.IsExpressionNode(_item) {
+																	if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																		errs = append(errs, rules.ValidationError{
+																			Kind:    rules.KindTypeMismatch,
+																			Path:    "on.workflow_run.workflows.*",
+																			Key:     "workflows[]",
+																			Got:     rules.NodeTypeName(_item),
+																			Allowed: []string{"string", "boolean", "number"},
+																			Token:   _item.GetToken(),
+																		})
+																	}
 																}
 															}
 														}
+													} else if !rules.IsAliasNode(_kvworkflows.Value) {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindTypeMismatch,
+															Path:    "workflows",
+															Key:     "workflows",
+															Got:     rules.NodeTypeName(_kvworkflows.Value),
+															Allowed: []string{"string", "boolean", "number", "sequence"},
+															Token:   _kvworkflows.Value.GetToken(),
+														})
 													}
 												}
 											}
 
 											// PatternProperty: ^branches(-ignore)?$
-											for _, _ppEntry0 := range _oneOfM66.Values {
+											for _, _ppEntry0 := range _oneOfM84.Values {
 												if _re4.MatchString(_ppEntry0.Key.GetToken().Value) {
 													_ppKey0 := _ppEntry0.Key.GetToken().Value
 													_ = _ppKey0 // may be unused if no type checks in children
@@ -8091,7 +8148,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 			// Property: "permissions"
 			if _kvpermissions := (workflow.Mapping{MappingNode: _subM}).FindKey("permissions"); _kvpermissions != nil {
 				if !rules.IsExpressionNode(_kvpermissions.Value) {
-					// oneOf type branching (id=67)
+					// oneOf type branching (id=86)
 					if rules.IsString(_kvpermissions.Value) {
 						if _sv := rules.StringValue(_kvpermissions.Value); _sv != "" {
 							_validEnumpermissions := map[string]bool{
@@ -8112,7 +8169,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 						}
 					} else if rules.IsMapping(_kvpermissions.Value) {
-						if _oneOfM67, _ok := rules.UnwrapNode(_kvpermissions.Value).(*ast.MappingNode); _ok {
+						if _oneOfM86, _ok := rules.UnwrapNode(_kvpermissions.Value).(*ast.MappingNode); _ok {
 							// Unknown key detection
 							_knownKeyspermissions := map[string]bool{
 								"actions":              true,
@@ -8135,7 +8192,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 								"statuses":             true,
 								"vulnerability-alerts": true,
 							}
-							for _, _entry := range _oneOfM67.Values {
+							for _, _entry := range _oneOfM86.Values {
 								_key := _entry.Key.GetToken().Value
 								if !(_knownKeyspermissions[_key]) {
 									errs = append(errs, rules.ValidationError{
@@ -8150,7 +8207,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "actions"
-							if _kvactions := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("actions"); _kvactions != nil {
+							if _kvactions := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("actions"); _kvactions != nil {
 								if !rules.IsExpressionNode(_kvactions.Value) {
 									if !rules.IsString(_kvactions.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8183,7 +8240,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "artifact-metadata"
-							if _kvartifact_metadata := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("artifact-metadata"); _kvartifact_metadata != nil {
+							if _kvartifact_metadata := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("artifact-metadata"); _kvartifact_metadata != nil {
 								if !rules.IsExpressionNode(_kvartifact_metadata.Value) {
 									if !rules.IsString(_kvartifact_metadata.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8216,7 +8273,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "attestations"
-							if _kvattestations := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("attestations"); _kvattestations != nil {
+							if _kvattestations := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("attestations"); _kvattestations != nil {
 								if !rules.IsExpressionNode(_kvattestations.Value) {
 									if !rules.IsString(_kvattestations.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8249,7 +8306,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "checks"
-							if _kvchecks := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("checks"); _kvchecks != nil {
+							if _kvchecks := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("checks"); _kvchecks != nil {
 								if !rules.IsExpressionNode(_kvchecks.Value) {
 									if !rules.IsString(_kvchecks.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8282,7 +8339,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "code-quality"
-							if _kvcode_quality := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("code-quality"); _kvcode_quality != nil {
+							if _kvcode_quality := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("code-quality"); _kvcode_quality != nil {
 								if !rules.IsExpressionNode(_kvcode_quality.Value) {
 									if !rules.IsString(_kvcode_quality.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8315,7 +8372,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "contents"
-							if _kvcontents := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("contents"); _kvcontents != nil {
+							if _kvcontents := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("contents"); _kvcontents != nil {
 								if !rules.IsExpressionNode(_kvcontents.Value) {
 									if !rules.IsString(_kvcontents.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8348,7 +8405,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "copilot-requests"
-							if _kvcopilot_requests := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("copilot-requests"); _kvcopilot_requests != nil {
+							if _kvcopilot_requests := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("copilot-requests"); _kvcopilot_requests != nil {
 								if !rules.IsExpressionNode(_kvcopilot_requests.Value) {
 									if !rules.IsString(_kvcopilot_requests.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8380,7 +8437,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "deployments"
-							if _kvdeployments := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("deployments"); _kvdeployments != nil {
+							if _kvdeployments := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("deployments"); _kvdeployments != nil {
 								if !rules.IsExpressionNode(_kvdeployments.Value) {
 									if !rules.IsString(_kvdeployments.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8413,7 +8470,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "discussions"
-							if _kvdiscussions := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("discussions"); _kvdiscussions != nil {
+							if _kvdiscussions := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("discussions"); _kvdiscussions != nil {
 								if !rules.IsExpressionNode(_kvdiscussions.Value) {
 									if !rules.IsString(_kvdiscussions.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8446,7 +8503,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "id-token"
-							if _kvid_token := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("id-token"); _kvid_token != nil {
+							if _kvid_token := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("id-token"); _kvid_token != nil {
 								if !rules.IsExpressionNode(_kvid_token.Value) {
 									if !rules.IsString(_kvid_token.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8478,7 +8535,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "issues"
-							if _kvissues := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("issues"); _kvissues != nil {
+							if _kvissues := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("issues"); _kvissues != nil {
 								if !rules.IsExpressionNode(_kvissues.Value) {
 									if !rules.IsString(_kvissues.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8511,7 +8568,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "models"
-							if _kvmodels := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("models"); _kvmodels != nil {
+							if _kvmodels := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("models"); _kvmodels != nil {
 								if !rules.IsExpressionNode(_kvmodels.Value) {
 									if !rules.IsString(_kvmodels.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8543,7 +8600,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "packages"
-							if _kvpackages := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("packages"); _kvpackages != nil {
+							if _kvpackages := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("packages"); _kvpackages != nil {
 								if !rules.IsExpressionNode(_kvpackages.Value) {
 									if !rules.IsString(_kvpackages.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8576,7 +8633,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "pages"
-							if _kvpages := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("pages"); _kvpages != nil {
+							if _kvpages := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("pages"); _kvpages != nil {
 								if !rules.IsExpressionNode(_kvpages.Value) {
 									if !rules.IsString(_kvpages.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8609,7 +8666,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "pull-requests"
-							if _kvpull_requests := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("pull-requests"); _kvpull_requests != nil {
+							if _kvpull_requests := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("pull-requests"); _kvpull_requests != nil {
 								if !rules.IsExpressionNode(_kvpull_requests.Value) {
 									if !rules.IsString(_kvpull_requests.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8642,7 +8699,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "repository-projects"
-							if _kvrepository_projects := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("repository-projects"); _kvrepository_projects != nil {
+							if _kvrepository_projects := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("repository-projects"); _kvrepository_projects != nil {
 								if !rules.IsExpressionNode(_kvrepository_projects.Value) {
 									if !rules.IsString(_kvrepository_projects.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8675,7 +8732,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "security-events"
-							if _kvsecurity_events := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("security-events"); _kvsecurity_events != nil {
+							if _kvsecurity_events := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("security-events"); _kvsecurity_events != nil {
 								if !rules.IsExpressionNode(_kvsecurity_events.Value) {
 									if !rules.IsString(_kvsecurity_events.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8708,7 +8765,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "statuses"
-							if _kvstatuses := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("statuses"); _kvstatuses != nil {
+							if _kvstatuses := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("statuses"); _kvstatuses != nil {
 								if !rules.IsExpressionNode(_kvstatuses.Value) {
 									if !rules.IsString(_kvstatuses.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8741,7 +8798,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 							}
 
 							// Property: "vulnerability-alerts"
-							if _kvvulnerability_alerts := (workflow.Mapping{MappingNode: _oneOfM67}).FindKey("vulnerability-alerts"); _kvvulnerability_alerts != nil {
+							if _kvvulnerability_alerts := (workflow.Mapping{MappingNode: _oneOfM86}).FindKey("vulnerability-alerts"); _kvvulnerability_alerts != nil {
 								if !rules.IsExpressionNode(_kvvulnerability_alerts.Value) {
 									if !rules.IsString(_kvvulnerability_alerts.Value) {
 										errs = append(errs, rules.ValidationError{
@@ -8882,17 +8939,17 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 	// Property: "concurrency"
 	if _kvconcurrency := (workflow.Mapping{MappingNode: m.MappingNode}).FindKey("concurrency"); _kvconcurrency != nil {
 		if !rules.IsExpressionNode(_kvconcurrency.Value) {
-			// oneOf type branching (id=68)
+			// oneOf type branching (id=87)
 			if rules.IsString(_kvconcurrency.Value) {
 			} else if rules.IsMapping(_kvconcurrency.Value) {
-				if _oneOfM68, _ok := rules.UnwrapNode(_kvconcurrency.Value).(*ast.MappingNode); _ok {
+				if _oneOfM87, _ok := rules.UnwrapNode(_kvconcurrency.Value).(*ast.MappingNode); _ok {
 					// Unknown key detection
 					_knownKeysconcurrency := map[string]bool{
 						"cancel-in-progress": true,
 						"group":              true,
 						"queue":              true,
 					}
-					for _, _entry := range _oneOfM68.Values {
+					for _, _entry := range _oneOfM87.Values {
 						_key := _entry.Key.GetToken().Value
 						if !(_knownKeysconcurrency[_key]) {
 							errs = append(errs, rules.ValidationError{
@@ -8906,7 +8963,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Required key checks
-					_mWrapconcurrency := workflow.Mapping{MappingNode: _oneOfM68}
+					_mWrapconcurrency := workflow.Mapping{MappingNode: _oneOfM87}
 					if _mWrapconcurrency.FindKey("group") == nil {
 						errs = append(errs, rules.ValidationError{
 							Kind:  rules.KindRequiredKey,
@@ -8917,7 +8974,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "cancel-in-progress"
-					if _kvcancel_in_progress := (workflow.Mapping{MappingNode: _oneOfM68}).FindKey("cancel-in-progress"); _kvcancel_in_progress != nil {
+					if _kvcancel_in_progress := (workflow.Mapping{MappingNode: _oneOfM87}).FindKey("cancel-in-progress"); _kvcancel_in_progress != nil {
 						if !rules.IsExpressionNode(_kvcancel_in_progress.Value) {
 							if !rules.IsBoolean(_kvcancel_in_progress.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -8933,7 +8990,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "group"
-					if _kvgroup := (workflow.Mapping{MappingNode: _oneOfM68}).FindKey("group"); _kvgroup != nil {
+					if _kvgroup := (workflow.Mapping{MappingNode: _oneOfM87}).FindKey("group"); _kvgroup != nil {
 						if !rules.IsExpressionNode(_kvgroup.Value) {
 							if !rules.IsString(_kvgroup.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -8949,7 +9006,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "queue"
-					if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM68}).FindKey("queue"); _kvqueue != nil {
+					if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM87}).FindKey("queue"); _kvqueue != nil {
 						if !rules.IsExpressionNode(_kvqueue.Value) {
 							if !rules.IsString(_kvqueue.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -9124,11 +9181,11 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 	// Property: "env"
 	if _kvenv := (workflow.Mapping{MappingNode: m.MappingNode}).FindKey("env"); _kvenv != nil {
 		if !rules.IsExpressionNode(_kvenv.Value) {
-			// oneOf type branching (id=69)
+			// oneOf type branching (id=88)
 			if rules.IsMapping(_kvenv.Value) {
-				if _oneOfM69, _ok := rules.UnwrapNode(_kvenv.Value).(*ast.MappingNode); _ok {
+				if _oneOfM88, _ok := rules.UnwrapNode(_kvenv.Value).(*ast.MappingNode); _ok {
 					// AdditionalProperties schema validation (delegated to helper)
-					for _, _apEntry := range _oneOfM69.Values {
+					for _, _apEntry := range _oneOfM88.Values {
 						errs = append(errs, _validateAP2(_apEntry.Value, _apEntry.Key.GetToken().Value)...)
 					}
 
@@ -9180,10 +9237,10 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 						_ppKey0 := _ppEntry0.Key.GetToken().Value
 						_ = _ppKey0 // may be unused if no type checks in children
 						if !rules.IsExpressionNode(_ppEntry0.Value) {
-							// oneOf presence-based branching (id=70)
-							if _oneOfPM70, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-								_oneOfPW70 := workflow.Mapping{MappingNode: _oneOfPM70}
-								if _oneOfPW70.FindKey("runs-on") != nil {
+							// oneOf presence-based branching (id=89)
+							if _oneOfPM89, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+								_oneOfPW89 := workflow.Mapping{MappingNode: _oneOfPM89}
+								if _oneOfPW89.FindKey("runs-on") != nil {
 									// Unknown key detection
 									_knownKeysjobs__ := map[string]bool{
 										"cache-mode":        true,
@@ -9205,7 +9262,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 										"strategy":          true,
 										"timeout-minutes":   true,
 									}
-									for _, _entry := range _oneOfPM70.Values {
+									for _, _entry := range _oneOfPM89.Values {
 										_key := _entry.Key.GetToken().Value
 										if !(_knownKeysjobs__[_key]) {
 											errs = append(errs, rules.ValidationError{
@@ -9218,7 +9275,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Required key checks
-									_mWrapjobs__ := workflow.Mapping{MappingNode: _oneOfPM70}
+									_mWrapjobs__ := workflow.Mapping{MappingNode: _oneOfPM89}
 									if _mWrapjobs__.FindKey("runs-on") == nil {
 										errs = append(errs, rules.ValidationError{
 											Kind:  rules.KindRequiredKey,
@@ -9229,7 +9286,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "cache-mode"
-									if _kvcache_mode := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("cache-mode"); _kvcache_mode != nil {
+									if _kvcache_mode := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("cache-mode"); _kvcache_mode != nil {
 										if !rules.IsExpressionNode(_kvcache_mode.Value) {
 											if !rules.IsString(_kvcache_mode.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -9263,19 +9320,19 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "concurrency"
-									if _kvconcurrency := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("concurrency"); _kvconcurrency != nil {
+									if _kvconcurrency := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("concurrency"); _kvconcurrency != nil {
 										if !rules.IsExpressionNode(_kvconcurrency.Value) {
-											// oneOf type branching (id=71)
+											// oneOf type branching (id=90)
 											if rules.IsString(_kvconcurrency.Value) {
 											} else if rules.IsMapping(_kvconcurrency.Value) {
-												if _oneOfM71, _ok := rules.UnwrapNode(_kvconcurrency.Value).(*ast.MappingNode); _ok {
+												if _oneOfM90, _ok := rules.UnwrapNode(_kvconcurrency.Value).(*ast.MappingNode); _ok {
 													// Unknown key detection
 													_knownKeysjobs___concurrency := map[string]bool{
 														"cancel-in-progress": true,
 														"group":              true,
 														"queue":              true,
 													}
-													for _, _entry := range _oneOfM71.Values {
+													for _, _entry := range _oneOfM90.Values {
 														_key := _entry.Key.GetToken().Value
 														if !(_knownKeysjobs___concurrency[_key]) {
 															errs = append(errs, rules.ValidationError{
@@ -9289,7 +9346,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Required key checks
-													_mWrapjobs___concurrency := workflow.Mapping{MappingNode: _oneOfM71}
+													_mWrapjobs___concurrency := workflow.Mapping{MappingNode: _oneOfM90}
 													if _mWrapjobs___concurrency.FindKey("group") == nil {
 														errs = append(errs, rules.ValidationError{
 															Kind:  rules.KindRequiredKey,
@@ -9300,7 +9357,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "cancel-in-progress"
-													if _kvcancel_in_progress := (workflow.Mapping{MappingNode: _oneOfM71}).FindKey("cancel-in-progress"); _kvcancel_in_progress != nil {
+													if _kvcancel_in_progress := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("cancel-in-progress"); _kvcancel_in_progress != nil {
 														if !rules.IsExpressionNode(_kvcancel_in_progress.Value) {
 															if !rules.IsBoolean(_kvcancel_in_progress.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9316,7 +9373,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "group"
-													if _kvgroup := (workflow.Mapping{MappingNode: _oneOfM71}).FindKey("group"); _kvgroup != nil {
+													if _kvgroup := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("group"); _kvgroup != nil {
 														if !rules.IsExpressionNode(_kvgroup.Value) {
 															if !rules.IsString(_kvgroup.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9332,7 +9389,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "queue"
-													if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM71}).FindKey("queue"); _kvqueue != nil {
+													if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("queue"); _kvqueue != nil {
 														if !rules.IsExpressionNode(_kvqueue.Value) {
 															if !rules.IsString(_kvqueue.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9378,12 +9435,12 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "container"
-									if _kvcontainer := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("container"); _kvcontainer != nil {
+									if _kvcontainer := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("container"); _kvcontainer != nil {
 										if !rules.IsExpressionNode(_kvcontainer.Value) {
-											// oneOf type branching (id=72)
+											// oneOf type branching (id=91)
 											if rules.IsString(_kvcontainer.Value) {
 											} else if rules.IsMapping(_kvcontainer.Value) {
-												if _oneOfM72, _ok := rules.UnwrapNode(_kvcontainer.Value).(*ast.MappingNode); _ok {
+												if _oneOfM91, _ok := rules.UnwrapNode(_kvcontainer.Value).(*ast.MappingNode); _ok {
 													// Unknown key detection
 													_knownKeysjobs___container := map[string]bool{
 														"credentials": true,
@@ -9393,7 +9450,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 														"ports":       true,
 														"volumes":     true,
 													}
-													for _, _entry := range _oneOfM72.Values {
+													for _, _entry := range _oneOfM91.Values {
 														_key := _entry.Key.GetToken().Value
 														if !(_knownKeysjobs___container[_key]) {
 															errs = append(errs, rules.ValidationError{
@@ -9407,7 +9464,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Required key checks
-													_mWrapjobs___container := workflow.Mapping{MappingNode: _oneOfM72}
+													_mWrapjobs___container := workflow.Mapping{MappingNode: _oneOfM91}
 													if _mWrapjobs___container.FindKey("image") == nil {
 														errs = append(errs, rules.ValidationError{
 															Kind:  rules.KindRequiredKey,
@@ -9418,7 +9475,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "credentials"
-													if _kvcredentials := (workflow.Mapping{MappingNode: _oneOfM72}).FindKey("credentials"); _kvcredentials != nil {
+													if _kvcredentials := (workflow.Mapping{MappingNode: _oneOfM91}).FindKey("credentials"); _kvcredentials != nil {
 														if !rules.IsExpressionNode(_kvcredentials.Value) {
 															if !rules.IsMapping(_kvcredentials.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9468,13 +9525,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "env"
-													if _kvenv := (workflow.Mapping{MappingNode: _oneOfM72}).FindKey("env"); _kvenv != nil {
+													if _kvenv := (workflow.Mapping{MappingNode: _oneOfM91}).FindKey("env"); _kvenv != nil {
 														if !rules.IsExpressionNode(_kvenv.Value) {
-															// oneOf type branching (id=73)
+															// oneOf type branching (id=92)
 															if rules.IsMapping(_kvenv.Value) {
-																if _oneOfM73, _ok := rules.UnwrapNode(_kvenv.Value).(*ast.MappingNode); _ok {
+																if _oneOfM92, _ok := rules.UnwrapNode(_kvenv.Value).(*ast.MappingNode); _ok {
 																	// AdditionalProperties schema validation (delegated to helper)
-																	for _, _apEntry := range _oneOfM73.Values {
+																	for _, _apEntry := range _oneOfM92.Values {
 																		errs = append(errs, _validateAP2(_apEntry.Value, _apEntry.Key.GetToken().Value)...)
 																	}
 
@@ -9493,7 +9550,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "image"
-													if _kvimage := (workflow.Mapping{MappingNode: _oneOfM72}).FindKey("image"); _kvimage != nil {
+													if _kvimage := (workflow.Mapping{MappingNode: _oneOfM91}).FindKey("image"); _kvimage != nil {
 														if !rules.IsExpressionNode(_kvimage.Value) {
 															if !rules.IsString(_kvimage.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9509,7 +9566,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "options"
-													if _kvoptions := (workflow.Mapping{MappingNode: _oneOfM72}).FindKey("options"); _kvoptions != nil {
+													if _kvoptions := (workflow.Mapping{MappingNode: _oneOfM91}).FindKey("options"); _kvoptions != nil {
 														if !rules.IsExpressionNode(_kvoptions.Value) {
 															if !rules.IsString(_kvoptions.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9525,7 +9582,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "ports"
-													if _kvports := (workflow.Mapping{MappingNode: _oneOfM72}).FindKey("ports"); _kvports != nil {
+													if _kvports := (workflow.Mapping{MappingNode: _oneOfM91}).FindKey("ports"); _kvports != nil {
 														if !rules.IsExpressionNode(_kvports.Value) {
 															if !rules.IsSequence(_kvports.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9567,7 +9624,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "volumes"
-													if _kvvolumes := (workflow.Mapping{MappingNode: _oneOfM72}).FindKey("volumes"); _kvvolumes != nil {
+													if _kvvolumes := (workflow.Mapping{MappingNode: _oneOfM91}).FindKey("volumes"); _kvvolumes != nil {
 														if !rules.IsExpressionNode(_kvvolumes.Value) {
 															if !rules.IsSequence(_kvvolumes.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9623,7 +9680,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "continue-on-error"
-									if _kvcontinue_on_error := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("continue-on-error"); _kvcontinue_on_error != nil {
+									if _kvcontinue_on_error := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("continue-on-error"); _kvcontinue_on_error != nil {
 										if !rules.IsExpressionNode(_kvcontinue_on_error.Value) {
 											if !rules.IsBoolean(_kvcontinue_on_error.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -9639,7 +9696,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "defaults"
-									if _kvdefaults := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("defaults"); _kvdefaults != nil {
+									if _kvdefaults := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("defaults"); _kvdefaults != nil {
 										if !rules.IsExpressionNode(_kvdefaults.Value) {
 											if !rules.IsMapping(_kvdefaults.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -9766,13 +9823,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "env"
-									if _kvenv := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("env"); _kvenv != nil {
+									if _kvenv := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("env"); _kvenv != nil {
 										if !rules.IsExpressionNode(_kvenv.Value) {
-											// oneOf type branching (id=74)
+											// oneOf type branching (id=93)
 											if rules.IsMapping(_kvenv.Value) {
-												if _oneOfM74, _ok := rules.UnwrapNode(_kvenv.Value).(*ast.MappingNode); _ok {
+												if _oneOfM93, _ok := rules.UnwrapNode(_kvenv.Value).(*ast.MappingNode); _ok {
 													// AdditionalProperties schema validation (delegated to helper)
-													for _, _apEntry := range _oneOfM74.Values {
+													for _, _apEntry := range _oneOfM93.Values {
 														errs = append(errs, _validateAP2(_apEntry.Value, _apEntry.Key.GetToken().Value)...)
 													}
 
@@ -9791,19 +9848,19 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "environment"
-									if _kvenvironment := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("environment"); _kvenvironment != nil {
+									if _kvenvironment := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("environment"); _kvenvironment != nil {
 										if !rules.IsExpressionNode(_kvenvironment.Value) {
-											// oneOf type branching (id=75)
+											// oneOf type branching (id=94)
 											if rules.IsString(_kvenvironment.Value) {
 											} else if rules.IsMapping(_kvenvironment.Value) {
-												if _oneOfM75, _ok := rules.UnwrapNode(_kvenvironment.Value).(*ast.MappingNode); _ok {
+												if _oneOfM94, _ok := rules.UnwrapNode(_kvenvironment.Value).(*ast.MappingNode); _ok {
 													// Unknown key detection
 													_knownKeysjobs___environment := map[string]bool{
 														"deployment": true,
 														"name":       true,
 														"url":        true,
 													}
-													for _, _entry := range _oneOfM75.Values {
+													for _, _entry := range _oneOfM94.Values {
 														_key := _entry.Key.GetToken().Value
 														if !(_knownKeysjobs___environment[_key]) {
 															errs = append(errs, rules.ValidationError{
@@ -9817,7 +9874,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Required key checks
-													_mWrapjobs___environment := workflow.Mapping{MappingNode: _oneOfM75}
+													_mWrapjobs___environment := workflow.Mapping{MappingNode: _oneOfM94}
 													if _mWrapjobs___environment.FindKey("name") == nil {
 														errs = append(errs, rules.ValidationError{
 															Kind:  rules.KindRequiredKey,
@@ -9828,7 +9885,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "deployment"
-													if _kvdeployment := (workflow.Mapping{MappingNode: _oneOfM75}).FindKey("deployment"); _kvdeployment != nil {
+													if _kvdeployment := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("deployment"); _kvdeployment != nil {
 														if !rules.IsExpressionNode(_kvdeployment.Value) {
 															if !rules.IsBoolean(_kvdeployment.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9844,7 +9901,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "name"
-													if _kvname := (workflow.Mapping{MappingNode: _oneOfM75}).FindKey("name"); _kvname != nil {
+													if _kvname := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("name"); _kvname != nil {
 														if !rules.IsExpressionNode(_kvname.Value) {
 															if !rules.IsString(_kvname.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9860,7 +9917,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "url"
-													if _kvurl := (workflow.Mapping{MappingNode: _oneOfM75}).FindKey("url"); _kvurl != nil {
+													if _kvurl := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("url"); _kvurl != nil {
 														if !rules.IsExpressionNode(_kvurl.Value) {
 															if !rules.IsString(_kvurl.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -9890,7 +9947,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "if"
-									if _kvif := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("if"); _kvif != nil {
+									if _kvif := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("if"); _kvif != nil {
 										if !rules.IsExpressionNode(_kvif.Value) {
 											if !rules.IsString(_kvif.Value) && !rules.IsBoolean(_kvif.Value) && !rules.IsNumber(_kvif.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -9906,7 +9963,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "name"
-									if _kvname := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("name"); _kvname != nil {
+									if _kvname := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("name"); _kvname != nil {
 										if !rules.IsExpressionNode(_kvname.Value) {
 											if !rules.IsString(_kvname.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -9922,22 +9979,22 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "needs"
-									if _kvneeds := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("needs"); _kvneeds != nil {
+									if _kvneeds := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("needs"); _kvneeds != nil {
 										if !rules.IsExpressionNode(_kvneeds.Value) {
-											// oneOf type branching (id=76)
+											// oneOf type branching (id=95)
 											if rules.IsSequence(_kvneeds.Value) {
-												if _oneOfSeq76, _ok := rules.UnwrapNode(_kvneeds.Value).(*ast.SequenceNode); _ok {
-													if len(_oneOfSeq76.Values) < 1 {
+												if _oneOfSeq95, _ok := rules.UnwrapNode(_kvneeds.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq95.Values) < 1 {
 														errs = append(errs, rules.ValidationError{
 															Kind:    rules.KindMinItems,
 															Path:    "jobs.*.needs",
 															Key:     "needs",
-															Got:     fmt.Sprintf("%d", len(_oneOfSeq76.Values)),
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq95.Values)),
 															Allowed: []string{fmt.Sprintf("at least %d", 1)},
 															Token:   _kvneeds.Value.GetToken(),
 														})
 													}
-													for _, _item := range _oneOfSeq76.Values {
+													for _, _item := range _oneOfSeq95.Values {
 														if !rules.IsExpressionNode(_item) {
 															if !rules.IsString(_item) {
 																errs = append(errs, rules.ValidationError{
@@ -9977,7 +10034,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "outputs"
-									if _kvoutputs := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("outputs"); _kvoutputs != nil {
+									if _kvoutputs := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("outputs"); _kvoutputs != nil {
 										if !rules.IsExpressionNode(_kvoutputs.Value) {
 											if !rules.IsMapping(_kvoutputs.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -10012,9 +10069,9 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "permissions"
-									if _kvpermissions := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("permissions"); _kvpermissions != nil {
+									if _kvpermissions := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("permissions"); _kvpermissions != nil {
 										if !rules.IsExpressionNode(_kvpermissions.Value) {
-											// oneOf type branching (id=77)
+											// oneOf type branching (id=96)
 											if rules.IsString(_kvpermissions.Value) {
 												if _sv := rules.StringValue(_kvpermissions.Value); _sv != "" {
 													_validEnumpermissions := map[string]bool{
@@ -10035,7 +10092,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 												}
 											} else if rules.IsMapping(_kvpermissions.Value) {
-												if _oneOfM77, _ok := rules.UnwrapNode(_kvpermissions.Value).(*ast.MappingNode); _ok {
+												if _oneOfM96, _ok := rules.UnwrapNode(_kvpermissions.Value).(*ast.MappingNode); _ok {
 													// Unknown key detection
 													_knownKeysjobs___permissions := map[string]bool{
 														"actions":              true,
@@ -10058,7 +10115,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 														"statuses":             true,
 														"vulnerability-alerts": true,
 													}
-													for _, _entry := range _oneOfM77.Values {
+													for _, _entry := range _oneOfM96.Values {
 														_key := _entry.Key.GetToken().Value
 														if !(_knownKeysjobs___permissions[_key]) {
 															errs = append(errs, rules.ValidationError{
@@ -10073,7 +10130,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "actions"
-													if _kvactions := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("actions"); _kvactions != nil {
+													if _kvactions := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("actions"); _kvactions != nil {
 														if !rules.IsExpressionNode(_kvactions.Value) {
 															if !rules.IsString(_kvactions.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10106,7 +10163,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "artifact-metadata"
-													if _kvartifact_metadata := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("artifact-metadata"); _kvartifact_metadata != nil {
+													if _kvartifact_metadata := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("artifact-metadata"); _kvartifact_metadata != nil {
 														if !rules.IsExpressionNode(_kvartifact_metadata.Value) {
 															if !rules.IsString(_kvartifact_metadata.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10139,7 +10196,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "attestations"
-													if _kvattestations := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("attestations"); _kvattestations != nil {
+													if _kvattestations := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("attestations"); _kvattestations != nil {
 														if !rules.IsExpressionNode(_kvattestations.Value) {
 															if !rules.IsString(_kvattestations.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10172,7 +10229,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "checks"
-													if _kvchecks := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("checks"); _kvchecks != nil {
+													if _kvchecks := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("checks"); _kvchecks != nil {
 														if !rules.IsExpressionNode(_kvchecks.Value) {
 															if !rules.IsString(_kvchecks.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10205,7 +10262,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "code-quality"
-													if _kvcode_quality := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("code-quality"); _kvcode_quality != nil {
+													if _kvcode_quality := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("code-quality"); _kvcode_quality != nil {
 														if !rules.IsExpressionNode(_kvcode_quality.Value) {
 															if !rules.IsString(_kvcode_quality.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10238,7 +10295,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "contents"
-													if _kvcontents := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("contents"); _kvcontents != nil {
+													if _kvcontents := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("contents"); _kvcontents != nil {
 														if !rules.IsExpressionNode(_kvcontents.Value) {
 															if !rules.IsString(_kvcontents.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10271,7 +10328,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "copilot-requests"
-													if _kvcopilot_requests := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("copilot-requests"); _kvcopilot_requests != nil {
+													if _kvcopilot_requests := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("copilot-requests"); _kvcopilot_requests != nil {
 														if !rules.IsExpressionNode(_kvcopilot_requests.Value) {
 															if !rules.IsString(_kvcopilot_requests.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10303,7 +10360,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "deployments"
-													if _kvdeployments := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("deployments"); _kvdeployments != nil {
+													if _kvdeployments := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("deployments"); _kvdeployments != nil {
 														if !rules.IsExpressionNode(_kvdeployments.Value) {
 															if !rules.IsString(_kvdeployments.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10336,7 +10393,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "discussions"
-													if _kvdiscussions := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("discussions"); _kvdiscussions != nil {
+													if _kvdiscussions := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("discussions"); _kvdiscussions != nil {
 														if !rules.IsExpressionNode(_kvdiscussions.Value) {
 															if !rules.IsString(_kvdiscussions.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10369,7 +10426,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "id-token"
-													if _kvid_token := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("id-token"); _kvid_token != nil {
+													if _kvid_token := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("id-token"); _kvid_token != nil {
 														if !rules.IsExpressionNode(_kvid_token.Value) {
 															if !rules.IsString(_kvid_token.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10401,7 +10458,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "issues"
-													if _kvissues := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("issues"); _kvissues != nil {
+													if _kvissues := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("issues"); _kvissues != nil {
 														if !rules.IsExpressionNode(_kvissues.Value) {
 															if !rules.IsString(_kvissues.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10434,7 +10491,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "models"
-													if _kvmodels := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("models"); _kvmodels != nil {
+													if _kvmodels := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("models"); _kvmodels != nil {
 														if !rules.IsExpressionNode(_kvmodels.Value) {
 															if !rules.IsString(_kvmodels.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10466,7 +10523,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "packages"
-													if _kvpackages := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("packages"); _kvpackages != nil {
+													if _kvpackages := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("packages"); _kvpackages != nil {
 														if !rules.IsExpressionNode(_kvpackages.Value) {
 															if !rules.IsString(_kvpackages.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10499,7 +10556,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "pages"
-													if _kvpages := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("pages"); _kvpages != nil {
+													if _kvpages := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("pages"); _kvpages != nil {
 														if !rules.IsExpressionNode(_kvpages.Value) {
 															if !rules.IsString(_kvpages.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10532,7 +10589,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "pull-requests"
-													if _kvpull_requests := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("pull-requests"); _kvpull_requests != nil {
+													if _kvpull_requests := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("pull-requests"); _kvpull_requests != nil {
 														if !rules.IsExpressionNode(_kvpull_requests.Value) {
 															if !rules.IsString(_kvpull_requests.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10565,7 +10622,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "repository-projects"
-													if _kvrepository_projects := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("repository-projects"); _kvrepository_projects != nil {
+													if _kvrepository_projects := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("repository-projects"); _kvrepository_projects != nil {
 														if !rules.IsExpressionNode(_kvrepository_projects.Value) {
 															if !rules.IsString(_kvrepository_projects.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10598,7 +10655,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "security-events"
-													if _kvsecurity_events := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("security-events"); _kvsecurity_events != nil {
+													if _kvsecurity_events := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("security-events"); _kvsecurity_events != nil {
 														if !rules.IsExpressionNode(_kvsecurity_events.Value) {
 															if !rules.IsString(_kvsecurity_events.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10631,7 +10688,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "statuses"
-													if _kvstatuses := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("statuses"); _kvstatuses != nil {
+													if _kvstatuses := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("statuses"); _kvstatuses != nil {
 														if !rules.IsExpressionNode(_kvstatuses.Value) {
 															if !rules.IsString(_kvstatuses.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10664,7 +10721,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "vulnerability-alerts"
-													if _kvvulnerability_alerts := (workflow.Mapping{MappingNode: _oneOfM77}).FindKey("vulnerability-alerts"); _kvvulnerability_alerts != nil {
+													if _kvvulnerability_alerts := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("vulnerability-alerts"); _kvvulnerability_alerts != nil {
 														if !rules.IsExpressionNode(_kvvulnerability_alerts.Value) {
 															if !rules.IsString(_kvvulnerability_alerts.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10710,7 +10767,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "runs-on"
-									if _kvruns_on := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("runs-on"); _kvruns_on != nil {
+									if _kvruns_on := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("runs-on"); _kvruns_on != nil {
 										if !rules.IsExpressionNode(_kvruns_on.Value) {
 											if !rules.IsString(_kvruns_on.Value) && !rules.IsSequence(_kvruns_on.Value) && !rules.IsMapping(_kvruns_on.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -10722,9 +10779,9 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													Token:   _kvruns_on.Value.GetToken(),
 												})
 											}
-											if _anyOfM78, _ok := rules.UnwrapNode(_kvruns_on.Value).(*ast.MappingNode); _ok {
+											if _anyOfM97, _ok := rules.UnwrapNode(_kvruns_on.Value).(*ast.MappingNode); _ok {
 												// Property: "group"
-												if _kvgroup := (workflow.Mapping{MappingNode: _anyOfM78}).FindKey("group"); _kvgroup != nil {
+												if _kvgroup := (workflow.Mapping{MappingNode: _anyOfM97}).FindKey("group"); _kvgroup != nil {
 													if !rules.IsExpressionNode(_kvgroup.Value) {
 														if !rules.IsString(_kvgroup.Value) {
 															errs = append(errs, rules.ValidationError{
@@ -10740,13 +10797,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 												}
 
 												// Property: "labels"
-												if _kvlabels := (workflow.Mapping{MappingNode: _anyOfM78}).FindKey("labels"); _kvlabels != nil {
+												if _kvlabels := (workflow.Mapping{MappingNode: _anyOfM97}).FindKey("labels"); _kvlabels != nil {
 													if !rules.IsExpressionNode(_kvlabels.Value) {
-														// oneOf type branching (id=79)
+														// oneOf type branching (id=98)
 														if rules.IsString(_kvlabels.Value) {
 														} else if rules.IsSequence(_kvlabels.Value) {
-															if _oneOfSeq79, _ok := rules.UnwrapNode(_kvlabels.Value).(*ast.SequenceNode); _ok {
-																for _, _item := range _oneOfSeq79.Values {
+															if _oneOfSeq98, _ok := rules.UnwrapNode(_kvlabels.Value).(*ast.SequenceNode); _ok {
+																for _, _item := range _oneOfSeq98.Values {
 																	if !rules.IsExpressionNode(_item) {
 																		if !rules.IsString(_item) {
 																			errs = append(errs, rules.ValidationError{
@@ -10779,13 +10836,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "services"
-									if _kvservices := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("services"); _kvservices != nil {
+									if _kvservices := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("services"); _kvservices != nil {
 										if !rules.IsExpressionNode(_kvservices.Value) {
-											// oneOf type branching (id=80)
+											// oneOf type branching (id=99)
 											if rules.IsMapping(_kvservices.Value) {
-												if _oneOfM80, _ok := rules.UnwrapNode(_kvservices.Value).(*ast.MappingNode); _ok {
+												if _oneOfM99, _ok := rules.UnwrapNode(_kvservices.Value).(*ast.MappingNode); _ok {
 													// AdditionalProperties schema validation (delegated to helper)
-													for _, _apEntry := range _oneOfM80.Values {
+													for _, _apEntry := range _oneOfM99.Values {
 														errs = append(errs, _validateAP15(_apEntry.Value, _apEntry.Key.GetToken().Value)...)
 													}
 
@@ -10804,18 +10861,18 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "snapshot"
-									if _kvsnapshot := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("snapshot"); _kvsnapshot != nil {
+									if _kvsnapshot := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("snapshot"); _kvsnapshot != nil {
 										if !rules.IsExpressionNode(_kvsnapshot.Value) {
-											// oneOf type branching (id=81)
+											// oneOf type branching (id=100)
 											if rules.IsString(_kvsnapshot.Value) {
 											} else if rules.IsMapping(_kvsnapshot.Value) {
-												if _oneOfM81, _ok := rules.UnwrapNode(_kvsnapshot.Value).(*ast.MappingNode); _ok {
+												if _oneOfM100, _ok := rules.UnwrapNode(_kvsnapshot.Value).(*ast.MappingNode); _ok {
 													// Unknown key detection
 													_knownKeysjobs___snapshot := map[string]bool{
 														"image-name": true,
 														"version":    true,
 													}
-													for _, _entry := range _oneOfM81.Values {
+													for _, _entry := range _oneOfM100.Values {
 														_key := _entry.Key.GetToken().Value
 														if !(_knownKeysjobs___snapshot[_key]) {
 															errs = append(errs, rules.ValidationError{
@@ -10829,7 +10886,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Required key checks
-													_mWrapjobs___snapshot := workflow.Mapping{MappingNode: _oneOfM81}
+													_mWrapjobs___snapshot := workflow.Mapping{MappingNode: _oneOfM100}
 													if _mWrapjobs___snapshot.FindKey("image-name") == nil {
 														errs = append(errs, rules.ValidationError{
 															Kind:  rules.KindRequiredKey,
@@ -10840,7 +10897,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "image-name"
-													if _kvimage_name := (workflow.Mapping{MappingNode: _oneOfM81}).FindKey("image-name"); _kvimage_name != nil {
+													if _kvimage_name := (workflow.Mapping{MappingNode: _oneOfM100}).FindKey("image-name"); _kvimage_name != nil {
 														if !rules.IsExpressionNode(_kvimage_name.Value) {
 															if !rules.IsString(_kvimage_name.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10856,7 +10913,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "version"
-													if _kvversion := (workflow.Mapping{MappingNode: _oneOfM81}).FindKey("version"); _kvversion != nil {
+													if _kvversion := (workflow.Mapping{MappingNode: _oneOfM100}).FindKey("version"); _kvversion != nil {
 														if !rules.IsExpressionNode(_kvversion.Value) {
 															if !rules.IsString(_kvversion.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -10896,7 +10953,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "steps"
-									if _kvsteps := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("steps"); _kvsteps != nil {
+									if _kvsteps := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("steps"); _kvsteps != nil {
 										if !rules.IsExpressionNode(_kvsteps.Value) {
 											if !rules.IsSequence(_kvsteps.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -11039,11 +11096,11 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 															// Property: "env"
 															if _kvenv := (workflow.Mapping{MappingNode: _subMsteps__}).FindKey("env"); _kvenv != nil {
 																if !rules.IsExpressionNode(_kvenv.Value) {
-																	// oneOf type branching (id=82)
+																	// oneOf type branching (id=101)
 																	if rules.IsMapping(_kvenv.Value) {
-																		if _oneOfM82, _ok := rules.UnwrapNode(_kvenv.Value).(*ast.MappingNode); _ok {
+																		if _oneOfM101, _ok := rules.UnwrapNode(_kvenv.Value).(*ast.MappingNode); _ok {
 																			// AdditionalProperties schema validation (delegated to helper)
-																			for _, _apEntry := range _oneOfM82.Values {
+																			for _, _apEntry := range _oneOfM101.Values {
 																				errs = append(errs, _validateAP2(_apEntry.Value, _apEntry.Key.GetToken().Value)...)
 																			}
 
@@ -11192,21 +11249,21 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 															// Property: "wait"
 															if _kvwait := (workflow.Mapping{MappingNode: _subMsteps__}).FindKey("wait"); _kvwait != nil {
 																if !rules.IsExpressionNode(_kvwait.Value) {
-																	// oneOf type branching (id=83)
+																	// oneOf type branching (id=102)
 																	if rules.IsString(_kvwait.Value) {
 																	} else if rules.IsSequence(_kvwait.Value) {
-																		if _oneOfSeq83, _ok := rules.UnwrapNode(_kvwait.Value).(*ast.SequenceNode); _ok {
-																			if len(_oneOfSeq83.Values) < 1 {
+																		if _oneOfSeq102, _ok := rules.UnwrapNode(_kvwait.Value).(*ast.SequenceNode); _ok {
+																			if len(_oneOfSeq102.Values) < 1 {
 																				errs = append(errs, rules.ValidationError{
 																					Kind:    rules.KindMinItems,
 																					Path:    "jobs.*.steps.*.wait",
 																					Key:     "wait",
-																					Got:     fmt.Sprintf("%d", len(_oneOfSeq83.Values)),
+																					Got:     fmt.Sprintf("%d", len(_oneOfSeq102.Values)),
 																					Allowed: []string{fmt.Sprintf("at least %d", 1)},
 																					Token:   _kvwait.Value.GetToken(),
 																				})
 																			}
-																			for _, _item := range _oneOfSeq83.Values {
+																			for _, _item := range _oneOfSeq102.Values {
 																				if !rules.IsExpressionNode(_item) {
 																					if !rules.IsString(_item) {
 																						errs = append(errs, rules.ValidationError{
@@ -11253,11 +11310,11 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 															// Property: "with"
 															if _kvwith := (workflow.Mapping{MappingNode: _subMsteps__}).FindKey("with"); _kvwith != nil {
 																if !rules.IsExpressionNode(_kvwith.Value) {
-																	// oneOf type branching (id=84)
+																	// oneOf type branching (id=103)
 																	if rules.IsMapping(_kvwith.Value) {
-																		if _oneOfM84, _ok := rules.UnwrapNode(_kvwith.Value).(*ast.MappingNode); _ok {
+																		if _oneOfM103, _ok := rules.UnwrapNode(_kvwith.Value).(*ast.MappingNode); _ok {
 																			// AdditionalProperties schema validation (delegated to helper)
-																			for _, _apEntry := range _oneOfM84.Values {
+																			for _, _apEntry := range _oneOfM103.Values {
 																				errs = append(errs, _validateAP2(_apEntry.Value, _apEntry.Key.GetToken().Value)...)
 																			}
 
@@ -11302,78 +11359,78 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 															}
 
 														}
-														// oneOf presence-based branching (id=85)
-														if _oneOfPM85, _ok := rules.UnwrapNode(_item).(*ast.MappingNode); _ok {
-															_oneOfPW85 := workflow.Mapping{MappingNode: _oneOfPM85}
-															if _oneOfPW85.FindKey("uses") != nil {
+														// oneOf presence-based branching (id=104)
+														if _oneOfPM104, _ok := rules.UnwrapNode(_item).(*ast.MappingNode); _ok {
+															_oneOfPW104 := workflow.Mapping{MappingNode: _oneOfPM104}
+															if _oneOfPW104.FindKey("uses") != nil {
 																// Required key checks
-																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM85}
+																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM104}
 																if _mWrapjobs___steps__.FindKey("uses") == nil {
 																	errs = append(errs, rules.ValidationError{
 																		Kind:  rules.KindRequiredKey,
 																		Path:  "jobs.*.steps.*",
 																		Key:   "uses",
-																		Token: _oneOfPM85.GetToken(),
+																		Token: _oneOfPM104.GetToken(),
 																	})
 																}
 
-															} else if _oneOfPW85.FindKey("run") != nil {
+															} else if _oneOfPW104.FindKey("run") != nil {
 																// Required key checks
-																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM85}
+																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM104}
 																if _mWrapjobs___steps__.FindKey("run") == nil {
 																	errs = append(errs, rules.ValidationError{
 																		Kind:  rules.KindRequiredKey,
 																		Path:  "jobs.*.steps.*",
 																		Key:   "run",
-																		Token: _oneOfPM85.GetToken(),
+																		Token: _oneOfPM104.GetToken(),
 																	})
 																}
 
-															} else if _oneOfPW85.FindKey("wait") != nil {
+															} else if _oneOfPW104.FindKey("wait") != nil {
 																// Required key checks
-																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM85}
+																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM104}
 																if _mWrapjobs___steps__.FindKey("wait") == nil {
 																	errs = append(errs, rules.ValidationError{
 																		Kind:  rules.KindRequiredKey,
 																		Path:  "jobs.*.steps.*",
 																		Key:   "wait",
-																		Token: _oneOfPM85.GetToken(),
+																		Token: _oneOfPM104.GetToken(),
 																	})
 																}
 
-															} else if _oneOfPW85.FindKey("wait-all") != nil {
+															} else if _oneOfPW104.FindKey("wait-all") != nil {
 																// Required key checks
-																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM85}
+																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM104}
 																if _mWrapjobs___steps__.FindKey("wait-all") == nil {
 																	errs = append(errs, rules.ValidationError{
 																		Kind:  rules.KindRequiredKey,
 																		Path:  "jobs.*.steps.*",
 																		Key:   "wait-all",
-																		Token: _oneOfPM85.GetToken(),
+																		Token: _oneOfPM104.GetToken(),
 																	})
 																}
 
-															} else if _oneOfPW85.FindKey("cancel") != nil {
+															} else if _oneOfPW104.FindKey("cancel") != nil {
 																// Required key checks
-																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM85}
+																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM104}
 																if _mWrapjobs___steps__.FindKey("cancel") == nil {
 																	errs = append(errs, rules.ValidationError{
 																		Kind:  rules.KindRequiredKey,
 																		Path:  "jobs.*.steps.*",
 																		Key:   "cancel",
-																		Token: _oneOfPM85.GetToken(),
+																		Token: _oneOfPM104.GetToken(),
 																	})
 																}
 
-															} else if _oneOfPW85.FindKey("parallel") != nil {
+															} else if _oneOfPW104.FindKey("parallel") != nil {
 																// Required key checks
-																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM85}
+																_mWrapjobs___steps__ := workflow.Mapping{MappingNode: _oneOfPM104}
 																if _mWrapjobs___steps__.FindKey("parallel") == nil {
 																	errs = append(errs, rules.ValidationError{
 																		Kind:  rules.KindRequiredKey,
 																		Path:  "jobs.*.steps.*",
 																		Key:   "parallel",
-																		Token: _oneOfPM85.GetToken(),
+																		Token: _oneOfPM104.GetToken(),
 																	})
 																}
 
@@ -11383,7 +11440,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																	Path:    "jobs.*.steps.*",
 																	Key:     "cancel",
 																	Allowed: []string{"cancel", "parallel", "run", "uses", "wait", "wait-all"},
-																	Token:   _oneOfPM85.GetToken(),
+																	Token:   _oneOfPM104.GetToken(),
 																})
 															}
 														} else if !rules.IsAliasNode(_item) {
@@ -11403,7 +11460,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "strategy"
-									if _kvstrategy := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("strategy"); _kvstrategy != nil {
+									if _kvstrategy := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("strategy"); _kvstrategy != nil {
 										if !rules.IsExpressionNode(_kvstrategy.Value) {
 											if !rules.IsMapping(_kvstrategy.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -11465,29 +11522,29 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 												// Property: "matrix"
 												if _kvmatrix := (workflow.Mapping{MappingNode: _subMstrategy}).FindKey("matrix"); _kvmatrix != nil {
 													if !rules.IsExpressionNode(_kvmatrix.Value) {
-														// oneOf type branching (id=86)
+														// oneOf type branching (id=105)
 														if rules.IsMapping(_kvmatrix.Value) {
-															if _oneOfM86, _ok := rules.UnwrapNode(_kvmatrix.Value).(*ast.MappingNode); _ok {
+															if _oneOfM105, _ok := rules.UnwrapNode(_kvmatrix.Value).(*ast.MappingNode); _ok {
 																// PatternProperty: ^(in|ex)clude$
-																for _, _ppEntry0 := range _oneOfM86.Values {
+																for _, _ppEntry0 := range _oneOfM105.Values {
 																	if _re2.MatchString(_ppEntry0.Key.GetToken().Value) {
 																		_ppKey0 := _ppEntry0.Key.GetToken().Value
 																		_ = _ppKey0 // may be unused if no type checks in children
 																		if !rules.IsExpressionNode(_ppEntry0.Value) {
-																			// oneOf type branching (id=87)
+																			// oneOf type branching (id=106)
 																			if rules.IsSequence(_ppEntry0.Value) {
-																				if _oneOfSeq87, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.SequenceNode); _ok {
-																					if len(_oneOfSeq87.Values) < 1 {
+																				if _oneOfSeq106, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.SequenceNode); _ok {
+																					if len(_oneOfSeq106.Values) < 1 {
 																						errs = append(errs, rules.ValidationError{
 																							Kind:    rules.KindMinItems,
 																							Path:    "jobs.*.strategy.matrix.*",
 																							Key:     "*",
-																							Got:     fmt.Sprintf("%d", len(_oneOfSeq87.Values)),
+																							Got:     fmt.Sprintf("%d", len(_oneOfSeq106.Values)),
 																							Allowed: []string{fmt.Sprintf("at least %d", 1)},
 																							Token:   _ppEntry0.Value.GetToken(),
 																						})
 																					}
-																					for _, _item := range _oneOfSeq87.Values {
+																					for _, _item := range _oneOfSeq106.Values {
 																						if !rules.IsExpressionNode(_item) {
 																							if !rules.IsMapping(_item) {
 																								errs = append(errs, rules.ValidationError{
@@ -11523,19 +11580,19 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																}
 
 																// AdditionalProperties schema validation (delegated to helper)
-																for _, _apEntry := range _oneOfM86.Values {
+																for _, _apEntry := range _oneOfM105.Values {
 																	errs = append(errs, _validateAP25(_apEntry.Value, _apEntry.Key.GetToken().Value)...)
 																}
 
 																// minProperties check
-																if len(_oneOfM86.Values) < 1 {
+																if len(_oneOfM105.Values) < 1 {
 																	errs = append(errs, rules.ValidationError{
 																		Kind:    rules.KindMinItems,
 																		Path:    "jobs.*.strategy.matrix",
 																		Key:     "matrix",
-																		Got:     fmt.Sprintf("%d", len(_oneOfM86.Values)),
+																		Got:     fmt.Sprintf("%d", len(_oneOfM105.Values)),
 																		Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																		Token:   _oneOfM86.GetToken(),
+																		Token:   _oneOfM105.GetToken(),
 																	})
 																}
 
@@ -11574,7 +11631,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "timeout-minutes"
-									if _kvtimeout_minutes := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("timeout-minutes"); _kvtimeout_minutes != nil {
+									if _kvtimeout_minutes := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("timeout-minutes"); _kvtimeout_minutes != nil {
 										if !rules.IsExpressionNode(_kvtimeout_minutes.Value) {
 											if !rules.IsNumber(_kvtimeout_minutes.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -11589,7 +11646,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 										}
 									}
 
-								} else if _oneOfPW70.FindKey("uses") != nil {
+								} else if _oneOfPW89.FindKey("uses") != nil {
 									// Unknown key detection
 									_knownKeysjobs__ := map[string]bool{
 										"cache-mode":  true,
@@ -11603,7 +11660,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 										"uses":        true,
 										"with":        true,
 									}
-									for _, _entry := range _oneOfPM70.Values {
+									for _, _entry := range _oneOfPM89.Values {
 										_key := _entry.Key.GetToken().Value
 										if !(_knownKeysjobs__[_key]) {
 											errs = append(errs, rules.ValidationError{
@@ -11616,7 +11673,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Required key checks
-									_mWrapjobs__ := workflow.Mapping{MappingNode: _oneOfPM70}
+									_mWrapjobs__ := workflow.Mapping{MappingNode: _oneOfPM89}
 									if _mWrapjobs__.FindKey("uses") == nil {
 										errs = append(errs, rules.ValidationError{
 											Kind:  rules.KindRequiredKey,
@@ -11627,7 +11684,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "cache-mode"
-									if _kvcache_mode := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("cache-mode"); _kvcache_mode != nil {
+									if _kvcache_mode := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("cache-mode"); _kvcache_mode != nil {
 										if !rules.IsExpressionNode(_kvcache_mode.Value) {
 											if !rules.IsString(_kvcache_mode.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -11661,19 +11718,19 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "concurrency"
-									if _kvconcurrency := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("concurrency"); _kvconcurrency != nil {
+									if _kvconcurrency := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("concurrency"); _kvconcurrency != nil {
 										if !rules.IsExpressionNode(_kvconcurrency.Value) {
-											// oneOf type branching (id=88)
+											// oneOf type branching (id=107)
 											if rules.IsString(_kvconcurrency.Value) {
 											} else if rules.IsMapping(_kvconcurrency.Value) {
-												if _oneOfM88, _ok := rules.UnwrapNode(_kvconcurrency.Value).(*ast.MappingNode); _ok {
+												if _oneOfM107, _ok := rules.UnwrapNode(_kvconcurrency.Value).(*ast.MappingNode); _ok {
 													// Unknown key detection
 													_knownKeysjobs___concurrency := map[string]bool{
 														"cancel-in-progress": true,
 														"group":              true,
 														"queue":              true,
 													}
-													for _, _entry := range _oneOfM88.Values {
+													for _, _entry := range _oneOfM107.Values {
 														_key := _entry.Key.GetToken().Value
 														if !(_knownKeysjobs___concurrency[_key]) {
 															errs = append(errs, rules.ValidationError{
@@ -11687,7 +11744,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Required key checks
-													_mWrapjobs___concurrency := workflow.Mapping{MappingNode: _oneOfM88}
+													_mWrapjobs___concurrency := workflow.Mapping{MappingNode: _oneOfM107}
 													if _mWrapjobs___concurrency.FindKey("group") == nil {
 														errs = append(errs, rules.ValidationError{
 															Kind:  rules.KindRequiredKey,
@@ -11698,7 +11755,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "cancel-in-progress"
-													if _kvcancel_in_progress := (workflow.Mapping{MappingNode: _oneOfM88}).FindKey("cancel-in-progress"); _kvcancel_in_progress != nil {
+													if _kvcancel_in_progress := (workflow.Mapping{MappingNode: _oneOfM107}).FindKey("cancel-in-progress"); _kvcancel_in_progress != nil {
 														if !rules.IsExpressionNode(_kvcancel_in_progress.Value) {
 															if !rules.IsBoolean(_kvcancel_in_progress.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -11714,7 +11771,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "group"
-													if _kvgroup := (workflow.Mapping{MappingNode: _oneOfM88}).FindKey("group"); _kvgroup != nil {
+													if _kvgroup := (workflow.Mapping{MappingNode: _oneOfM107}).FindKey("group"); _kvgroup != nil {
 														if !rules.IsExpressionNode(_kvgroup.Value) {
 															if !rules.IsString(_kvgroup.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -11730,7 +11787,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "queue"
-													if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM88}).FindKey("queue"); _kvqueue != nil {
+													if _kvqueue := (workflow.Mapping{MappingNode: _oneOfM107}).FindKey("queue"); _kvqueue != nil {
 														if !rules.IsExpressionNode(_kvqueue.Value) {
 															if !rules.IsString(_kvqueue.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -11776,7 +11833,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "if"
-									if _kvif := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("if"); _kvif != nil {
+									if _kvif := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("if"); _kvif != nil {
 										if !rules.IsExpressionNode(_kvif.Value) {
 											if !rules.IsString(_kvif.Value) && !rules.IsBoolean(_kvif.Value) && !rules.IsNumber(_kvif.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -11792,7 +11849,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "name"
-									if _kvname := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("name"); _kvname != nil {
+									if _kvname := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("name"); _kvname != nil {
 										if !rules.IsExpressionNode(_kvname.Value) {
 											if !rules.IsString(_kvname.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -11808,22 +11865,22 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "needs"
-									if _kvneeds := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("needs"); _kvneeds != nil {
+									if _kvneeds := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("needs"); _kvneeds != nil {
 										if !rules.IsExpressionNode(_kvneeds.Value) {
-											// oneOf type branching (id=89)
+											// oneOf type branching (id=108)
 											if rules.IsSequence(_kvneeds.Value) {
-												if _oneOfSeq89, _ok := rules.UnwrapNode(_kvneeds.Value).(*ast.SequenceNode); _ok {
-													if len(_oneOfSeq89.Values) < 1 {
+												if _oneOfSeq108, _ok := rules.UnwrapNode(_kvneeds.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq108.Values) < 1 {
 														errs = append(errs, rules.ValidationError{
 															Kind:    rules.KindMinItems,
 															Path:    "jobs.*.needs",
 															Key:     "needs",
-															Got:     fmt.Sprintf("%d", len(_oneOfSeq89.Values)),
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq108.Values)),
 															Allowed: []string{fmt.Sprintf("at least %d", 1)},
 															Token:   _kvneeds.Value.GetToken(),
 														})
 													}
-													for _, _item := range _oneOfSeq89.Values {
+													for _, _item := range _oneOfSeq108.Values {
 														if !rules.IsExpressionNode(_item) {
 															if !rules.IsString(_item) {
 																errs = append(errs, rules.ValidationError{
@@ -11863,9 +11920,9 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "permissions"
-									if _kvpermissions := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("permissions"); _kvpermissions != nil {
+									if _kvpermissions := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("permissions"); _kvpermissions != nil {
 										if !rules.IsExpressionNode(_kvpermissions.Value) {
-											// oneOf type branching (id=90)
+											// oneOf type branching (id=109)
 											if rules.IsString(_kvpermissions.Value) {
 												if _sv := rules.StringValue(_kvpermissions.Value); _sv != "" {
 													_validEnumpermissions := map[string]bool{
@@ -11886,7 +11943,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 												}
 											} else if rules.IsMapping(_kvpermissions.Value) {
-												if _oneOfM90, _ok := rules.UnwrapNode(_kvpermissions.Value).(*ast.MappingNode); _ok {
+												if _oneOfM109, _ok := rules.UnwrapNode(_kvpermissions.Value).(*ast.MappingNode); _ok {
 													// Unknown key detection
 													_knownKeysjobs___permissions := map[string]bool{
 														"actions":              true,
@@ -11909,7 +11966,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 														"statuses":             true,
 														"vulnerability-alerts": true,
 													}
-													for _, _entry := range _oneOfM90.Values {
+													for _, _entry := range _oneOfM109.Values {
 														_key := _entry.Key.GetToken().Value
 														if !(_knownKeysjobs___permissions[_key]) {
 															errs = append(errs, rules.ValidationError{
@@ -11924,7 +11981,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "actions"
-													if _kvactions := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("actions"); _kvactions != nil {
+													if _kvactions := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("actions"); _kvactions != nil {
 														if !rules.IsExpressionNode(_kvactions.Value) {
 															if !rules.IsString(_kvactions.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -11957,7 +12014,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "artifact-metadata"
-													if _kvartifact_metadata := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("artifact-metadata"); _kvartifact_metadata != nil {
+													if _kvartifact_metadata := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("artifact-metadata"); _kvartifact_metadata != nil {
 														if !rules.IsExpressionNode(_kvartifact_metadata.Value) {
 															if !rules.IsString(_kvartifact_metadata.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -11990,7 +12047,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "attestations"
-													if _kvattestations := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("attestations"); _kvattestations != nil {
+													if _kvattestations := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("attestations"); _kvattestations != nil {
 														if !rules.IsExpressionNode(_kvattestations.Value) {
 															if !rules.IsString(_kvattestations.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12023,7 +12080,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "checks"
-													if _kvchecks := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("checks"); _kvchecks != nil {
+													if _kvchecks := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("checks"); _kvchecks != nil {
 														if !rules.IsExpressionNode(_kvchecks.Value) {
 															if !rules.IsString(_kvchecks.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12056,7 +12113,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "code-quality"
-													if _kvcode_quality := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("code-quality"); _kvcode_quality != nil {
+													if _kvcode_quality := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("code-quality"); _kvcode_quality != nil {
 														if !rules.IsExpressionNode(_kvcode_quality.Value) {
 															if !rules.IsString(_kvcode_quality.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12089,7 +12146,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "contents"
-													if _kvcontents := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("contents"); _kvcontents != nil {
+													if _kvcontents := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("contents"); _kvcontents != nil {
 														if !rules.IsExpressionNode(_kvcontents.Value) {
 															if !rules.IsString(_kvcontents.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12122,7 +12179,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "copilot-requests"
-													if _kvcopilot_requests := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("copilot-requests"); _kvcopilot_requests != nil {
+													if _kvcopilot_requests := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("copilot-requests"); _kvcopilot_requests != nil {
 														if !rules.IsExpressionNode(_kvcopilot_requests.Value) {
 															if !rules.IsString(_kvcopilot_requests.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12154,7 +12211,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "deployments"
-													if _kvdeployments := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("deployments"); _kvdeployments != nil {
+													if _kvdeployments := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("deployments"); _kvdeployments != nil {
 														if !rules.IsExpressionNode(_kvdeployments.Value) {
 															if !rules.IsString(_kvdeployments.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12187,7 +12244,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "discussions"
-													if _kvdiscussions := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("discussions"); _kvdiscussions != nil {
+													if _kvdiscussions := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("discussions"); _kvdiscussions != nil {
 														if !rules.IsExpressionNode(_kvdiscussions.Value) {
 															if !rules.IsString(_kvdiscussions.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12220,7 +12277,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "id-token"
-													if _kvid_token := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("id-token"); _kvid_token != nil {
+													if _kvid_token := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("id-token"); _kvid_token != nil {
 														if !rules.IsExpressionNode(_kvid_token.Value) {
 															if !rules.IsString(_kvid_token.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12252,7 +12309,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "issues"
-													if _kvissues := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("issues"); _kvissues != nil {
+													if _kvissues := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("issues"); _kvissues != nil {
 														if !rules.IsExpressionNode(_kvissues.Value) {
 															if !rules.IsString(_kvissues.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12285,7 +12342,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "models"
-													if _kvmodels := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("models"); _kvmodels != nil {
+													if _kvmodels := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("models"); _kvmodels != nil {
 														if !rules.IsExpressionNode(_kvmodels.Value) {
 															if !rules.IsString(_kvmodels.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12317,7 +12374,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "packages"
-													if _kvpackages := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("packages"); _kvpackages != nil {
+													if _kvpackages := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("packages"); _kvpackages != nil {
 														if !rules.IsExpressionNode(_kvpackages.Value) {
 															if !rules.IsString(_kvpackages.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12350,7 +12407,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "pages"
-													if _kvpages := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("pages"); _kvpages != nil {
+													if _kvpages := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("pages"); _kvpages != nil {
 														if !rules.IsExpressionNode(_kvpages.Value) {
 															if !rules.IsString(_kvpages.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12383,7 +12440,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "pull-requests"
-													if _kvpull_requests := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("pull-requests"); _kvpull_requests != nil {
+													if _kvpull_requests := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("pull-requests"); _kvpull_requests != nil {
 														if !rules.IsExpressionNode(_kvpull_requests.Value) {
 															if !rules.IsString(_kvpull_requests.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12416,7 +12473,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "repository-projects"
-													if _kvrepository_projects := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("repository-projects"); _kvrepository_projects != nil {
+													if _kvrepository_projects := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("repository-projects"); _kvrepository_projects != nil {
 														if !rules.IsExpressionNode(_kvrepository_projects.Value) {
 															if !rules.IsString(_kvrepository_projects.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12449,7 +12506,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "security-events"
-													if _kvsecurity_events := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("security-events"); _kvsecurity_events != nil {
+													if _kvsecurity_events := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("security-events"); _kvsecurity_events != nil {
 														if !rules.IsExpressionNode(_kvsecurity_events.Value) {
 															if !rules.IsString(_kvsecurity_events.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12482,7 +12539,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "statuses"
-													if _kvstatuses := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("statuses"); _kvstatuses != nil {
+													if _kvstatuses := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("statuses"); _kvstatuses != nil {
 														if !rules.IsExpressionNode(_kvstatuses.Value) {
 															if !rules.IsString(_kvstatuses.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12515,7 +12572,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 
 													// Property: "vulnerability-alerts"
-													if _kvvulnerability_alerts := (workflow.Mapping{MappingNode: _oneOfM90}).FindKey("vulnerability-alerts"); _kvvulnerability_alerts != nil {
+													if _kvvulnerability_alerts := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("vulnerability-alerts"); _kvvulnerability_alerts != nil {
 														if !rules.IsExpressionNode(_kvvulnerability_alerts.Value) {
 															if !rules.IsString(_kvvulnerability_alerts.Value) {
 																errs = append(errs, rules.ValidationError{
@@ -12561,13 +12618,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "secrets"
-									if _kvsecrets := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("secrets"); _kvsecrets != nil {
+									if _kvsecrets := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("secrets"); _kvsecrets != nil {
 										if !rules.IsExpressionNode(_kvsecrets.Value) {
 										}
 									}
 
 									// Property: "strategy"
-									if _kvstrategy := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("strategy"); _kvstrategy != nil {
+									if _kvstrategy := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("strategy"); _kvstrategy != nil {
 										if !rules.IsExpressionNode(_kvstrategy.Value) {
 											if !rules.IsMapping(_kvstrategy.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -12629,29 +12686,29 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 												// Property: "matrix"
 												if _kvmatrix := (workflow.Mapping{MappingNode: _subMstrategy}).FindKey("matrix"); _kvmatrix != nil {
 													if !rules.IsExpressionNode(_kvmatrix.Value) {
-														// oneOf type branching (id=91)
+														// oneOf type branching (id=110)
 														if rules.IsMapping(_kvmatrix.Value) {
-															if _oneOfM91, _ok := rules.UnwrapNode(_kvmatrix.Value).(*ast.MappingNode); _ok {
+															if _oneOfM110, _ok := rules.UnwrapNode(_kvmatrix.Value).(*ast.MappingNode); _ok {
 																// PatternProperty: ^(in|ex)clude$
-																for _, _ppEntry0 := range _oneOfM91.Values {
+																for _, _ppEntry0 := range _oneOfM110.Values {
 																	if _re2.MatchString(_ppEntry0.Key.GetToken().Value) {
 																		_ppKey0 := _ppEntry0.Key.GetToken().Value
 																		_ = _ppKey0 // may be unused if no type checks in children
 																		if !rules.IsExpressionNode(_ppEntry0.Value) {
-																			// oneOf type branching (id=92)
+																			// oneOf type branching (id=111)
 																			if rules.IsSequence(_ppEntry0.Value) {
-																				if _oneOfSeq92, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.SequenceNode); _ok {
-																					if len(_oneOfSeq92.Values) < 1 {
+																				if _oneOfSeq111, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.SequenceNode); _ok {
+																					if len(_oneOfSeq111.Values) < 1 {
 																						errs = append(errs, rules.ValidationError{
 																							Kind:    rules.KindMinItems,
 																							Path:    "jobs.*.strategy.matrix.*",
 																							Key:     "*",
-																							Got:     fmt.Sprintf("%d", len(_oneOfSeq92.Values)),
+																							Got:     fmt.Sprintf("%d", len(_oneOfSeq111.Values)),
 																							Allowed: []string{fmt.Sprintf("at least %d", 1)},
 																							Token:   _ppEntry0.Value.GetToken(),
 																						})
 																					}
-																					for _, _item := range _oneOfSeq92.Values {
+																					for _, _item := range _oneOfSeq111.Values {
 																						if !rules.IsExpressionNode(_item) {
 																							if !rules.IsMapping(_item) {
 																								errs = append(errs, rules.ValidationError{
@@ -12687,19 +12744,19 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																}
 
 																// AdditionalProperties schema validation (delegated to helper)
-																for _, _apEntry := range _oneOfM91.Values {
+																for _, _apEntry := range _oneOfM110.Values {
 																	errs = append(errs, _validateAP25(_apEntry.Value, _apEntry.Key.GetToken().Value)...)
 																}
 
 																// minProperties check
-																if len(_oneOfM91.Values) < 1 {
+																if len(_oneOfM110.Values) < 1 {
 																	errs = append(errs, rules.ValidationError{
 																		Kind:    rules.KindMinItems,
 																		Path:    "jobs.*.strategy.matrix",
 																		Key:     "matrix",
-																		Got:     fmt.Sprintf("%d", len(_oneOfM91.Values)),
+																		Got:     fmt.Sprintf("%d", len(_oneOfM110.Values)),
 																		Allowed: []string{fmt.Sprintf("at least %d", 1)},
-																		Token:   _oneOfM91.GetToken(),
+																		Token:   _oneOfM110.GetToken(),
 																	})
 																}
 
@@ -12738,7 +12795,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "uses"
-									if _kvuses := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("uses"); _kvuses != nil {
+									if _kvuses := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("uses"); _kvuses != nil {
 										if !rules.IsExpressionNode(_kvuses.Value) {
 											if !rules.IsString(_kvuses.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -12764,13 +12821,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "with"
-									if _kvwith := (workflow.Mapping{MappingNode: _oneOfPM70}).FindKey("with"); _kvwith != nil {
+									if _kvwith := (workflow.Mapping{MappingNode: _oneOfPM89}).FindKey("with"); _kvwith != nil {
 										if !rules.IsExpressionNode(_kvwith.Value) {
-											// oneOf type branching (id=93)
+											// oneOf type branching (id=112)
 											if rules.IsMapping(_kvwith.Value) {
-												if _oneOfM93, _ok := rules.UnwrapNode(_kvwith.Value).(*ast.MappingNode); _ok {
+												if _oneOfM112, _ok := rules.UnwrapNode(_kvwith.Value).(*ast.MappingNode); _ok {
 													// AdditionalProperties schema validation (delegated to helper)
-													for _, _apEntry := range _oneOfM93.Values {
+													for _, _apEntry := range _oneOfM112.Values {
 														errs = append(errs, _validateAP2(_apEntry.Value, _apEntry.Key.GetToken().Value)...)
 													}
 
@@ -12794,7 +12851,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 										Path:    "jobs.*",
 										Key:     "runs-on",
 										Allowed: []string{"runs-on", "uses"},
-										Token:   _oneOfPM70.GetToken(),
+										Token:   _oneOfPM89.GetToken(),
 									})
 								}
 							} else if !rules.IsAliasNode(_ppEntry0.Value) {
@@ -12845,7 +12902,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 	// Property: "on"
 	if _kvon := (workflow.Mapping{MappingNode: m.MappingNode}).FindKey("on"); _kvon != nil {
 		if !rules.IsExpressionNode(_kvon.Value) {
-			// oneOf type branching (id=94)
+			// oneOf type branching (id=113)
 			if rules.IsString(_kvon.Value) {
 				if _sv := rules.StringValue(_kvon.Value); _sv != "" {
 					_validEnumon := map[string]bool{
@@ -12899,18 +12956,18 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 				}
 			} else if rules.IsSequence(_kvon.Value) {
-				if _oneOfSeq94, _ok := rules.UnwrapNode(_kvon.Value).(*ast.SequenceNode); _ok {
-					if len(_oneOfSeq94.Values) < 1 {
+				if _oneOfSeq113, _ok := rules.UnwrapNode(_kvon.Value).(*ast.SequenceNode); _ok {
+					if len(_oneOfSeq113.Values) < 1 {
 						errs = append(errs, rules.ValidationError{
 							Kind:    rules.KindMinItems,
 							Path:    "on",
 							Key:     "on",
-							Got:     fmt.Sprintf("%d", len(_oneOfSeq94.Values)),
+							Got:     fmt.Sprintf("%d", len(_oneOfSeq113.Values)),
 							Allowed: []string{fmt.Sprintf("at least %d", 1)},
 							Token:   _kvon.Value.GetToken(),
 						})
 					}
-					for _, _item := range _oneOfSeq94.Values {
+					for _, _item := range _oneOfSeq113.Values {
 						if !rules.IsExpressionNode(_item) {
 							if !rules.IsString(_item) {
 								errs = append(errs, rules.ValidationError{
@@ -12975,7 +13032,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 				}
 			} else if rules.IsMapping(_kvon.Value) {
-				if _oneOfM94, _ok := rules.UnwrapNode(_kvon.Value).(*ast.MappingNode); _ok {
+				if _oneOfM113, _ok := rules.UnwrapNode(_kvon.Value).(*ast.MappingNode); _ok {
 					// Unknown key detection
 					_knownKeyson := map[string]bool{
 						"branch_protection_rule":      true,
@@ -13015,7 +13072,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 						"workflow_dispatch":           true,
 						"workflow_run":                true,
 					}
-					for _, _entry := range _oneOfM94.Values {
+					for _, _entry := range _oneOfM113.Values {
 						_key := _entry.Key.GetToken().Value
 						if !(_knownKeyson[_key]) {
 							errs = append(errs, rules.ValidationError{
@@ -13030,14 +13087,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "branch_protection_rule"
-					if _kvbranch_protection_rule := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("branch_protection_rule"); _kvbranch_protection_rule != nil {
+					if _kvbranch_protection_rule := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("branch_protection_rule"); _kvbranch_protection_rule != nil {
 						if !rules.IsExpressionNode(_kvbranch_protection_rule.Value) {
-							// oneOf type branching (id=95)
+							// oneOf type branching (id=114)
 							if rules.IsNull(_kvbranch_protection_rule.Value) {
 							} else if rules.IsMapping(_kvbranch_protection_rule.Value) {
-								if _oneOfM95, _ok := rules.UnwrapNode(_kvbranch_protection_rule.Value).(*ast.MappingNode); _ok {
+								if _oneOfM114, _ok := rules.UnwrapNode(_kvbranch_protection_rule.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM95}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM114}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -13110,14 +13167,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "check_run"
-					if _kvcheck_run := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("check_run"); _kvcheck_run != nil {
+					if _kvcheck_run := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("check_run"); _kvcheck_run != nil {
 						if !rules.IsExpressionNode(_kvcheck_run.Value) {
-							// oneOf type branching (id=96)
+							// oneOf type branching (id=115)
 							if rules.IsNull(_kvcheck_run.Value) {
 							} else if rules.IsMapping(_kvcheck_run.Value) {
-								if _oneOfM96, _ok := rules.UnwrapNode(_kvcheck_run.Value).(*ast.MappingNode); _ok {
+								if _oneOfM115, _ok := rules.UnwrapNode(_kvcheck_run.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM96}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM115}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -13191,14 +13248,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "check_suite"
-					if _kvcheck_suite := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("check_suite"); _kvcheck_suite != nil {
+					if _kvcheck_suite := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("check_suite"); _kvcheck_suite != nil {
 						if !rules.IsExpressionNode(_kvcheck_suite.Value) {
-							// oneOf type branching (id=97)
+							// oneOf type branching (id=116)
 							if rules.IsNull(_kvcheck_suite.Value) {
 							} else if rules.IsMapping(_kvcheck_suite.Value) {
-								if _oneOfM97, _ok := rules.UnwrapNode(_kvcheck_suite.Value).(*ast.MappingNode); _ok {
+								if _oneOfM116, _ok := rules.UnwrapNode(_kvcheck_suite.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM97}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM116}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -13271,7 +13328,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "create"
-					if _kvcreate := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("create"); _kvcreate != nil {
+					if _kvcreate := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("create"); _kvcreate != nil {
 						if !rules.IsExpressionNode(_kvcreate.Value) {
 							if !rules.IsNull(_kvcreate.Value) && !rules.IsMapping(_kvcreate.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -13287,7 +13344,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "delete"
-					if _kvdelete := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("delete"); _kvdelete != nil {
+					if _kvdelete := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("delete"); _kvdelete != nil {
 						if !rules.IsExpressionNode(_kvdelete.Value) {
 							if !rules.IsNull(_kvdelete.Value) && !rules.IsMapping(_kvdelete.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -13303,7 +13360,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "deployment"
-					if _kvdeployment := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("deployment"); _kvdeployment != nil {
+					if _kvdeployment := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("deployment"); _kvdeployment != nil {
 						if !rules.IsExpressionNode(_kvdeployment.Value) {
 							if !rules.IsNull(_kvdeployment.Value) && !rules.IsMapping(_kvdeployment.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -13319,7 +13376,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "deployment_status"
-					if _kvdeployment_status := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("deployment_status"); _kvdeployment_status != nil {
+					if _kvdeployment_status := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("deployment_status"); _kvdeployment_status != nil {
 						if !rules.IsExpressionNode(_kvdeployment_status.Value) {
 							if !rules.IsNull(_kvdeployment_status.Value) && !rules.IsMapping(_kvdeployment_status.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -13335,14 +13392,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "discussion"
-					if _kvdiscussion := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("discussion"); _kvdiscussion != nil {
+					if _kvdiscussion := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("discussion"); _kvdiscussion != nil {
 						if !rules.IsExpressionNode(_kvdiscussion.Value) {
-							// oneOf type branching (id=98)
+							// oneOf type branching (id=117)
 							if rules.IsNull(_kvdiscussion.Value) {
 							} else if rules.IsMapping(_kvdiscussion.Value) {
-								if _oneOfM98, _ok := rules.UnwrapNode(_kvdiscussion.Value).(*ast.MappingNode); _ok {
+								if _oneOfM117, _ok := rules.UnwrapNode(_kvdiscussion.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM98}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM117}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -13425,14 +13482,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "discussion_comment"
-					if _kvdiscussion_comment := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("discussion_comment"); _kvdiscussion_comment != nil {
+					if _kvdiscussion_comment := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("discussion_comment"); _kvdiscussion_comment != nil {
 						if !rules.IsExpressionNode(_kvdiscussion_comment.Value) {
-							// oneOf type branching (id=99)
+							// oneOf type branching (id=118)
 							if rules.IsNull(_kvdiscussion_comment.Value) {
 							} else if rules.IsMapping(_kvdiscussion_comment.Value) {
-								if _oneOfM99, _ok := rules.UnwrapNode(_kvdiscussion_comment.Value).(*ast.MappingNode); _ok {
+								if _oneOfM118, _ok := rules.UnwrapNode(_kvdiscussion_comment.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM99}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM118}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -13505,7 +13562,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "fork"
-					if _kvfork := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("fork"); _kvfork != nil {
+					if _kvfork := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("fork"); _kvfork != nil {
 						if !rules.IsExpressionNode(_kvfork.Value) {
 							if !rules.IsNull(_kvfork.Value) && !rules.IsMapping(_kvfork.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -13521,7 +13578,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "gollum"
-					if _kvgollum := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("gollum"); _kvgollum != nil {
+					if _kvgollum := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("gollum"); _kvgollum != nil {
 						if !rules.IsExpressionNode(_kvgollum.Value) {
 							if !rules.IsNull(_kvgollum.Value) && !rules.IsMapping(_kvgollum.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -13537,19 +13594,19 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "image_version"
-					if _kvimage_version := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("image_version"); _kvimage_version != nil {
+					if _kvimage_version := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("image_version"); _kvimage_version != nil {
 						if !rules.IsExpressionNode(_kvimage_version.Value) {
-							// oneOf type branching (id=100)
+							// oneOf type branching (id=119)
 							if rules.IsNull(_kvimage_version.Value) {
 							} else if rules.IsMapping(_kvimage_version.Value) {
-								if _oneOfM100, _ok := rules.UnwrapNode(_kvimage_version.Value).(*ast.MappingNode); _ok {
+								if _oneOfM119, _ok := rules.UnwrapNode(_kvimage_version.Value).(*ast.MappingNode); _ok {
 									// Unknown key detection
 									_knownKeyson_image_version := map[string]bool{
 										"names":    true,
 										"types":    true,
 										"versions": true,
 									}
-									for _, _entry := range _oneOfM100.Values {
+									for _, _entry := range _oneOfM119.Values {
 										_key := _entry.Key.GetToken().Value
 										if !(_knownKeyson_image_version[_key]) {
 											errs = append(errs, rules.ValidationError{
@@ -13563,23 +13620,23 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "names"
-									if _kvnames := (workflow.Mapping{MappingNode: _oneOfM100}).FindKey("names"); _kvnames != nil {
+									if _kvnames := (workflow.Mapping{MappingNode: _oneOfM119}).FindKey("names"); _kvnames != nil {
 										if !rules.IsExpressionNode(_kvnames.Value) {
-											// oneOf type branching (id=101)
+											// oneOf type branching (id=120)
 											if rules.IsBoolean(_kvnames.Value) || rules.IsNumber(_kvnames.Value) || rules.IsString(_kvnames.Value) {
 											} else if rules.IsSequence(_kvnames.Value) {
-												if _oneOfSeq101, _ok := rules.UnwrapNode(_kvnames.Value).(*ast.SequenceNode); _ok {
-													if len(_oneOfSeq101.Values) < 1 {
+												if _oneOfSeq120, _ok := rules.UnwrapNode(_kvnames.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq120.Values) < 1 {
 														errs = append(errs, rules.ValidationError{
 															Kind:    rules.KindMinItems,
 															Path:    "on.image_version.names",
 															Key:     "names",
-															Got:     fmt.Sprintf("%d", len(_oneOfSeq101.Values)),
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq120.Values)),
 															Allowed: []string{fmt.Sprintf("at least %d", 1)},
 															Token:   _kvnames.Value.GetToken(),
 														})
 													}
-													for _, _item := range _oneOfSeq101.Values {
+													for _, _item := range _oneOfSeq120.Values {
 														if !rules.IsExpressionNode(_item) {
 															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
 																errs = append(errs, rules.ValidationError{
@@ -13608,9 +13665,9 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM100}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM119}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
-											// oneOf type branching (id=102)
+											// oneOf type branching (id=121)
 											if rules.IsString(_kvtypes.Value) {
 												if _sv := rules.StringValue(_kvtypes.Value); _sv != "" {
 													_validEnumtypes := map[string]bool{
@@ -13630,8 +13687,8 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 													}
 												}
 											} else if rules.IsSequence(_kvtypes.Value) {
-												if _oneOfSeq102, _ok := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _ok {
-													for _, _item := range _oneOfSeq102.Values {
+												if _oneOfSeq121, _ok := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _ok {
+													for _, _item := range _oneOfSeq121.Values {
 														if !rules.IsExpressionNode(_item) {
 															if !rules.IsString(_item) {
 																errs = append(errs, rules.ValidationError{
@@ -13677,23 +13734,23 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "versions"
-									if _kvversions := (workflow.Mapping{MappingNode: _oneOfM100}).FindKey("versions"); _kvversions != nil {
+									if _kvversions := (workflow.Mapping{MappingNode: _oneOfM119}).FindKey("versions"); _kvversions != nil {
 										if !rules.IsExpressionNode(_kvversions.Value) {
-											// oneOf type branching (id=103)
+											// oneOf type branching (id=122)
 											if rules.IsBoolean(_kvversions.Value) || rules.IsNumber(_kvversions.Value) || rules.IsString(_kvversions.Value) {
 											} else if rules.IsSequence(_kvversions.Value) {
-												if _oneOfSeq103, _ok := rules.UnwrapNode(_kvversions.Value).(*ast.SequenceNode); _ok {
-													if len(_oneOfSeq103.Values) < 1 {
+												if _oneOfSeq122, _ok := rules.UnwrapNode(_kvversions.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq122.Values) < 1 {
 														errs = append(errs, rules.ValidationError{
 															Kind:    rules.KindMinItems,
 															Path:    "on.image_version.versions",
 															Key:     "versions",
-															Got:     fmt.Sprintf("%d", len(_oneOfSeq103.Values)),
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq122.Values)),
 															Allowed: []string{fmt.Sprintf("at least %d", 1)},
 															Token:   _kvversions.Value.GetToken(),
 														})
 													}
-													for _, _item := range _oneOfSeq103.Values {
+													for _, _item := range _oneOfSeq122.Values {
 														if !rules.IsExpressionNode(_item) {
 															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
 																errs = append(errs, rules.ValidationError{
@@ -13746,14 +13803,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "issue_comment"
-					if _kvissue_comment := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("issue_comment"); _kvissue_comment != nil {
+					if _kvissue_comment := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("issue_comment"); _kvissue_comment != nil {
 						if !rules.IsExpressionNode(_kvissue_comment.Value) {
-							// oneOf type branching (id=104)
+							// oneOf type branching (id=123)
 							if rules.IsNull(_kvissue_comment.Value) {
 							} else if rules.IsMapping(_kvissue_comment.Value) {
-								if _oneOfM104, _ok := rules.UnwrapNode(_kvissue_comment.Value).(*ast.MappingNode); _ok {
+								if _oneOfM123, _ok := rules.UnwrapNode(_kvissue_comment.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM104}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM123}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -13826,14 +13883,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "issues"
-					if _kvissues := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("issues"); _kvissues != nil {
+					if _kvissues := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("issues"); _kvissues != nil {
 						if !rules.IsExpressionNode(_kvissues.Value) {
-							// oneOf type branching (id=105)
+							// oneOf type branching (id=124)
 							if rules.IsNull(_kvissues.Value) {
 							} else if rules.IsMapping(_kvissues.Value) {
-								if _oneOfM105, _ok := rules.UnwrapNode(_kvissues.Value).(*ast.MappingNode); _ok {
+								if _oneOfM124, _ok := rules.UnwrapNode(_kvissues.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM105}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM124}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -13924,14 +13981,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "label"
-					if _kvlabel := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("label"); _kvlabel != nil {
+					if _kvlabel := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("label"); _kvlabel != nil {
 						if !rules.IsExpressionNode(_kvlabel.Value) {
-							// oneOf type branching (id=106)
+							// oneOf type branching (id=125)
 							if rules.IsNull(_kvlabel.Value) {
 							} else if rules.IsMapping(_kvlabel.Value) {
-								if _oneOfM106, _ok := rules.UnwrapNode(_kvlabel.Value).(*ast.MappingNode); _ok {
+								if _oneOfM125, _ok := rules.UnwrapNode(_kvlabel.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM106}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM125}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -14004,14 +14061,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "merge_group"
-					if _kvmerge_group := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("merge_group"); _kvmerge_group != nil {
+					if _kvmerge_group := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("merge_group"); _kvmerge_group != nil {
 						if !rules.IsExpressionNode(_kvmerge_group.Value) {
-							// oneOf type branching (id=107)
+							// oneOf type branching (id=126)
 							if rules.IsNull(_kvmerge_group.Value) {
 							} else if rules.IsMapping(_kvmerge_group.Value) {
-								if _oneOfM107, _ok := rules.UnwrapNode(_kvmerge_group.Value).(*ast.MappingNode); _ok {
+								if _oneOfM126, _ok := rules.UnwrapNode(_kvmerge_group.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM107}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM126}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -14082,14 +14139,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "milestone"
-					if _kvmilestone := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("milestone"); _kvmilestone != nil {
+					if _kvmilestone := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("milestone"); _kvmilestone != nil {
 						if !rules.IsExpressionNode(_kvmilestone.Value) {
-							// oneOf type branching (id=108)
+							// oneOf type branching (id=127)
 							if rules.IsNull(_kvmilestone.Value) {
 							} else if rules.IsMapping(_kvmilestone.Value) {
-								if _oneOfM108, _ok := rules.UnwrapNode(_kvmilestone.Value).(*ast.MappingNode); _ok {
+								if _oneOfM127, _ok := rules.UnwrapNode(_kvmilestone.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM108}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -14164,7 +14221,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "page_build"
-					if _kvpage_build := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("page_build"); _kvpage_build != nil {
+					if _kvpage_build := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("page_build"); _kvpage_build != nil {
 						if !rules.IsExpressionNode(_kvpage_build.Value) {
 							if !rules.IsNull(_kvpage_build.Value) && !rules.IsMapping(_kvpage_build.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -14180,14 +14237,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "project"
-					if _kvproject := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("project"); _kvproject != nil {
+					if _kvproject := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("project"); _kvproject != nil {
 						if !rules.IsExpressionNode(_kvproject.Value) {
-							// oneOf type branching (id=109)
+							// oneOf type branching (id=128)
 							if rules.IsNull(_kvproject.Value) {
 							} else if rules.IsMapping(_kvproject.Value) {
-								if _oneOfM109, _ok := rules.UnwrapNode(_kvproject.Value).(*ast.MappingNode); _ok {
+								if _oneOfM128, _ok := rules.UnwrapNode(_kvproject.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM109}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM128}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -14263,14 +14320,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "project_card"
-					if _kvproject_card := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("project_card"); _kvproject_card != nil {
+					if _kvproject_card := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("project_card"); _kvproject_card != nil {
 						if !rules.IsExpressionNode(_kvproject_card.Value) {
-							// oneOf type branching (id=110)
+							// oneOf type branching (id=129)
 							if rules.IsNull(_kvproject_card.Value) {
 							} else if rules.IsMapping(_kvproject_card.Value) {
-								if _oneOfM110, _ok := rules.UnwrapNode(_kvproject_card.Value).(*ast.MappingNode); _ok {
+								if _oneOfM129, _ok := rules.UnwrapNode(_kvproject_card.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM110}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM129}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -14345,14 +14402,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "project_column"
-					if _kvproject_column := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("project_column"); _kvproject_column != nil {
+					if _kvproject_column := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("project_column"); _kvproject_column != nil {
 						if !rules.IsExpressionNode(_kvproject_column.Value) {
-							// oneOf type branching (id=111)
+							// oneOf type branching (id=130)
 							if rules.IsNull(_kvproject_column.Value) {
 							} else if rules.IsMapping(_kvproject_column.Value) {
-								if _oneOfM111, _ok := rules.UnwrapNode(_kvproject_column.Value).(*ast.MappingNode); _ok {
+								if _oneOfM130, _ok := rules.UnwrapNode(_kvproject_column.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM111}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM130}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -14426,7 +14483,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "public"
-					if _kvpublic := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("public"); _kvpublic != nil {
+					if _kvpublic := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("public"); _kvpublic != nil {
 						if !rules.IsExpressionNode(_kvpublic.Value) {
 							if !rules.IsNull(_kvpublic.Value) && !rules.IsMapping(_kvpublic.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -14442,12 +14499,12 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "pull_request"
-					if _kvpull_request := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("pull_request"); _kvpull_request != nil {
+					if _kvpull_request := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("pull_request"); _kvpull_request != nil {
 						if !rules.IsExpressionNode(_kvpull_request.Value) {
-							// oneOf type branching (id=112)
+							// oneOf type branching (id=131)
 							if rules.IsNull(_kvpull_request.Value) {
 							} else if rules.IsMapping(_kvpull_request.Value) {
-								if _oneOfM112, _ok := rules.UnwrapNode(_kvpull_request.Value).(*ast.MappingNode); _ok {
+								if _oneOfM131, _ok := rules.UnwrapNode(_kvpull_request.Value).(*ast.MappingNode); _ok {
 									// Unknown key detection
 									_knownKeyson_pull_request := map[string]bool{
 										"branches":        true,
@@ -14458,7 +14515,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 										"tags-ignore":     true,
 										"types":           true,
 									}
-									for _, _entry := range _oneOfM112.Values {
+									for _, _entry := range _oneOfM131.Values {
 										_key := _entry.Key.GetToken().Value
 										if !(_knownKeyson_pull_request[_key]) {
 											errs = append(errs, rules.ValidationError{
@@ -14472,259 +14529,277 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "branches"
-									if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM112}).FindKey("branches"); _kvbranches != nil {
+									if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM131}).FindKey("branches"); _kvbranches != nil {
 										if !rules.IsExpressionNode(_kvbranches.Value) {
-											if !rules.IsSequence(_kvbranches.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request.branches",
-													Key:     "branches",
-													Got:     rules.NodeTypeName(_kvbranches.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvbranches.Value.GetToken(),
-												})
-											}
-											if _branchesSeq, _branchesSeqOk := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _branchesSeqOk {
-												if len(_branchesSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request.branches",
-														Key:     "branches",
-														Got:     fmt.Sprintf("%d", len(_branchesSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvbranches.Value.GetToken(),
-													})
-												}
-												for _, _item := range _branchesSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request.branches.*",
-																Key:     "branches[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=132)
+											if rules.IsBoolean(_kvbranches.Value) || rules.IsNumber(_kvbranches.Value) || rules.IsString(_kvbranches.Value) {
+											} else if rules.IsSequence(_kvbranches.Value) {
+												if _oneOfSeq132, _ok := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq132.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request.branches",
+															Key:     "branches",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq132.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvbranches.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq132.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request.branches.*",
+																	Key:     "branches[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvbranches.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "branches",
+													Key:     "branches",
+													Got:     rules.NodeTypeName(_kvbranches.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvbranches.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "branches-ignore"
-									if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM112}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
+									if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM131}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
 										if !rules.IsExpressionNode(_kvbranches_ignore.Value) {
-											if !rules.IsSequence(_kvbranches_ignore.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request.branches-ignore",
-													Key:     "branches-ignore",
-													Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvbranches_ignore.Value.GetToken(),
-												})
-											}
-											if _branches_ignoreSeq, _branches_ignoreSeqOk := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _branches_ignoreSeqOk {
-												if len(_branches_ignoreSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request.branches-ignore",
-														Key:     "branches-ignore",
-														Got:     fmt.Sprintf("%d", len(_branches_ignoreSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvbranches_ignore.Value.GetToken(),
-													})
-												}
-												for _, _item := range _branches_ignoreSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request.branches-ignore.*",
-																Key:     "branches-ignore[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=133)
+											if rules.IsBoolean(_kvbranches_ignore.Value) || rules.IsNumber(_kvbranches_ignore.Value) || rules.IsString(_kvbranches_ignore.Value) {
+											} else if rules.IsSequence(_kvbranches_ignore.Value) {
+												if _oneOfSeq133, _ok := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq133.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request.branches-ignore",
+															Key:     "branches-ignore",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq133.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvbranches_ignore.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq133.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request.branches-ignore.*",
+																	Key:     "branches-ignore[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvbranches_ignore.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "branches-ignore",
+													Key:     "branches-ignore",
+													Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvbranches_ignore.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "paths"
-									if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM112}).FindKey("paths"); _kvpaths != nil {
+									if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM131}).FindKey("paths"); _kvpaths != nil {
 										if !rules.IsExpressionNode(_kvpaths.Value) {
-											if !rules.IsSequence(_kvpaths.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request.paths",
-													Key:     "paths",
-													Got:     rules.NodeTypeName(_kvpaths.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvpaths.Value.GetToken(),
-												})
-											}
-											if _pathsSeq, _pathsSeqOk := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _pathsSeqOk {
-												if len(_pathsSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request.paths",
-														Key:     "paths",
-														Got:     fmt.Sprintf("%d", len(_pathsSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvpaths.Value.GetToken(),
-													})
-												}
-												for _, _item := range _pathsSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request.paths.*",
-																Key:     "paths[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=134)
+											if rules.IsBoolean(_kvpaths.Value) || rules.IsNumber(_kvpaths.Value) || rules.IsString(_kvpaths.Value) {
+											} else if rules.IsSequence(_kvpaths.Value) {
+												if _oneOfSeq134, _ok := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq134.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request.paths",
+															Key:     "paths",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq134.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvpaths.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq134.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request.paths.*",
+																	Key:     "paths[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvpaths.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "paths",
+													Key:     "paths",
+													Got:     rules.NodeTypeName(_kvpaths.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvpaths.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "paths-ignore"
-									if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM112}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
+									if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM131}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
 										if !rules.IsExpressionNode(_kvpaths_ignore.Value) {
-											if !rules.IsSequence(_kvpaths_ignore.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request.paths-ignore",
-													Key:     "paths-ignore",
-													Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvpaths_ignore.Value.GetToken(),
-												})
-											}
-											if _paths_ignoreSeq, _paths_ignoreSeqOk := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _paths_ignoreSeqOk {
-												if len(_paths_ignoreSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request.paths-ignore",
-														Key:     "paths-ignore",
-														Got:     fmt.Sprintf("%d", len(_paths_ignoreSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvpaths_ignore.Value.GetToken(),
-													})
-												}
-												for _, _item := range _paths_ignoreSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request.paths-ignore.*",
-																Key:     "paths-ignore[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=135)
+											if rules.IsBoolean(_kvpaths_ignore.Value) || rules.IsNumber(_kvpaths_ignore.Value) || rules.IsString(_kvpaths_ignore.Value) {
+											} else if rules.IsSequence(_kvpaths_ignore.Value) {
+												if _oneOfSeq135, _ok := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq135.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request.paths-ignore",
+															Key:     "paths-ignore",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq135.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvpaths_ignore.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq135.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request.paths-ignore.*",
+																	Key:     "paths-ignore[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvpaths_ignore.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "paths-ignore",
+													Key:     "paths-ignore",
+													Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvpaths_ignore.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "tags"
-									if _kvtags := (workflow.Mapping{MappingNode: _oneOfM112}).FindKey("tags"); _kvtags != nil {
+									if _kvtags := (workflow.Mapping{MappingNode: _oneOfM131}).FindKey("tags"); _kvtags != nil {
 										if !rules.IsExpressionNode(_kvtags.Value) {
-											if !rules.IsSequence(_kvtags.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request.tags",
-													Key:     "tags",
-													Got:     rules.NodeTypeName(_kvtags.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvtags.Value.GetToken(),
-												})
-											}
-											if _tagsSeq, _tagsSeqOk := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _tagsSeqOk {
-												if len(_tagsSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request.tags",
-														Key:     "tags",
-														Got:     fmt.Sprintf("%d", len(_tagsSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvtags.Value.GetToken(),
-													})
-												}
-												for _, _item := range _tagsSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request.tags.*",
-																Key:     "tags[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=136)
+											if rules.IsBoolean(_kvtags.Value) || rules.IsNumber(_kvtags.Value) || rules.IsString(_kvtags.Value) {
+											} else if rules.IsSequence(_kvtags.Value) {
+												if _oneOfSeq136, _ok := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq136.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request.tags",
+															Key:     "tags",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq136.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvtags.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq136.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request.tags.*",
+																	Key:     "tags[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvtags.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "tags",
+													Key:     "tags",
+													Got:     rules.NodeTypeName(_kvtags.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvtags.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "tags-ignore"
-									if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM112}).FindKey("tags-ignore"); _kvtags_ignore != nil {
+									if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM131}).FindKey("tags-ignore"); _kvtags_ignore != nil {
 										if !rules.IsExpressionNode(_kvtags_ignore.Value) {
-											if !rules.IsSequence(_kvtags_ignore.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request.tags-ignore",
-													Key:     "tags-ignore",
-													Got:     rules.NodeTypeName(_kvtags_ignore.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvtags_ignore.Value.GetToken(),
-												})
-											}
-											if _tags_ignoreSeq, _tags_ignoreSeqOk := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _tags_ignoreSeqOk {
-												if len(_tags_ignoreSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request.tags-ignore",
-														Key:     "tags-ignore",
-														Got:     fmt.Sprintf("%d", len(_tags_ignoreSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvtags_ignore.Value.GetToken(),
-													})
-												}
-												for _, _item := range _tags_ignoreSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request.tags-ignore.*",
-																Key:     "tags-ignore[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=137)
+											if rules.IsBoolean(_kvtags_ignore.Value) || rules.IsNumber(_kvtags_ignore.Value) || rules.IsString(_kvtags_ignore.Value) {
+											} else if rules.IsSequence(_kvtags_ignore.Value) {
+												if _oneOfSeq137, _ok := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq137.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request.tags-ignore",
+															Key:     "tags-ignore",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq137.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvtags_ignore.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq137.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request.tags-ignore.*",
+																	Key:     "tags-ignore[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvtags_ignore.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "tags-ignore",
+													Key:     "tags-ignore",
+													Got:     rules.NodeTypeName(_kvtags_ignore.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvtags_ignore.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM112}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM131}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -14805,14 +14880,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "pull_request_review"
-					if _kvpull_request_review := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("pull_request_review"); _kvpull_request_review != nil {
+					if _kvpull_request_review := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("pull_request_review"); _kvpull_request_review != nil {
 						if !rules.IsExpressionNode(_kvpull_request_review.Value) {
-							// oneOf type branching (id=113)
+							// oneOf type branching (id=138)
 							if rules.IsNull(_kvpull_request_review.Value) {
 							} else if rules.IsMapping(_kvpull_request_review.Value) {
-								if _oneOfM113, _ok := rules.UnwrapNode(_kvpull_request_review.Value).(*ast.MappingNode); _ok {
+								if _oneOfM138, _ok := rules.UnwrapNode(_kvpull_request_review.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM138}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -14885,14 +14960,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "pull_request_review_comment"
-					if _kvpull_request_review_comment := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("pull_request_review_comment"); _kvpull_request_review_comment != nil {
+					if _kvpull_request_review_comment := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("pull_request_review_comment"); _kvpull_request_review_comment != nil {
 						if !rules.IsExpressionNode(_kvpull_request_review_comment.Value) {
-							// oneOf type branching (id=114)
+							// oneOf type branching (id=139)
 							if rules.IsNull(_kvpull_request_review_comment.Value) {
 							} else if rules.IsMapping(_kvpull_request_review_comment.Value) {
-								if _oneOfM114, _ok := rules.UnwrapNode(_kvpull_request_review_comment.Value).(*ast.MappingNode); _ok {
+								if _oneOfM139, _ok := rules.UnwrapNode(_kvpull_request_review_comment.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM114}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM139}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -14965,12 +15040,12 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "pull_request_target"
-					if _kvpull_request_target := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("pull_request_target"); _kvpull_request_target != nil {
+					if _kvpull_request_target := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("pull_request_target"); _kvpull_request_target != nil {
 						if !rules.IsExpressionNode(_kvpull_request_target.Value) {
-							// oneOf type branching (id=115)
+							// oneOf type branching (id=140)
 							if rules.IsNull(_kvpull_request_target.Value) {
 							} else if rules.IsMapping(_kvpull_request_target.Value) {
-								if _oneOfM115, _ok := rules.UnwrapNode(_kvpull_request_target.Value).(*ast.MappingNode); _ok {
+								if _oneOfM140, _ok := rules.UnwrapNode(_kvpull_request_target.Value).(*ast.MappingNode); _ok {
 									// Unknown key detection
 									_knownKeyson_pull_request_target := map[string]bool{
 										"branches":        true,
@@ -14981,7 +15056,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 										"tags-ignore":     true,
 										"types":           true,
 									}
-									for _, _entry := range _oneOfM115.Values {
+									for _, _entry := range _oneOfM140.Values {
 										_key := _entry.Key.GetToken().Value
 										if !(_knownKeyson_pull_request_target[_key]) {
 											errs = append(errs, rules.ValidationError{
@@ -14995,259 +15070,277 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "branches"
-									if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM115}).FindKey("branches"); _kvbranches != nil {
+									if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM140}).FindKey("branches"); _kvbranches != nil {
 										if !rules.IsExpressionNode(_kvbranches.Value) {
-											if !rules.IsSequence(_kvbranches.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request_target.branches",
-													Key:     "branches",
-													Got:     rules.NodeTypeName(_kvbranches.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvbranches.Value.GetToken(),
-												})
-											}
-											if _branchesSeq, _branchesSeqOk := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _branchesSeqOk {
-												if len(_branchesSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request_target.branches",
-														Key:     "branches",
-														Got:     fmt.Sprintf("%d", len(_branchesSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvbranches.Value.GetToken(),
-													})
-												}
-												for _, _item := range _branchesSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request_target.branches.*",
-																Key:     "branches[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=141)
+											if rules.IsBoolean(_kvbranches.Value) || rules.IsNumber(_kvbranches.Value) || rules.IsString(_kvbranches.Value) {
+											} else if rules.IsSequence(_kvbranches.Value) {
+												if _oneOfSeq141, _ok := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq141.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request_target.branches",
+															Key:     "branches",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq141.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvbranches.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq141.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request_target.branches.*",
+																	Key:     "branches[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvbranches.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "branches",
+													Key:     "branches",
+													Got:     rules.NodeTypeName(_kvbranches.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvbranches.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "branches-ignore"
-									if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM115}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
+									if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM140}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
 										if !rules.IsExpressionNode(_kvbranches_ignore.Value) {
-											if !rules.IsSequence(_kvbranches_ignore.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request_target.branches-ignore",
-													Key:     "branches-ignore",
-													Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvbranches_ignore.Value.GetToken(),
-												})
-											}
-											if _branches_ignoreSeq, _branches_ignoreSeqOk := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _branches_ignoreSeqOk {
-												if len(_branches_ignoreSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request_target.branches-ignore",
-														Key:     "branches-ignore",
-														Got:     fmt.Sprintf("%d", len(_branches_ignoreSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvbranches_ignore.Value.GetToken(),
-													})
-												}
-												for _, _item := range _branches_ignoreSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request_target.branches-ignore.*",
-																Key:     "branches-ignore[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=142)
+											if rules.IsBoolean(_kvbranches_ignore.Value) || rules.IsNumber(_kvbranches_ignore.Value) || rules.IsString(_kvbranches_ignore.Value) {
+											} else if rules.IsSequence(_kvbranches_ignore.Value) {
+												if _oneOfSeq142, _ok := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq142.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request_target.branches-ignore",
+															Key:     "branches-ignore",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq142.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvbranches_ignore.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq142.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request_target.branches-ignore.*",
+																	Key:     "branches-ignore[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvbranches_ignore.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "branches-ignore",
+													Key:     "branches-ignore",
+													Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvbranches_ignore.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "paths"
-									if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM115}).FindKey("paths"); _kvpaths != nil {
+									if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM140}).FindKey("paths"); _kvpaths != nil {
 										if !rules.IsExpressionNode(_kvpaths.Value) {
-											if !rules.IsSequence(_kvpaths.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request_target.paths",
-													Key:     "paths",
-													Got:     rules.NodeTypeName(_kvpaths.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvpaths.Value.GetToken(),
-												})
-											}
-											if _pathsSeq, _pathsSeqOk := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _pathsSeqOk {
-												if len(_pathsSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request_target.paths",
-														Key:     "paths",
-														Got:     fmt.Sprintf("%d", len(_pathsSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvpaths.Value.GetToken(),
-													})
-												}
-												for _, _item := range _pathsSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request_target.paths.*",
-																Key:     "paths[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=143)
+											if rules.IsBoolean(_kvpaths.Value) || rules.IsNumber(_kvpaths.Value) || rules.IsString(_kvpaths.Value) {
+											} else if rules.IsSequence(_kvpaths.Value) {
+												if _oneOfSeq143, _ok := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq143.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request_target.paths",
+															Key:     "paths",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq143.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvpaths.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq143.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request_target.paths.*",
+																	Key:     "paths[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvpaths.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "paths",
+													Key:     "paths",
+													Got:     rules.NodeTypeName(_kvpaths.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvpaths.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "paths-ignore"
-									if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM115}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
+									if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM140}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
 										if !rules.IsExpressionNode(_kvpaths_ignore.Value) {
-											if !rules.IsSequence(_kvpaths_ignore.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request_target.paths-ignore",
-													Key:     "paths-ignore",
-													Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvpaths_ignore.Value.GetToken(),
-												})
-											}
-											if _paths_ignoreSeq, _paths_ignoreSeqOk := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _paths_ignoreSeqOk {
-												if len(_paths_ignoreSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request_target.paths-ignore",
-														Key:     "paths-ignore",
-														Got:     fmt.Sprintf("%d", len(_paths_ignoreSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvpaths_ignore.Value.GetToken(),
-													})
-												}
-												for _, _item := range _paths_ignoreSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request_target.paths-ignore.*",
-																Key:     "paths-ignore[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=144)
+											if rules.IsBoolean(_kvpaths_ignore.Value) || rules.IsNumber(_kvpaths_ignore.Value) || rules.IsString(_kvpaths_ignore.Value) {
+											} else if rules.IsSequence(_kvpaths_ignore.Value) {
+												if _oneOfSeq144, _ok := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq144.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request_target.paths-ignore",
+															Key:     "paths-ignore",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq144.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvpaths_ignore.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq144.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request_target.paths-ignore.*",
+																	Key:     "paths-ignore[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvpaths_ignore.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "paths-ignore",
+													Key:     "paths-ignore",
+													Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvpaths_ignore.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "tags"
-									if _kvtags := (workflow.Mapping{MappingNode: _oneOfM115}).FindKey("tags"); _kvtags != nil {
+									if _kvtags := (workflow.Mapping{MappingNode: _oneOfM140}).FindKey("tags"); _kvtags != nil {
 										if !rules.IsExpressionNode(_kvtags.Value) {
-											if !rules.IsSequence(_kvtags.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request_target.tags",
-													Key:     "tags",
-													Got:     rules.NodeTypeName(_kvtags.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvtags.Value.GetToken(),
-												})
-											}
-											if _tagsSeq, _tagsSeqOk := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _tagsSeqOk {
-												if len(_tagsSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request_target.tags",
-														Key:     "tags",
-														Got:     fmt.Sprintf("%d", len(_tagsSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvtags.Value.GetToken(),
-													})
-												}
-												for _, _item := range _tagsSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request_target.tags.*",
-																Key:     "tags[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=145)
+											if rules.IsBoolean(_kvtags.Value) || rules.IsNumber(_kvtags.Value) || rules.IsString(_kvtags.Value) {
+											} else if rules.IsSequence(_kvtags.Value) {
+												if _oneOfSeq145, _ok := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq145.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request_target.tags",
+															Key:     "tags",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq145.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvtags.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq145.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request_target.tags.*",
+																	Key:     "tags[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvtags.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "tags",
+													Key:     "tags",
+													Got:     rules.NodeTypeName(_kvtags.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvtags.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "tags-ignore"
-									if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM115}).FindKey("tags-ignore"); _kvtags_ignore != nil {
+									if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM140}).FindKey("tags-ignore"); _kvtags_ignore != nil {
 										if !rules.IsExpressionNode(_kvtags_ignore.Value) {
-											if !rules.IsSequence(_kvtags_ignore.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.pull_request_target.tags-ignore",
-													Key:     "tags-ignore",
-													Got:     rules.NodeTypeName(_kvtags_ignore.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvtags_ignore.Value.GetToken(),
-												})
-											}
-											if _tags_ignoreSeq, _tags_ignoreSeqOk := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _tags_ignoreSeqOk {
-												if len(_tags_ignoreSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.pull_request_target.tags-ignore",
-														Key:     "tags-ignore",
-														Got:     fmt.Sprintf("%d", len(_tags_ignoreSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvtags_ignore.Value.GetToken(),
-													})
-												}
-												for _, _item := range _tags_ignoreSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.pull_request_target.tags-ignore.*",
-																Key:     "tags-ignore[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=146)
+											if rules.IsBoolean(_kvtags_ignore.Value) || rules.IsNumber(_kvtags_ignore.Value) || rules.IsString(_kvtags_ignore.Value) {
+											} else if rules.IsSequence(_kvtags_ignore.Value) {
+												if _oneOfSeq146, _ok := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq146.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.pull_request_target.tags-ignore",
+															Key:     "tags-ignore",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq146.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvtags_ignore.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq146.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.pull_request_target.tags-ignore.*",
+																	Key:     "tags-ignore[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvtags_ignore.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "tags-ignore",
+													Key:     "tags-ignore",
+													Got:     rules.NodeTypeName(_kvtags_ignore.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvtags_ignore.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM115}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM140}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -15328,12 +15421,12 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "push"
-					if _kvpush := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("push"); _kvpush != nil {
+					if _kvpush := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("push"); _kvpush != nil {
 						if !rules.IsExpressionNode(_kvpush.Value) {
-							// oneOf type branching (id=116)
+							// oneOf type branching (id=147)
 							if rules.IsNull(_kvpush.Value) {
 							} else if rules.IsMapping(_kvpush.Value) {
-								if _oneOfM116, _ok := rules.UnwrapNode(_kvpush.Value).(*ast.MappingNode); _ok {
+								if _oneOfM147, _ok := rules.UnwrapNode(_kvpush.Value).(*ast.MappingNode); _ok {
 									// Unknown key detection
 									_knownKeyson_push := map[string]bool{
 										"branches":        true,
@@ -15343,7 +15436,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 										"tags":            true,
 										"tags-ignore":     true,
 									}
-									for _, _entry := range _oneOfM116.Values {
+									for _, _entry := range _oneOfM147.Values {
 										_key := _entry.Key.GetToken().Value
 										if !(_knownKeyson_push[_key]) {
 											errs = append(errs, rules.ValidationError{
@@ -15357,253 +15450,271 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "branches"
-									if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM116}).FindKey("branches"); _kvbranches != nil {
+									if _kvbranches := (workflow.Mapping{MappingNode: _oneOfM147}).FindKey("branches"); _kvbranches != nil {
 										if !rules.IsExpressionNode(_kvbranches.Value) {
-											if !rules.IsSequence(_kvbranches.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.push.branches",
-													Key:     "branches",
-													Got:     rules.NodeTypeName(_kvbranches.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvbranches.Value.GetToken(),
-												})
-											}
-											if _branchesSeq, _branchesSeqOk := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _branchesSeqOk {
-												if len(_branchesSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.push.branches",
-														Key:     "branches",
-														Got:     fmt.Sprintf("%d", len(_branchesSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvbranches.Value.GetToken(),
-													})
-												}
-												for _, _item := range _branchesSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.push.branches.*",
-																Key:     "branches[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=148)
+											if rules.IsBoolean(_kvbranches.Value) || rules.IsNumber(_kvbranches.Value) || rules.IsString(_kvbranches.Value) {
+											} else if rules.IsSequence(_kvbranches.Value) {
+												if _oneOfSeq148, _ok := rules.UnwrapNode(_kvbranches.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq148.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.push.branches",
+															Key:     "branches",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq148.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvbranches.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq148.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.push.branches.*",
+																	Key:     "branches[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvbranches.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "branches",
+													Key:     "branches",
+													Got:     rules.NodeTypeName(_kvbranches.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvbranches.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "branches-ignore"
-									if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM116}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
+									if _kvbranches_ignore := (workflow.Mapping{MappingNode: _oneOfM147}).FindKey("branches-ignore"); _kvbranches_ignore != nil {
 										if !rules.IsExpressionNode(_kvbranches_ignore.Value) {
-											if !rules.IsSequence(_kvbranches_ignore.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.push.branches-ignore",
-													Key:     "branches-ignore",
-													Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvbranches_ignore.Value.GetToken(),
-												})
-											}
-											if _branches_ignoreSeq, _branches_ignoreSeqOk := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _branches_ignoreSeqOk {
-												if len(_branches_ignoreSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.push.branches-ignore",
-														Key:     "branches-ignore",
-														Got:     fmt.Sprintf("%d", len(_branches_ignoreSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvbranches_ignore.Value.GetToken(),
-													})
-												}
-												for _, _item := range _branches_ignoreSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.push.branches-ignore.*",
-																Key:     "branches-ignore[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=149)
+											if rules.IsBoolean(_kvbranches_ignore.Value) || rules.IsNumber(_kvbranches_ignore.Value) || rules.IsString(_kvbranches_ignore.Value) {
+											} else if rules.IsSequence(_kvbranches_ignore.Value) {
+												if _oneOfSeq149, _ok := rules.UnwrapNode(_kvbranches_ignore.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq149.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.push.branches-ignore",
+															Key:     "branches-ignore",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq149.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvbranches_ignore.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq149.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.push.branches-ignore.*",
+																	Key:     "branches-ignore[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvbranches_ignore.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "branches-ignore",
+													Key:     "branches-ignore",
+													Got:     rules.NodeTypeName(_kvbranches_ignore.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvbranches_ignore.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "paths"
-									if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM116}).FindKey("paths"); _kvpaths != nil {
+									if _kvpaths := (workflow.Mapping{MappingNode: _oneOfM147}).FindKey("paths"); _kvpaths != nil {
 										if !rules.IsExpressionNode(_kvpaths.Value) {
-											if !rules.IsSequence(_kvpaths.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.push.paths",
-													Key:     "paths",
-													Got:     rules.NodeTypeName(_kvpaths.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvpaths.Value.GetToken(),
-												})
-											}
-											if _pathsSeq, _pathsSeqOk := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _pathsSeqOk {
-												if len(_pathsSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.push.paths",
-														Key:     "paths",
-														Got:     fmt.Sprintf("%d", len(_pathsSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvpaths.Value.GetToken(),
-													})
-												}
-												for _, _item := range _pathsSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.push.paths.*",
-																Key:     "paths[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=150)
+											if rules.IsBoolean(_kvpaths.Value) || rules.IsNumber(_kvpaths.Value) || rules.IsString(_kvpaths.Value) {
+											} else if rules.IsSequence(_kvpaths.Value) {
+												if _oneOfSeq150, _ok := rules.UnwrapNode(_kvpaths.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq150.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.push.paths",
+															Key:     "paths",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq150.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvpaths.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq150.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.push.paths.*",
+																	Key:     "paths[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvpaths.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "paths",
+													Key:     "paths",
+													Got:     rules.NodeTypeName(_kvpaths.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvpaths.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "paths-ignore"
-									if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM116}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
+									if _kvpaths_ignore := (workflow.Mapping{MappingNode: _oneOfM147}).FindKey("paths-ignore"); _kvpaths_ignore != nil {
 										if !rules.IsExpressionNode(_kvpaths_ignore.Value) {
-											if !rules.IsSequence(_kvpaths_ignore.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.push.paths-ignore",
-													Key:     "paths-ignore",
-													Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvpaths_ignore.Value.GetToken(),
-												})
-											}
-											if _paths_ignoreSeq, _paths_ignoreSeqOk := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _paths_ignoreSeqOk {
-												if len(_paths_ignoreSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.push.paths-ignore",
-														Key:     "paths-ignore",
-														Got:     fmt.Sprintf("%d", len(_paths_ignoreSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvpaths_ignore.Value.GetToken(),
-													})
-												}
-												for _, _item := range _paths_ignoreSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.push.paths-ignore.*",
-																Key:     "paths-ignore[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=151)
+											if rules.IsBoolean(_kvpaths_ignore.Value) || rules.IsNumber(_kvpaths_ignore.Value) || rules.IsString(_kvpaths_ignore.Value) {
+											} else if rules.IsSequence(_kvpaths_ignore.Value) {
+												if _oneOfSeq151, _ok := rules.UnwrapNode(_kvpaths_ignore.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq151.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.push.paths-ignore",
+															Key:     "paths-ignore",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq151.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvpaths_ignore.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq151.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.push.paths-ignore.*",
+																	Key:     "paths-ignore[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvpaths_ignore.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "paths-ignore",
+													Key:     "paths-ignore",
+													Got:     rules.NodeTypeName(_kvpaths_ignore.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvpaths_ignore.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "tags"
-									if _kvtags := (workflow.Mapping{MappingNode: _oneOfM116}).FindKey("tags"); _kvtags != nil {
+									if _kvtags := (workflow.Mapping{MappingNode: _oneOfM147}).FindKey("tags"); _kvtags != nil {
 										if !rules.IsExpressionNode(_kvtags.Value) {
-											if !rules.IsSequence(_kvtags.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.push.tags",
-													Key:     "tags",
-													Got:     rules.NodeTypeName(_kvtags.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvtags.Value.GetToken(),
-												})
-											}
-											if _tagsSeq, _tagsSeqOk := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _tagsSeqOk {
-												if len(_tagsSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.push.tags",
-														Key:     "tags",
-														Got:     fmt.Sprintf("%d", len(_tagsSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvtags.Value.GetToken(),
-													})
-												}
-												for _, _item := range _tagsSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.push.tags.*",
-																Key:     "tags[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=152)
+											if rules.IsBoolean(_kvtags.Value) || rules.IsNumber(_kvtags.Value) || rules.IsString(_kvtags.Value) {
+											} else if rules.IsSequence(_kvtags.Value) {
+												if _oneOfSeq152, _ok := rules.UnwrapNode(_kvtags.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq152.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.push.tags",
+															Key:     "tags",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq152.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvtags.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq152.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.push.tags.*",
+																	Key:     "tags[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvtags.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "tags",
+													Key:     "tags",
+													Got:     rules.NodeTypeName(_kvtags.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvtags.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// Property: "tags-ignore"
-									if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM116}).FindKey("tags-ignore"); _kvtags_ignore != nil {
+									if _kvtags_ignore := (workflow.Mapping{MappingNode: _oneOfM147}).FindKey("tags-ignore"); _kvtags_ignore != nil {
 										if !rules.IsExpressionNode(_kvtags_ignore.Value) {
-											if !rules.IsSequence(_kvtags_ignore.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.push.tags-ignore",
-													Key:     "tags-ignore",
-													Got:     rules.NodeTypeName(_kvtags_ignore.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvtags_ignore.Value.GetToken(),
-												})
-											}
-											if _tags_ignoreSeq, _tags_ignoreSeqOk := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _tags_ignoreSeqOk {
-												if len(_tags_ignoreSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.push.tags-ignore",
-														Key:     "tags-ignore",
-														Got:     fmt.Sprintf("%d", len(_tags_ignoreSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvtags_ignore.Value.GetToken(),
-													})
-												}
-												for _, _item := range _tags_ignoreSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.push.tags-ignore.*",
-																Key:     "tags-ignore[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=153)
+											if rules.IsBoolean(_kvtags_ignore.Value) || rules.IsNumber(_kvtags_ignore.Value) || rules.IsString(_kvtags_ignore.Value) {
+											} else if rules.IsSequence(_kvtags_ignore.Value) {
+												if _oneOfSeq153, _ok := rules.UnwrapNode(_kvtags_ignore.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq153.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.push.tags-ignore",
+															Key:     "tags-ignore",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq153.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvtags_ignore.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq153.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.push.tags-ignore.*",
+																	Key:     "tags-ignore[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvtags_ignore.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "tags-ignore",
+													Key:     "tags-ignore",
+													Got:     rules.NodeTypeName(_kvtags_ignore.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvtags_ignore.Value.GetToken(),
+												})
 											}
 										}
 									}
@@ -15623,14 +15734,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "registry_package"
-					if _kvregistry_package := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("registry_package"); _kvregistry_package != nil {
+					if _kvregistry_package := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("registry_package"); _kvregistry_package != nil {
 						if !rules.IsExpressionNode(_kvregistry_package.Value) {
-							// oneOf type branching (id=117)
+							// oneOf type branching (id=154)
 							if rules.IsNull(_kvregistry_package.Value) {
 							} else if rules.IsMapping(_kvregistry_package.Value) {
-								if _oneOfM117, _ok := rules.UnwrapNode(_kvregistry_package.Value).(*ast.MappingNode); _ok {
+								if _oneOfM154, _ok := rules.UnwrapNode(_kvregistry_package.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM117}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM154}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -15702,14 +15813,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "release"
-					if _kvrelease := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("release"); _kvrelease != nil {
+					if _kvrelease := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("release"); _kvrelease != nil {
 						if !rules.IsExpressionNode(_kvrelease.Value) {
-							// oneOf type branching (id=118)
+							// oneOf type branching (id=155)
 							if rules.IsNull(_kvrelease.Value) {
 							} else if rules.IsMapping(_kvrelease.Value) {
-								if _oneOfM118, _ok := rules.UnwrapNode(_kvrelease.Value).(*ast.MappingNode); _ok {
+								if _oneOfM155, _ok := rules.UnwrapNode(_kvrelease.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM118}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM155}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -15786,7 +15897,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "repository_dispatch"
-					if _kvrepository_dispatch := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("repository_dispatch"); _kvrepository_dispatch != nil {
+					if _kvrepository_dispatch := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("repository_dispatch"); _kvrepository_dispatch != nil {
 						if !rules.IsExpressionNode(_kvrepository_dispatch.Value) {
 							if !rules.IsNull(_kvrepository_dispatch.Value) && !rules.IsMapping(_kvrepository_dispatch.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -15802,7 +15913,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "schedule"
-					if _kvschedule := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("schedule"); _kvschedule != nil {
+					if _kvschedule := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("schedule"); _kvschedule != nil {
 						if !rules.IsExpressionNode(_kvschedule.Value) {
 							if !rules.IsSequence(_kvschedule.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -15906,7 +16017,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "status"
-					if _kvstatus := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("status"); _kvstatus != nil {
+					if _kvstatus := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("status"); _kvstatus != nil {
 						if !rules.IsExpressionNode(_kvstatus.Value) {
 							if !rules.IsNull(_kvstatus.Value) && !rules.IsMapping(_kvstatus.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -15922,7 +16033,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "watch"
-					if _kvwatch := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("watch"); _kvwatch != nil {
+					if _kvwatch := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("watch"); _kvwatch != nil {
 						if !rules.IsExpressionNode(_kvwatch.Value) {
 							if !rules.IsNull(_kvwatch.Value) && !rules.IsMapping(_kvwatch.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -15938,14 +16049,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "workflow_call"
-					if _kvworkflow_call := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("workflow_call"); _kvworkflow_call != nil {
+					if _kvworkflow_call := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("workflow_call"); _kvworkflow_call != nil {
 						if !rules.IsExpressionNode(_kvworkflow_call.Value) {
-							// oneOf type branching (id=119)
+							// oneOf type branching (id=156)
 							if rules.IsNull(_kvworkflow_call.Value) {
 							} else if rules.IsMapping(_kvworkflow_call.Value) {
-								if _oneOfM119, _ok := rules.UnwrapNode(_kvworkflow_call.Value).(*ast.MappingNode); _ok {
+								if _oneOfM156, _ok := rules.UnwrapNode(_kvworkflow_call.Value).(*ast.MappingNode); _ok {
 									// Property: "inputs"
-									if _kvinputs := (workflow.Mapping{MappingNode: _oneOfM119}).FindKey("inputs"); _kvinputs != nil {
+									if _kvinputs := (workflow.Mapping{MappingNode: _oneOfM156}).FindKey("inputs"); _kvinputs != nil {
 										if !rules.IsExpressionNode(_kvinputs.Value) {
 											if !rules.IsMapping(_kvinputs.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -16110,7 +16221,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "outputs"
-									if _kvoutputs := (workflow.Mapping{MappingNode: _oneOfM119}).FindKey("outputs"); _kvoutputs != nil {
+									if _kvoutputs := (workflow.Mapping{MappingNode: _oneOfM156}).FindKey("outputs"); _kvoutputs != nil {
 										if !rules.IsExpressionNode(_kvoutputs.Value) {
 											if !rules.IsMapping(_kvoutputs.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -16224,7 +16335,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "secrets"
-									if _kvsecrets := (workflow.Mapping{MappingNode: _oneOfM119}).FindKey("secrets"); _kvsecrets != nil {
+									if _kvsecrets := (workflow.Mapping{MappingNode: _oneOfM156}).FindKey("secrets"); _kvsecrets != nil {
 										if !rules.IsExpressionNode(_kvsecrets.Value) {
 											if !rules.IsMapping(_kvsecrets.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -16341,17 +16452,17 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "workflow_dispatch"
-					if _kvworkflow_dispatch := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("workflow_dispatch"); _kvworkflow_dispatch != nil {
+					if _kvworkflow_dispatch := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("workflow_dispatch"); _kvworkflow_dispatch != nil {
 						if !rules.IsExpressionNode(_kvworkflow_dispatch.Value) {
-							// oneOf type branching (id=120)
+							// oneOf type branching (id=157)
 							if rules.IsNull(_kvworkflow_dispatch.Value) {
 							} else if rules.IsMapping(_kvworkflow_dispatch.Value) {
-								if _oneOfM120, _ok := rules.UnwrapNode(_kvworkflow_dispatch.Value).(*ast.MappingNode); _ok {
+								if _oneOfM157, _ok := rules.UnwrapNode(_kvworkflow_dispatch.Value).(*ast.MappingNode); _ok {
 									// Unknown key detection
 									_knownKeyson_workflow_dispatch := map[string]bool{
 										"inputs": true,
 									}
-									for _, _entry := range _oneOfM120.Values {
+									for _, _entry := range _oneOfM157.Values {
 										_key := _entry.Key.GetToken().Value
 										if !(_knownKeyson_workflow_dispatch[_key]) {
 											errs = append(errs, rules.ValidationError{
@@ -16365,7 +16476,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "inputs"
-									if _kvinputs := (workflow.Mapping{MappingNode: _oneOfM120}).FindKey("inputs"); _kvinputs != nil {
+									if _kvinputs := (workflow.Mapping{MappingNode: _oneOfM157}).FindKey("inputs"); _kvinputs != nil {
 										if !rules.IsExpressionNode(_kvinputs.Value) {
 											if !rules.IsMapping(_kvinputs.Value) {
 												errs = append(errs, rules.ValidationError{
@@ -16556,13 +16667,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																}
 
 															}
-															// if/then/else on "type" == "string" (id=121)
-															if _ifM121, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-																if _kv := (workflow.Mapping{MappingNode: _ifM121}).FindKey("type"); _kv != nil {
-																	_ifCV121 := rules.StringValue(_kv.Value)
-																	if _ifCV121 == "string" {
+															// if/then/else on "type" == "string" (id=158)
+															if _ifM158, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+																if _kv := (workflow.Mapping{MappingNode: _ifM158}).FindKey("type"); _kv != nil {
+																	_ifCV158 := rules.StringValue(_kv.Value)
+																	if _ifCV158 == "string" {
 																		// Property: "default"
-																		if _kvdefault := (workflow.Mapping{MappingNode: _ifM121}).FindKey("default"); _kvdefault != nil {
+																		if _kvdefault := (workflow.Mapping{MappingNode: _ifM158}).FindKey("default"); _kvdefault != nil {
 																			if !rules.IsExpressionNode(_kvdefault.Value) {
 																				if !rules.IsString(_kvdefault.Value) {
 																					errs = append(errs, rules.ValidationError{
@@ -16580,13 +16691,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																	}
 																}
 															}
-															// if/then/else on "type" == "boolean" (id=122)
-															if _ifM122, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-																if _kv := (workflow.Mapping{MappingNode: _ifM122}).FindKey("type"); _kv != nil {
-																	_ifCV122 := rules.StringValue(_kv.Value)
-																	if _ifCV122 == "boolean" {
+															// if/then/else on "type" == "boolean" (id=159)
+															if _ifM159, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+																if _kv := (workflow.Mapping{MappingNode: _ifM159}).FindKey("type"); _kv != nil {
+																	_ifCV159 := rules.StringValue(_kv.Value)
+																	if _ifCV159 == "boolean" {
 																		// Property: "default"
-																		if _kvdefault := (workflow.Mapping{MappingNode: _ifM122}).FindKey("default"); _kvdefault != nil {
+																		if _kvdefault := (workflow.Mapping{MappingNode: _ifM159}).FindKey("default"); _kvdefault != nil {
 																			if !rules.IsExpressionNode(_kvdefault.Value) {
 																				if !rules.IsBoolean(_kvdefault.Value) {
 																					errs = append(errs, rules.ValidationError{
@@ -16604,13 +16715,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																	}
 																}
 															}
-															// if/then/else on "type" == "number" (id=123)
-															if _ifM123, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-																if _kv := (workflow.Mapping{MappingNode: _ifM123}).FindKey("type"); _kv != nil {
-																	_ifCV123 := rules.StringValue(_kv.Value)
-																	if _ifCV123 == "number" {
+															// if/then/else on "type" == "number" (id=160)
+															if _ifM160, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+																if _kv := (workflow.Mapping{MappingNode: _ifM160}).FindKey("type"); _kv != nil {
+																	_ifCV160 := rules.StringValue(_kv.Value)
+																	if _ifCV160 == "number" {
 																		// Property: "default"
-																		if _kvdefault := (workflow.Mapping{MappingNode: _ifM123}).FindKey("default"); _kvdefault != nil {
+																		if _kvdefault := (workflow.Mapping{MappingNode: _ifM160}).FindKey("default"); _kvdefault != nil {
 																			if !rules.IsExpressionNode(_kvdefault.Value) {
 																				if !rules.IsNumber(_kvdefault.Value) {
 																					errs = append(errs, rules.ValidationError{
@@ -16628,13 +16739,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																	}
 																}
 															}
-															// if/then/else on "type" == "environment" (id=124)
-															if _ifM124, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-																if _kv := (workflow.Mapping{MappingNode: _ifM124}).FindKey("type"); _kv != nil {
-																	_ifCV124 := rules.StringValue(_kv.Value)
-																	if _ifCV124 == "environment" {
+															// if/then/else on "type" == "environment" (id=161)
+															if _ifM161, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+																if _kv := (workflow.Mapping{MappingNode: _ifM161}).FindKey("type"); _kv != nil {
+																	_ifCV161 := rules.StringValue(_kv.Value)
+																	if _ifCV161 == "environment" {
 																		// Property: "default"
-																		if _kvdefault := (workflow.Mapping{MappingNode: _ifM124}).FindKey("default"); _kvdefault != nil {
+																		if _kvdefault := (workflow.Mapping{MappingNode: _ifM161}).FindKey("default"); _kvdefault != nil {
 																			if !rules.IsExpressionNode(_kvdefault.Value) {
 																				if !rules.IsString(_kvdefault.Value) {
 																					errs = append(errs, rules.ValidationError{
@@ -16652,13 +16763,13 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 																	}
 																}
 															}
-															// if/then/else on "type" == "choice" (id=125)
-															if _ifM125, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
-																if _kv := (workflow.Mapping{MappingNode: _ifM125}).FindKey("type"); _kv != nil {
-																	_ifCV125 := rules.StringValue(_kv.Value)
-																	if _ifCV125 == "choice" {
+															// if/then/else on "type" == "choice" (id=162)
+															if _ifM162, _ok := rules.UnwrapNode(_ppEntry0.Value).(*ast.MappingNode); _ok {
+																if _kv := (workflow.Mapping{MappingNode: _ifM162}).FindKey("type"); _kv != nil {
+																	_ifCV162 := rules.StringValue(_kv.Value)
+																	if _ifCV162 == "choice" {
 																		// Required key checks
-																		_mWrapon_workflow_dispatch_inputs__ := workflow.Mapping{MappingNode: _ifM125}
+																		_mWrapon_workflow_dispatch_inputs__ := workflow.Mapping{MappingNode: _ifM162}
 																		if _mWrapon_workflow_dispatch_inputs__.FindKey("options") == nil {
 																			errs = append(errs, rules.ValidationError{
 																				Kind:  rules.KindRequiredKey,
@@ -16704,14 +16815,14 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "workflow_run"
-					if _kvworkflow_run := (workflow.Mapping{MappingNode: _oneOfM94}).FindKey("workflow_run"); _kvworkflow_run != nil {
+					if _kvworkflow_run := (workflow.Mapping{MappingNode: _oneOfM113}).FindKey("workflow_run"); _kvworkflow_run != nil {
 						if !rules.IsExpressionNode(_kvworkflow_run.Value) {
-							// oneOf type branching (id=126)
+							// oneOf type branching (id=163)
 							if rules.IsNull(_kvworkflow_run.Value) {
 							} else if rules.IsMapping(_kvworkflow_run.Value) {
-								if _oneOfM126, _ok := rules.UnwrapNode(_kvworkflow_run.Value).(*ast.MappingNode); _ok {
+								if _oneOfM163, _ok := rules.UnwrapNode(_kvworkflow_run.Value).(*ast.MappingNode); _ok {
 									// Property: "types"
-									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM126}).FindKey("types"); _kvtypes != nil {
+									if _kvtypes := (workflow.Mapping{MappingNode: _oneOfM163}).FindKey("types"); _kvtypes != nil {
 										if !rules.IsExpressionNode(_kvtypes.Value) {
 											if _typesSeq, _typesSeqOk := rules.UnwrapNode(_kvtypes.Value).(*ast.SequenceNode); _typesSeqOk {
 												for _, _item := range _typesSeq.Values {
@@ -16760,49 +16871,52 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 									}
 
 									// Property: "workflows"
-									if _kvworkflows := (workflow.Mapping{MappingNode: _oneOfM126}).FindKey("workflows"); _kvworkflows != nil {
+									if _kvworkflows := (workflow.Mapping{MappingNode: _oneOfM163}).FindKey("workflows"); _kvworkflows != nil {
 										if !rules.IsExpressionNode(_kvworkflows.Value) {
-											if !rules.IsSequence(_kvworkflows.Value) {
-												errs = append(errs, rules.ValidationError{
-													Kind:    rules.KindTypeMismatch,
-													Path:    "on.workflow_run.workflows",
-													Key:     "workflows",
-													Got:     rules.NodeTypeName(_kvworkflows.Value),
-													Allowed: []string{"sequence"},
-													Token:   _kvworkflows.Value.GetToken(),
-												})
-											}
-											if _workflowsSeq, _workflowsSeqOk := rules.UnwrapNode(_kvworkflows.Value).(*ast.SequenceNode); _workflowsSeqOk {
-												if len(_workflowsSeq.Values) < 1 {
-													errs = append(errs, rules.ValidationError{
-														Kind:    rules.KindMinItems,
-														Path:    "on.workflow_run.workflows",
-														Key:     "workflows",
-														Got:     fmt.Sprintf("%d", len(_workflowsSeq.Values)),
-														Allowed: []string{fmt.Sprintf("at least %d", 1)},
-														Token:   _kvworkflows.Value.GetToken(),
-													})
-												}
-												for _, _item := range _workflowsSeq.Values {
-													if !rules.IsExpressionNode(_item) {
-														if !rules.IsString(_item) {
-															errs = append(errs, rules.ValidationError{
-																Kind:    rules.KindTypeMismatch,
-																Path:    "on.workflow_run.workflows.*",
-																Key:     "workflows[]",
-																Got:     rules.NodeTypeName(_item),
-																Allowed: []string{"string"},
-																Token:   _item.GetToken(),
-															})
+											// oneOf type branching (id=164)
+											if rules.IsBoolean(_kvworkflows.Value) || rules.IsNumber(_kvworkflows.Value) || rules.IsString(_kvworkflows.Value) {
+											} else if rules.IsSequence(_kvworkflows.Value) {
+												if _oneOfSeq164, _ok := rules.UnwrapNode(_kvworkflows.Value).(*ast.SequenceNode); _ok {
+													if len(_oneOfSeq164.Values) < 1 {
+														errs = append(errs, rules.ValidationError{
+															Kind:    rules.KindMinItems,
+															Path:    "on.workflow_run.workflows",
+															Key:     "workflows",
+															Got:     fmt.Sprintf("%d", len(_oneOfSeq164.Values)),
+															Allowed: []string{fmt.Sprintf("at least %d", 1)},
+															Token:   _kvworkflows.Value.GetToken(),
+														})
+													}
+													for _, _item := range _oneOfSeq164.Values {
+														if !rules.IsExpressionNode(_item) {
+															if !rules.IsBoolean(_item) && !rules.IsNumber(_item) && !rules.IsString(_item) {
+																errs = append(errs, rules.ValidationError{
+																	Kind:    rules.KindTypeMismatch,
+																	Path:    "on.workflow_run.workflows.*",
+																	Key:     "workflows[]",
+																	Got:     rules.NodeTypeName(_item),
+																	Allowed: []string{"string", "boolean", "number"},
+																	Token:   _item.GetToken(),
+																})
+															}
 														}
 													}
 												}
+											} else if !rules.IsAliasNode(_kvworkflows.Value) {
+												errs = append(errs, rules.ValidationError{
+													Kind:    rules.KindTypeMismatch,
+													Path:    "workflows",
+													Key:     "workflows",
+													Got:     rules.NodeTypeName(_kvworkflows.Value),
+													Allowed: []string{"string", "boolean", "number", "sequence"},
+													Token:   _kvworkflows.Value.GetToken(),
+												})
 											}
 										}
 									}
 
 									// PatternProperty: ^branches(-ignore)?$
-									for _, _ppEntry0 := range _oneOfM126.Values {
+									for _, _ppEntry0 := range _oneOfM163.Values {
 										if _re4.MatchString(_ppEntry0.Key.GetToken().Value) {
 											_ppKey0 := _ppEntry0.Key.GetToken().Value
 											_ = _ppKey0 // may be unused if no type checks in children
@@ -16852,7 +16966,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 	// Property: "permissions"
 	if _kvpermissions := (workflow.Mapping{MappingNode: m.MappingNode}).FindKey("permissions"); _kvpermissions != nil {
 		if !rules.IsExpressionNode(_kvpermissions.Value) {
-			// oneOf type branching (id=127)
+			// oneOf type branching (id=165)
 			if rules.IsString(_kvpermissions.Value) {
 				if _sv := rules.StringValue(_kvpermissions.Value); _sv != "" {
 					_validEnumpermissions := map[string]bool{
@@ -16873,7 +16987,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 				}
 			} else if rules.IsMapping(_kvpermissions.Value) {
-				if _oneOfM127, _ok := rules.UnwrapNode(_kvpermissions.Value).(*ast.MappingNode); _ok {
+				if _oneOfM165, _ok := rules.UnwrapNode(_kvpermissions.Value).(*ast.MappingNode); _ok {
 					// Unknown key detection
 					_knownKeyspermissions := map[string]bool{
 						"actions":              true,
@@ -16896,7 +17010,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 						"statuses":             true,
 						"vulnerability-alerts": true,
 					}
-					for _, _entry := range _oneOfM127.Values {
+					for _, _entry := range _oneOfM165.Values {
 						_key := _entry.Key.GetToken().Value
 						if !(_knownKeyspermissions[_key]) {
 							errs = append(errs, rules.ValidationError{
@@ -16911,7 +17025,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "actions"
-					if _kvactions := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("actions"); _kvactions != nil {
+					if _kvactions := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("actions"); _kvactions != nil {
 						if !rules.IsExpressionNode(_kvactions.Value) {
 							if !rules.IsString(_kvactions.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -16944,7 +17058,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "artifact-metadata"
-					if _kvartifact_metadata := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("artifact-metadata"); _kvartifact_metadata != nil {
+					if _kvartifact_metadata := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("artifact-metadata"); _kvartifact_metadata != nil {
 						if !rules.IsExpressionNode(_kvartifact_metadata.Value) {
 							if !rules.IsString(_kvartifact_metadata.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -16977,7 +17091,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "attestations"
-					if _kvattestations := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("attestations"); _kvattestations != nil {
+					if _kvattestations := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("attestations"); _kvattestations != nil {
 						if !rules.IsExpressionNode(_kvattestations.Value) {
 							if !rules.IsString(_kvattestations.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17010,7 +17124,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "checks"
-					if _kvchecks := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("checks"); _kvchecks != nil {
+					if _kvchecks := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("checks"); _kvchecks != nil {
 						if !rules.IsExpressionNode(_kvchecks.Value) {
 							if !rules.IsString(_kvchecks.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17043,7 +17157,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "code-quality"
-					if _kvcode_quality := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("code-quality"); _kvcode_quality != nil {
+					if _kvcode_quality := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("code-quality"); _kvcode_quality != nil {
 						if !rules.IsExpressionNode(_kvcode_quality.Value) {
 							if !rules.IsString(_kvcode_quality.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17076,7 +17190,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "contents"
-					if _kvcontents := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("contents"); _kvcontents != nil {
+					if _kvcontents := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("contents"); _kvcontents != nil {
 						if !rules.IsExpressionNode(_kvcontents.Value) {
 							if !rules.IsString(_kvcontents.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17109,7 +17223,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "copilot-requests"
-					if _kvcopilot_requests := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("copilot-requests"); _kvcopilot_requests != nil {
+					if _kvcopilot_requests := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("copilot-requests"); _kvcopilot_requests != nil {
 						if !rules.IsExpressionNode(_kvcopilot_requests.Value) {
 							if !rules.IsString(_kvcopilot_requests.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17141,7 +17255,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "deployments"
-					if _kvdeployments := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("deployments"); _kvdeployments != nil {
+					if _kvdeployments := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("deployments"); _kvdeployments != nil {
 						if !rules.IsExpressionNode(_kvdeployments.Value) {
 							if !rules.IsString(_kvdeployments.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17174,7 +17288,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "discussions"
-					if _kvdiscussions := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("discussions"); _kvdiscussions != nil {
+					if _kvdiscussions := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("discussions"); _kvdiscussions != nil {
 						if !rules.IsExpressionNode(_kvdiscussions.Value) {
 							if !rules.IsString(_kvdiscussions.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17207,7 +17321,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "id-token"
-					if _kvid_token := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("id-token"); _kvid_token != nil {
+					if _kvid_token := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("id-token"); _kvid_token != nil {
 						if !rules.IsExpressionNode(_kvid_token.Value) {
 							if !rules.IsString(_kvid_token.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17239,7 +17353,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "issues"
-					if _kvissues := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("issues"); _kvissues != nil {
+					if _kvissues := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("issues"); _kvissues != nil {
 						if !rules.IsExpressionNode(_kvissues.Value) {
 							if !rules.IsString(_kvissues.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17272,7 +17386,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "models"
-					if _kvmodels := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("models"); _kvmodels != nil {
+					if _kvmodels := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("models"); _kvmodels != nil {
 						if !rules.IsExpressionNode(_kvmodels.Value) {
 							if !rules.IsString(_kvmodels.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17304,7 +17418,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "packages"
-					if _kvpackages := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("packages"); _kvpackages != nil {
+					if _kvpackages := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("packages"); _kvpackages != nil {
 						if !rules.IsExpressionNode(_kvpackages.Value) {
 							if !rules.IsString(_kvpackages.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17337,7 +17451,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "pages"
-					if _kvpages := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("pages"); _kvpages != nil {
+					if _kvpages := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("pages"); _kvpages != nil {
 						if !rules.IsExpressionNode(_kvpages.Value) {
 							if !rules.IsString(_kvpages.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17370,7 +17484,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "pull-requests"
-					if _kvpull_requests := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("pull-requests"); _kvpull_requests != nil {
+					if _kvpull_requests := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("pull-requests"); _kvpull_requests != nil {
 						if !rules.IsExpressionNode(_kvpull_requests.Value) {
 							if !rules.IsString(_kvpull_requests.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17403,7 +17517,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "repository-projects"
-					if _kvrepository_projects := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("repository-projects"); _kvrepository_projects != nil {
+					if _kvrepository_projects := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("repository-projects"); _kvrepository_projects != nil {
 						if !rules.IsExpressionNode(_kvrepository_projects.Value) {
 							if !rules.IsString(_kvrepository_projects.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17436,7 +17550,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "security-events"
-					if _kvsecurity_events := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("security-events"); _kvsecurity_events != nil {
+					if _kvsecurity_events := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("security-events"); _kvsecurity_events != nil {
 						if !rules.IsExpressionNode(_kvsecurity_events.Value) {
 							if !rules.IsString(_kvsecurity_events.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17469,7 +17583,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "statuses"
-					if _kvstatuses := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("statuses"); _kvstatuses != nil {
+					if _kvstatuses := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("statuses"); _kvstatuses != nil {
 						if !rules.IsExpressionNode(_kvstatuses.Value) {
 							if !rules.IsString(_kvstatuses.Value) {
 								errs = append(errs, rules.ValidationError{
@@ -17502,7 +17616,7 @@ func validateWorkflow(m workflow.WorkflowMapping) []rules.ValidationError {
 					}
 
 					// Property: "vulnerability-alerts"
-					if _kvvulnerability_alerts := (workflow.Mapping{MappingNode: _oneOfM127}).FindKey("vulnerability-alerts"); _kvvulnerability_alerts != nil {
+					if _kvvulnerability_alerts := (workflow.Mapping{MappingNode: _oneOfM165}).FindKey("vulnerability-alerts"); _kvvulnerability_alerts != nil {
 						if !rules.IsExpressionNode(_kvvulnerability_alerts.Value) {
 							if !rules.IsString(_kvvulnerability_alerts.Value) {
 								errs = append(errs, rules.ValidationError{

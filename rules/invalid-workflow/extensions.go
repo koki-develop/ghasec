@@ -758,7 +758,8 @@ func checkWorkflowCallExpressionPositions(node ast.Node) []*diagnostic.Error {
 	return errs
 }
 
-// V8: Filter negation requires at least one positive pattern.
+// V8: Filter negation requires at least one positive pattern. A filter
+// written as a single value is checked as a sequence of that one value.
 func checkFilterNegationPatterns(mapping workflow.Mapping) []*diagnostic.Error {
 	kv := mapping.FindKey("on")
 	if kv == nil {
@@ -790,21 +791,33 @@ func checkFilterNegationPatterns(mapping workflow.Mapping) []*diagnostic.Error {
 			if filterKV == nil {
 				continue
 			}
-			seq, ok := rules.UnwrapNode(filterKV.Value).(*ast.SequenceNode)
-			if !ok {
-				continue
+			// A filter is a sequence of patterns or a single pattern, which
+			// GitHub reads as a sequence of one.
+			var items []ast.Node
+			switch v := rules.UnwrapNode(filterKV.Value).(type) {
+			case *ast.SequenceNode:
+				items = v.Values
+			default:
+				items = []ast.Node{v}
 			}
 
 			hasNegative := false
 			hasPositive := false
-			for _, item := range seq.Values {
-				sv := rules.StringValue(item)
-				if sv == "" {
-					continue
-				}
-				if strings.HasPrefix(sv, "!") {
-					hasNegative = true
-				} else {
+			for _, item := range items {
+				switch v := rules.UnwrapNode(item).(type) {
+				case *ast.StringNode, *ast.LiteralNode:
+					sv := rules.StringValue(v)
+					if sv == "" {
+						continue
+					}
+					if strings.HasPrefix(sv, "!") {
+						hasNegative = true
+					} else {
+						hasPositive = true
+					}
+				case *ast.IntegerNode, *ast.FloatNode, *ast.BoolNode:
+					// GitHub reads numbers and booleans as strings, and
+					// none of them starts with "!".
 					hasPositive = true
 				}
 			}

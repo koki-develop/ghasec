@@ -1,0 +1,68 @@
+workflows:
+  - name: filter-scalars-branches.yml
+    content: |
+      on:
+        push:
+          branches: 2026
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: filter-scalars-tags.yml
+    content: |
+      on:
+        push:
+          tags: [1.0, true]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: filter-scalars-workflows.yml
+    content: |
+      on:
+        workflow_run:
+          workflows: [Build, 42]
+          types: [completed]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: filter-scalars-negation-branches.yml
+    content: |
+      on:
+        push:
+          branches: ['!main', 2026]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: filter-scalars-negation-tags.yml
+    content: |
+      on:
+        push:
+          tags: ['!v1', true]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 5 files checked, no errors found

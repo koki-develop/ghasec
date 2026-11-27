@@ -1,0 +1,27 @@
+workflows:
+  - name: filter-type-mismatch.yml
+    content: |
+      on:
+        push:
+          branches: {name: main}
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/filter-type-mismatch.yml:3:15
+    1 | on:
+    2 |   push:
+    3 |     branches: {name: main}
+      |               ^ "branches" must be a string, boolean, number, or sequence, but got mapping (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 1 error found in 1 of 1 file
