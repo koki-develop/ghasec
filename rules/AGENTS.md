@@ -70,7 +70,7 @@ Messages use **key-path subject style** — the YAML key or structural term is t
 
 Most hand-written checks in `extensions.go` / `invalid_action.go` either auto-follow SchemaStore updates via `go generate` or produce build errors when schema structure changes. The one exception:
 
-- **Filter negation check (`checkFilterNegationPatterns` in `extensions.go`):** The `targetEvents` and `filterKeys` lists are hardcoded. If GitHub adds filter support to a new event, ghasec will silently skip it — no error, no warning. Check the [GitHub Actions documentation](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions) when updating the SchemaStore submodule.
+- **Filter negation check (`checkFilterNegationPatterns` in `extensions.go`):** The `targetEvents` and `filterKeys` lists are hardcoded, and a filter written as a single value is checked as a sequence of that one value. If GitHub adds filter support to a new event, ghasec will silently skip it — no error, no warning. Check the [GitHub Actions documentation](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions) when updating the SchemaStore submodule.
 
 ## Schema Overrides
 
@@ -81,6 +81,8 @@ Most hand-written checks in `extensions.go` / `invalid_action.go` either auto-fo
 - **`workflow_dispatch` input without `type`:** upstream requires `type`; GitHub treats an input without it as a string. The per-type `default` and `options` checks apply only when `type` is set.
 - **Event `types` as a single string:** upstream says `"type": "array"` next to `$ref: #/definitions/types`; GitHub also accepts a single string. The `items` enum stays.
 - **`on.image_version`:** upstream has no `types` and allows only sequences of strings; GitHub also accepts `types` (`created`, `ready`, `deleted`), a single value for `names`, `versions` and `types`, and numbers and booleans in `names` and `versions`.
+- **`branches`, `tags` and `paths` filters as a single value:** upstream defines `#/definitions/branch` and `#/definitions/path` (used by `push`, `pull_request` and `pull_request_target`, including the `-ignore` forms) as `$ref: #/definitions/globs`, a sequence of strings; GitHub also accepts a single value and reads numbers and booleans as strings. The two definitions are rewritten, not `globs`.
+- **`on.workflow_run.workflows` as a single value:** upstream allows only a sequence of strings; GitHub also accepts a single value and reads numbers and booleans as strings.
 - **`permissions.copilot-requests: none`:** upstream allows only `write`.
 - **`on.workflow_call` secret with no value:** upstream requires each secret to be a mapping; GitHub also accepts `token:` with no value.
 

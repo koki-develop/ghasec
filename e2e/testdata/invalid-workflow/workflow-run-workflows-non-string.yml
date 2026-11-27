@@ -3,11 +3,13 @@ workflows:
     content: |
       on:
         workflow_run:
-          workflows: [Build, 42]
+          workflows: [Build, {name: build}]
           types: [completed]
+      permissions: {}
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - run: echo hi
 
@@ -18,8 +20,8 @@ expected:
     --> {{.Dir}}/workflow-run-workflows-non-string.yml:3:24
     1 | on:
     2 |   workflow_run:
-    3 |     workflows: [Build, 42]
-      |                        ^^ "workflows" elements must be strings, but got integer (invalid-workflow)
+    3 |     workflows: [Build, {name: build}]
+      |                        ^ "workflows" elements must be strings, booleans, or numbers, but got mapping (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

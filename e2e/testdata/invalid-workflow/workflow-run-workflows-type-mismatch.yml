@@ -3,11 +3,13 @@ workflows:
     content: |
       on:
         workflow_run:
-          workflows: build
+          workflows: {name: build}
           types: [completed]
+      permissions: {}
       jobs:
         build:
           runs-on: ubuntu-latest
+          timeout-minutes: 10
           steps:
             - run: echo hi
 
@@ -18,8 +20,8 @@ expected:
     --> {{.Dir}}/workflow-run-workflows-type-mismatch.yml:3:16
     1 | on:
     2 |   workflow_run:
-    3 |     workflows: build
-      |                ^^^^^ "workflows" must be a sequence, but got string (invalid-workflow)
+    3 |     workflows: {name: build}
+      |                ^ "workflows" must be a string, boolean, number, or sequence, but got mapping (invalid-workflow)
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
 

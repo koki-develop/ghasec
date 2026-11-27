@@ -1,0 +1,100 @@
+workflows:
+  - name: filter-single-push.yml
+    content: |
+      on:
+        push:
+          branches: main
+          tags: v*
+          paths: src/**
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: filter-single-push-ignore.yml
+    content: |
+      on:
+        push:
+          branches-ignore: main
+          tags-ignore: v*
+          paths-ignore: docs/**
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: filter-single-pull-request.yml
+    content: |
+      on:
+        pull_request:
+          branches: main
+          paths: src/**
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: filter-single-pull-request-ignore.yml
+    content: |
+      on:
+        pull_request:
+          branches-ignore: main
+          paths-ignore: docs/**
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: filter-single-pull-request-target.yml
+    content: |
+      on:
+        pull_request_target:
+          branches: main
+          paths: src/**
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: filter-single-pull-request-target-ignore.yml
+    content: |
+      on:
+        pull_request_target:
+          branches-ignore: main
+          paths-ignore: docs/**
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+  - name: filter-single-workflow-run.yml
+    content: |
+      on:
+        workflow_run:
+          workflows: CI
+          types: [completed]
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 7 files checked, no errors found

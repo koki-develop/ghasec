@@ -171,9 +171,41 @@ func TestOverrides_Effect(t *testing.T) {
 		for _, k := range []string{"names", "versions"} {
 			oneOf := props[k].(map[string]any)["oneOf"].([]any)
 			assert.Equal(t, scalars, oneOf[0].(map[string]any)["type"], k)
+			assert.Equal(t, float64(1), oneOf[0].(map[string]any)["minLength"], k)
 			assert.Equal(t, scalars, oneOf[1].(map[string]any)["items"].(map[string]any)["type"], k)
+			assert.Equal(t, float64(1), oneOf[1].(map[string]any)["items"].(map[string]any)["minLength"], k)
 		}
 		assert.Equal(t, false, obj["additionalProperties"])
+	})
+
+	t.Run("branch, tag and path filters accept a single value", func(t *testing.T) {
+		scalars := []any{"string", "number", "boolean"}
+		for _, k := range []string{"branch", "path"} {
+			def := defs[k].(map[string]any)
+			assert.NotContains(t, def, "$ref", k)
+			assert.Contains(t, def, "description", k)
+			oneOf := def["oneOf"].([]any)
+			require.Len(t, oneOf, 2, k)
+			assert.Equal(t, map[string]any{"type": scalars, "minLength": float64(1)}, oneOf[0], k)
+			assert.Equal(t, map[string]any{
+				"type":     "array",
+				"items":    map[string]any{"type": scalars, "minLength": float64(1)},
+				"minItems": float64(1),
+			}, oneOf[1], k)
+		}
+	})
+
+	t.Run("workflow_run workflows accepts a single value", func(t *testing.T) {
+		scalars := []any{"string", "number", "boolean"}
+		workflows := events["workflow_run"].(map[string]any)["oneOf"].([]any)[1].(map[string]any)["properties"].(map[string]any)["workflows"].(map[string]any)
+		assert.Equal(t, map[string]any{"oneOf": []any{
+			map[string]any{"type": scalars, "minLength": float64(1)},
+			map[string]any{
+				"type":     "array",
+				"items":    map[string]any{"type": scalars, "minLength": float64(1)},
+				"minItems": float64(1),
+			},
+		}}, workflows)
 	})
 
 	t.Run("workflow_call secret accepts null", func(t *testing.T) {
@@ -229,6 +261,13 @@ func TestOverrides_RejectChangedFragment(t *testing.T) {
 		{"image_version accepts types and single strings", "github-workflow.json", func(doc map[string]any) {
 			props := get(doc, append(events, "image_version", "oneOf", 1, "properties")...)
 			props["types"] = map[string]any{"type": "array"}
+		}},
+		{"branch, tag and path filters accept a single value", "github-workflow.json", func(doc map[string]any) {
+			// The definitions keep their $ref; only the shared target changes.
+			get(doc, "definitions", "globs")["minItems"] = float64(0)
+		}},
+		{"workflow_run workflows accepts a single value", "github-workflow.json", func(doc map[string]any) {
+			get(doc, append(events, "workflow_run", "oneOf", 1, "properties", "workflows", "items")...)["minLength"] = float64(1)
 		}},
 		{"workflow_call secret accepts null", "github-workflow.json", func(doc map[string]any) {
 			secrets := get(doc, append(events, "workflow_call", "oneOf", 1, "properties", "secrets", "patternProperties")...)
