@@ -1,0 +1,67 @@
+workflows:
+  - name: cache-mode-read.yml
+    content: |
+      on: push
+      permissions: {}
+      cache-mode: read
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          cache-mode: read
+          steps:
+            - run: echo hi
+        call:
+          uses: ./.github/workflows/reusable.yml
+          cache-mode: read
+  - name: cache-mode-write.yml
+    content: |
+      on: push
+      permissions: {}
+      cache-mode: write
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          cache-mode: write
+          steps:
+            - run: echo hi
+        call:
+          uses: ./.github/workflows/reusable.yml
+          cache-mode: write
+  - name: cache-mode-write-only.yml
+    content: |
+      on: push
+      permissions: {}
+      cache-mode: write-only
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          cache-mode: write-only
+          steps:
+            - run: echo hi
+        call:
+          uses: ./.github/workflows/reusable.yml
+          cache-mode: write-only
+  - name: cache-mode-none.yml
+    content: |
+      on: push
+      permissions: {}
+      cache-mode: none
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          cache-mode: none
+          steps:
+            - run: echo hi
+        call:
+          uses: ./.github/workflows/reusable.yml
+          cache-mode: none
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 4 files checked, no errors found

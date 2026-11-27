@@ -1,0 +1,180 @@
+workflows:
+  - name: non-expression-strings.yml
+    content: |
+      on: push
+      permissions: {}
+      concurrency:
+        group: deploy
+        cancel-in-progress: maybe
+      jobs:
+        deploy:
+          runs-on: ubuntu-latest
+          timeout-minutes: ten
+          continue-on-error: maybe
+          env: production
+          environment:
+            name: production
+            deployment: maybe
+          strategy:
+            matrix: big
+          steps:
+            - run: echo hi
+              env: production
+              timeout-minutes: ten
+              continue-on-error: maybe
+            - uses: docker://alpine@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1
+              with: oops
+        matrix-entries:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          strategy:
+            matrix:
+              os: ubuntu-latest
+              include: big
+          steps:
+            - run: echo hi
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/non-expression-strings.yml:5:23
+    ...
+    3 | concurrency:
+    ...
+    5 |   cancel-in-progress: maybe
+      |                       ^^^^^ "cancel-in-progress" must be a boolean, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:9:22
+    ...
+    6 | jobs:
+    7 |   deploy:
+    ...
+    9 |     timeout-minutes: ten
+      |                      ^^^ "timeout-minutes" must be a number, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:10:24
+    ...
+     6 | jobs:
+     7 |   deploy:
+    ...
+    10 |     continue-on-error: maybe
+       |                        ^^^^^ "continue-on-error" must be a boolean, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:11:10
+    ...
+     6 | jobs:
+     7 |   deploy:
+    ...
+    11 |     env: production
+       |          ^^^^^^^^^^ "env" must be a mapping, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:14:19
+    ...
+     6 | jobs:
+     7 |   deploy:
+    ...
+    12 |     environment:
+    ...
+    14 |       deployment: maybe
+       |                   ^^^^^ "deployment" must be a boolean, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:16:15
+    ...
+     6 | jobs:
+     7 |   deploy:
+    ...
+    15 |     strategy:
+    16 |       matrix: big
+       |               ^^^ "matrix" must be a mapping, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:19:14
+    ...
+     6 | jobs:
+     7 |   deploy:
+    ...
+    17 |     steps:
+    18 |       - run: echo hi
+    19 |         env: production
+       |              ^^^^^^^^^^ "env" must be a mapping, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:20:26
+    ...
+     6 | jobs:
+     7 |   deploy:
+    ...
+    17 |     steps:
+    18 |       - run: echo hi
+    ...
+    20 |         timeout-minutes: ten
+       |                          ^^^ "timeout-minutes" must be a number, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:21:28
+    ...
+     6 | jobs:
+     7 |   deploy:
+    ...
+    17 |     steps:
+    18 |       - run: echo hi
+    ...
+    21 |         continue-on-error: maybe
+       |                            ^^^^^ "continue-on-error" must be a boolean, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:23:15
+    ...
+     6 | jobs:
+     7 |   deploy:
+    ...
+    17 |     steps:
+    ...
+    22 |       - uses: docker://alpine@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1
+    23 |         with: oops
+       |               ^^^^ "with" must be a mapping, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:29:13
+    ...
+     6 | jobs:
+    ...
+    24 |   matrix-entries:
+    ...
+    27 |     strategy:
+    28 |       matrix:
+    29 |         os: ubuntu-latest
+       |             ^^^^^^^^^^^^^ "os" must be a sequence, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/non-expression-strings.yml:30:18
+    ...
+     6 | jobs:
+    ...
+    24 |   matrix-entries:
+    ...
+    27 |     strategy:
+    28 |       matrix:
+    ...
+    30 |         include: big
+       |                  ^^^ "include" must be a sequence, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 12 errors found in 1 of 1 file

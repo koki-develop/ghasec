@@ -1,0 +1,46 @@
+workflows:
+  - name: image-version-invalid.yml
+    content: |
+      on:
+        image_version:
+          names: [{a: b}]
+          types: [published]
+          foo: bar
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/image-version-invalid.yml:3:13
+    1 | on:
+    2 |   image_version:
+    3 |     names: [{a: b}]
+      |             ^ "names" elements must be strings, booleans, or numbers, but got mapping (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/image-version-invalid.yml:4:13
+    1 | on:
+    2 |   image_version:
+    ...
+    4 |     types: [published]
+      |             ^^^^^^^^^ "types[]" has unknown value "published" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/image-version-invalid.yml:5:5
+    1 | on:
+    2 |   image_version:
+    ...
+    5 |     foo: bar
+      |     ^^^ "image_version" has unknown key "foo" (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 3 errors found in 1 of 1 file

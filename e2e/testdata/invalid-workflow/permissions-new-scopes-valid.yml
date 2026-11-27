@@ -1,0 +1,28 @@
+workflows:
+  - name: permissions-new-scopes-valid.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        agent:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          permissions:
+            copilot-requests: write
+            vulnerability-alerts: read
+          steps:
+            - run: echo hi
+        reader:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          permissions:
+            copilot-requests: none
+            vulnerability-alerts: none
+          steps:
+            - run: echo hi
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

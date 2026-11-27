@@ -1,0 +1,20 @@
+workflows:
+  - name: step-with-non-string-args.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: docker://alpine@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1
+              with:
+                args: 1
+                entrypoint: true
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

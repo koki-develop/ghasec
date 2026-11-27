@@ -74,6 +74,14 @@ func resolveRef(s *jsonschema.Schema) *jsonschema.Schema {
 	return s
 }
 
+// isExprOnly reports whether s only accepts a string containing a `${{ }}`
+// expression (SchemaStore's expressionSyntax and
+// stringContainingExpressionSyntax).
+func isExprOnly(s *jsonschema.Schema) bool {
+	r := resolveRef(s)
+	return r != nil && r.Pattern != nil && strings.Contains(r.Pattern.String(), `\$\{\{`)
+}
+
 // apSchemaCache caches converted additionalProperties schemas to avoid OOM
 // when the same schema is referenced from multiple locations.
 var apSchemaCache = map[*jsonschema.Schema]*Node{}
@@ -227,9 +235,13 @@ func convert(s *jsonschema.Schema, path string) *Node {
 		}
 	}
 
-	// Combiners
+	// Combiners. Branches that only accept a `${{ }}` expression are
+	// dropped: the generated code skips values containing an expression, so
+	// such a branch would only let any other string through.
 	for _, sub := range s.OneOf {
-		node.OneOf = append(node.OneOf, convert(sub, path))
+		if !isExprOnly(sub) {
+			node.OneOf = append(node.OneOf, convert(sub, path))
+		}
 	}
 	// G3: For allOf, filter out `not` sub-schemas. We can't validate them,
 	// but we can still validate the remaining constraints. This enables
@@ -240,7 +252,9 @@ func convert(s *jsonschema.Schema, path string) *Node {
 		}
 	}
 	for _, sub := range s.AnyOf {
-		node.AnyOf = append(node.AnyOf, convert(sub, path))
+		if !isExprOnly(sub) {
+			node.AnyOf = append(node.AnyOf, convert(sub, path))
+		}
 	}
 
 	// If/Then/Else

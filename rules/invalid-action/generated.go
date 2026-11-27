@@ -875,13 +875,13 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 															// Property: "continue-on-error"
 															if _kvcontinue_on_error := (workflow.Mapping{MappingNode: _subMsteps__}).FindKey("continue-on-error"); _kvcontinue_on_error != nil {
 																if !rules.IsExpressionNode(_kvcontinue_on_error.Value) {
-																	if !rules.IsString(_kvcontinue_on_error.Value) && !rules.IsBoolean(_kvcontinue_on_error.Value) {
+																	if !rules.IsBoolean(_kvcontinue_on_error.Value) {
 																		errs = append(errs, rules.ValidationError{
 																			Kind:    rules.KindTypeMismatch,
 																			Path:    "runs.steps.*.continue-on-error",
 																			Key:     "continue-on-error",
 																			Got:     rules.NodeTypeName(_kvcontinue_on_error.Value),
-																			Allowed: []string{"string", "boolean"},
+																			Allowed: []string{"boolean"},
 																			Token:   _kvcontinue_on_error.Value.GetToken(),
 																		})
 																	}
@@ -900,14 +900,13 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 																			}
 
 																		}
-																	} else if rules.IsString(_kvenv.Value) {
 																	} else if !rules.IsAliasNode(_kvenv.Value) {
 																		errs = append(errs, rules.ValidationError{
 																			Kind:    rules.KindTypeMismatch,
 																			Path:    "env",
 																			Key:     "env",
 																			Got:     rules.NodeTypeName(_kvenv.Value),
-																			Allowed: []string{"string", "mapping"},
+																			Allowed: []string{"mapping"},
 																			Token:   _kvenv.Value.GetToken(),
 																		})
 																	}
@@ -1214,14 +1213,13 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 													}
 
 												}
-											} else if rules.IsString(_kvenv.Value) {
 											} else if !rules.IsAliasNode(_kvenv.Value) {
 												errs = append(errs, rules.ValidationError{
 													Kind:    rules.KindTypeMismatch,
 													Path:    "env",
 													Key:     "env",
 													Got:     rules.NodeTypeName(_kvenv.Value),
-													Allowed: []string{"string", "mapping"},
+													Allowed: []string{"mapping"},
 													Token:   _kvenv.Value.GetToken(),
 												})
 											}
@@ -2401,13 +2399,13 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 													// Property: "continue-on-error"
 													if _kvcontinue_on_error := (workflow.Mapping{MappingNode: _subMsteps__}).FindKey("continue-on-error"); _kvcontinue_on_error != nil {
 														if !rules.IsExpressionNode(_kvcontinue_on_error.Value) {
-															if !rules.IsString(_kvcontinue_on_error.Value) && !rules.IsBoolean(_kvcontinue_on_error.Value) {
+															if !rules.IsBoolean(_kvcontinue_on_error.Value) {
 																errs = append(errs, rules.ValidationError{
 																	Kind:    rules.KindTypeMismatch,
 																	Path:    "runs.steps.*.continue-on-error",
 																	Key:     "continue-on-error",
 																	Got:     rules.NodeTypeName(_kvcontinue_on_error.Value),
-																	Allowed: []string{"string", "boolean"},
+																	Allowed: []string{"boolean"},
 																	Token:   _kvcontinue_on_error.Value.GetToken(),
 																})
 															}
@@ -2426,14 +2424,13 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 																	}
 
 																}
-															} else if rules.IsString(_kvenv.Value) {
 															} else if !rules.IsAliasNode(_kvenv.Value) {
 																errs = append(errs, rules.ValidationError{
 																	Kind:    rules.KindTypeMismatch,
 																	Path:    "env",
 																	Key:     "env",
 																	Got:     rules.NodeTypeName(_kvenv.Value),
-																	Allowed: []string{"string", "mapping"},
+																	Allowed: []string{"mapping"},
 																	Token:   _kvenv.Value.GetToken(),
 																})
 															}
@@ -2740,14 +2737,13 @@ func validateAction(m workflow.ActionMapping) []rules.ValidationError {
 											}
 
 										}
-									} else if rules.IsString(_kvenv.Value) {
 									} else if !rules.IsAliasNode(_kvenv.Value) {
 										errs = append(errs, rules.ValidationError{
 											Kind:    rules.KindTypeMismatch,
 											Path:    "env",
 											Key:     "env",
 											Got:     rules.NodeTypeName(_kvenv.Value),
-											Allowed: []string{"string", "mapping"},
+											Allowed: []string{"mapping"},
 											Token:   _kvenv.Value.GetToken(),
 										})
 									}

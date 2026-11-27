@@ -71,3 +71,21 @@ Messages use **key-path subject style** — the YAML key or structural term is t
 Most hand-written checks in `extensions.go` / `invalid_action.go` either auto-follow SchemaStore updates via `go generate` or produce build errors when schema structure changes. The one exception:
 
 - **Filter negation check (`checkFilterNegationPatterns` in `extensions.go`):** The `targetEvents` and `filterKeys` lists are hardcoded. If GitHub adds filter support to a new event, ghasec will silently skip it — no error, no warning. Check the [GitHub Actions documentation](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions) when updating the SchemaStore submodule.
+
+## Schema Overrides
+
+`cmd/gen/preprocess.go` rewrites parts of the SchemaStore schemas before generating code, where they reject what GitHub accepts. Each override checks the shape of the upstream fragment it rewrites, so `go generate` fails when SchemaStore changes that fragment. When that happens, check whether upstream now matches GitHub (then drop the override) or update the override to the new shape. The authority for what GitHub accepts is the schema in [actions/languageservices](https://github.com/actions/languageservices/blob/main/workflow-parser/src/workflow-v1.0.json).
+
+`github-workflow.json` (`workflowOverrides`):
+
+- **`workflow_dispatch` input without `type`:** upstream requires `type`; GitHub treats an input without it as a string. The per-type `default` and `options` checks apply only when `type` is set.
+- **Event `types` as a single string:** upstream says `"type": "array"` next to `$ref: #/definitions/types`; GitHub also accepts a single string. The `items` enum stays.
+- **`on.image_version`:** upstream has no `types` and allows only sequences of strings; GitHub also accepts `types` (`created`, `ready`, `deleted`), a single value for `names`, `versions` and `types`, and numbers and booleans in `names` and `versions`.
+- **`permissions.copilot-requests: none`:** upstream allows only `write`.
+- **`on.workflow_call` secret with no value:** upstream requires each secret to be a mapping; GitHub also accepts `token:` with no value.
+
+`github-action.json` (`actionOverrides`):
+
+- **Composite step `run` + `shell` or `uses`:** upstream writes the condition with `not`, which the generator cannot check. The override is the same condition written with `required`.
+
+Before generating code, `loadSchema` also applies the constraints that SchemaStore writes next to `$ref` (draft-07 ignores them, but SchemaStore's own validator applies them) by moving the `$ref` into `allOf`, and `convert` drops `oneOf`/`anyOf` branches that only accept a `${{ }}` expression (values containing an expression are skipped by the generated code).

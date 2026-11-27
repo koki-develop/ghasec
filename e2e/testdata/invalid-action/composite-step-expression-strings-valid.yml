@@ -1,0 +1,18 @@
+actions:
+  - name: action.yml
+    content: |
+      name: composite
+      description: composite action
+      runs:
+        using: composite
+        steps:
+          - run: echo hi
+            shell: bash
+            env: ${{ fromJSON(inputs.env) }}
+            continue-on-error: ${{ inputs.allow-failure == 'true' }}
+
+expected:
+  exit_code: 0
+  stdout: ""
+  stderr: |
+    ✓ 1 file checked, no errors found

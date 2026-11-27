@@ -589,3 +589,65 @@ func TestEmitValidateFunc_GeneratesCompilableCode(t *testing.T) {
 	closeCount := strings.Count(code, "}")
 	require.Equal(t, openCount, closeCount, "unbalanced braces in generated code:\n%s", code)
 }
+
+// TestEmitAnyOf_MultipleMappingBranches checks that when more than one anyOf
+// branch accepts a mapping, no branch's mapping checks are applied on their
+// own: a mapping only has to satisfy one of the branches.
+func TestEmitAnyOf_MultipleMappingBranches(t *testing.T) {
+	node := &Node{
+		Path: "parent",
+		Properties: map[string]*Node{
+			"with": {
+				Path: "with",
+				AnyOf: []*Node{
+					{Path: "with", OneOf: []*Node{{Path: "with", Types: []string{"mapping"}}}},
+					{
+						Path:  "with",
+						Types: []string{"mapping"},
+						Properties: map[string]*Node{
+							"args": {Path: "with.args", Types: []string{"string"}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	e := &emitter{}
+	e.EmitValidateFunc("ValidateAnyOf", "workflow.WorkflowMapping", node)
+	code := e.String()
+
+	assert.NotContains(t, code, `FindKey("args")`)
+	assert.Contains(t, code, "rules.IsMapping(")
+	assert.Equal(t, strings.Count(code, "{"), strings.Count(code, "}"), "unbalanced braces:\n%s", code)
+}
+
+// TestEmitAnyOf_SingleMappingBranch checks that a branch's mapping checks are
+// still applied when it is the only branch that accepts a mapping.
+func TestEmitAnyOf_SingleMappingBranch(t *testing.T) {
+	node := &Node{
+		Path: "parent",
+		Properties: map[string]*Node{
+			"container": {
+				Path: "container",
+				AnyOf: []*Node{
+					{Path: "container", Types: []string{"string"}},
+					{
+						Path:  "container",
+						Types: []string{"mapping"},
+						Properties: map[string]*Node{
+							"image": {Path: "container.image", Types: []string{"string"}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	e := &emitter{}
+	e.EmitValidateFunc("ValidateAnyOf", "workflow.WorkflowMapping", node)
+	code := e.String()
+
+	assert.Contains(t, code, `FindKey("image")`)
+	assert.Equal(t, strings.Count(code, "{"), strings.Count(code, "}"), "unbalanced braces:\n%s", code)
+}

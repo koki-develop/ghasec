@@ -1,0 +1,33 @@
+workflows:
+  - name: event-not-mapping.yml
+    content: |
+      on:
+        workflow_dispatch: manual
+        workflow_call: library
+      permissions: {}
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo hi
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/event-not-mapping.yml:2:22
+    1 | on:
+    2 |   workflow_dispatch: manual
+      |                      ^^^^^^ "workflow_dispatch" must be a null or mapping, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    --> {{.Dir}}/event-not-mapping.yml:3:18
+    1 | on:
+    ...
+    3 |   workflow_call: library
+      |                  ^^^^^^^ "workflow_call" must be a null or mapping, but got string (invalid-workflow)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/invalid-workflow/README.md
+
+    ✗ 2 errors found in 1 of 1 file
