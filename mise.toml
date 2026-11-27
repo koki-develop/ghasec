@@ -2,7 +2,7 @@
 go = "1.26.4"
 "aqua:golangci/golangci-lint" = "2.12.2"
 "aqua:evilmartians/lefthook" = "2.1.11"
-"aqua:goreleaser/goreleaser" = "2.15.4"
+"aqua:goreleaser/goreleaser" = "2.20.3"
 "aqua:hadolint/hadolint" = "2.14.0"
 "aqua:betterleaks/betterleaks" = "1.10.1"
 
