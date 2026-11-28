@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.19.0](https://github.com/koki-develop/ghasec/compare/v0.18.1...v0.19.0) (2026-11-28)
+
+
+### Features
+
+* add unlocked-action and unlocked-transitive-action rules ([#89](https://github.com/koki-develop/ghasec/issues/89)) ([3b02ff0](https://github.com/koki-develop/ghasec/commit/3b02ff005c230b4322d95b08b8b614bb365856c4))
+* support workflow dependency lockfiles (actions.lock) ([#88](https://github.com/koki-develop/ghasec/issues/88)) ([d17260c](https://github.com/koki-develop/ghasec/commit/d17260c062ecc128b507399417c414d2e63e9366))
+
+
+### Patches
+
+* accept a single value for event filters in invalid-workflow ([#87](https://github.com/koki-develop/ghasec/issues/87)) ([d618cde](https://github.com/koki-develop/ghasec/commit/d618cde27e4ec5c64cc65d19fe484b41d24dc0ec))
+* follow the latest GitHub Actions syntax in invalid-workflow and invalid-action ([#85](https://github.com/koki-develop/ghasec/issues/85)) ([ec76590](https://github.com/koki-develop/ghasec/commit/ec76590150f79e00a0c54ea1f3ff84424bbcd0f3))
+
 ## [0.18.1](https://github.com/koki-develop/ghasec/compare/v0.18.0...v0.18.1) (2026-11-27)
 
 
