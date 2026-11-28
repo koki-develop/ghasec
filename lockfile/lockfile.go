@@ -36,10 +36,17 @@ type Workflow struct {
 	// pins holds the keys the lockfile lists for the workflow. It is non-nil
 	// exactly when the workflow is listed, an empty or null list included.
 	pins map[string]struct{}
+	// root is the absolute path of the repository the workflow belongs to.
+	root string
 }
 
 // Locked reports whether a lockfile lists the workflow.
 func (w Workflow) Locked() bool { return w.pins != nil }
+
+// Root returns the absolute path of the repository root the workflow belongs
+// to: the directory holding its .github directory. It is set by Load and empty
+// for a Workflow taken from a File.
+func (w Workflow) Root() string { return w.root }
 
 // Dependency is an action a lockfile locks.
 type Dependency struct {
@@ -54,38 +61,64 @@ type Dependency struct {
 // the workflow lists for it, with its commit. Sub-path actions share their
 // repository's entry, as GitHub resolves them.
 func (w Workflow) Lookup(uses string) (Dependency, bool) {
-	return w.lookup(uses, func(key string) bool {
-		_, ok := w.pins[key]
-		return ok
-	})
+	return lookup(w.entry(uses, w.listed))
 }
 
 // LookupFrom returns what the workflow locks a uses value inside the action
 // parent to. GitHub resolves such a value from the parent's own entry or from
 // the workflow's list, and fails the job when neither has it.
 func (w Workflow) LookupFrom(parent Dependency, uses string) (Dependency, bool) {
-	return w.lookup(uses, func(key string) bool {
-		if slices.Contains(parent.uses, key) {
-			return true
-		}
-		_, ok := w.pins[key]
-		return ok
-	})
+	return lookup(w.entry(uses, w.listedFrom(parent)))
 }
 
-func (w Workflow) lookup(uses string, reachable func(key string) bool) (Dependency, bool) {
+// Listed reports whether the lockfile records a step's uses value for the
+// workflow: whether the workflow's list has its key and the lockfile has an
+// entry under that key. GitHub refuses to start the workflow otherwise. Unlike
+// Lookup, it holds whatever algorithm the entry's commit is recorded with.
+func (w Workflow) Listed(uses string) bool {
+	_, ok := w.entry(uses, w.listed)
+	return ok
+}
+
+// ListedFrom reports whether the lockfile records a uses value inside the
+// action parent, from the parent's own entry or from the workflow's list.
+// GitHub fails the job otherwise.
+func (w Workflow) ListedFrom(parent Dependency, uses string) bool {
+	_, ok := w.entry(uses, w.listedFrom(parent))
+	return ok
+}
+
+func (w Workflow) listed(key string) bool {
+	_, ok := w.pins[key]
+	return ok
+}
+
+func (w Workflow) listedFrom(parent Dependency) func(key string) bool {
+	return func(key string) bool {
+		return slices.Contains(parent.uses, key) || w.listed(key)
+	}
+}
+
+// entry returns the lockfile's entry for a uses value, when reachable reports
+// its key as one the workflow can resolve it by.
+func (w Workflow) entry(uses string, reachable func(key string) bool) (ghlock.Action, bool) {
 	if !w.Locked() {
-		return Dependency{}, false
+		return ghlock.Action{}, false
 	}
 	ref := ghlock.ParseActionRef(uses)
 	if ref == nil {
-		return Dependency{}, false
+		return ghlock.Action{}, false
 	}
 	key := ghlock.IndexKey(ref.Owner, ref.Repo, ref.Ref)
 	if !reachable(key) {
-		return Dependency{}, false
+		return ghlock.Action{}, false
 	}
 	action, ok := w.file.Dependencies[key]
+	return action, ok
+}
+
+// lookup returns the dependency an entry records, when its commit is a SHA-1.
+func lookup(action ghlock.Action, ok bool) (Dependency, bool) {
 	if !ok {
 		return Dependency{}, false
 	}
@@ -156,7 +189,7 @@ func Load(workflows []string) (map[string]Workflow, []error) {
 	locks := map[string]Workflow{}
 	var errs []error
 	for _, path := range workflows {
-		lockPath, key, ok := locate(path)
+		lockPath, key, root, ok := locate(path)
 		if !ok {
 			continue
 		}
@@ -178,6 +211,7 @@ func Load(workflows []string) (map[string]Workflow, []error) {
 			continue
 		}
 		if w := r.file.Workflow(key); w.Locked() {
+			w.root = root
 			locks[path] = w
 		}
 	}
@@ -187,19 +221,20 @@ func Load(workflows []string) (map[string]Workflow, []error) {
 	return locks, errs
 }
 
-// locate returns where the lockfile for a workflow file lies and the key it
-// would list the workflow under. GitHub reads a lockfile only for workflows
-// directly under .github/workflows, so other files have none.
-func locate(path string) (lockPath, key string, ok bool) {
+// locate returns where the lockfile for a workflow file lies, the key it
+// would list the workflow under, and the absolute path of the repository root.
+// GitHub reads a lockfile only for workflows directly under .github/workflows,
+// so other files have none.
+func locate(path string) (lockPath, key, root string, ok bool) {
 	abs, err := filepath.Abs(path)
 	if err != nil {
-		return "", "", false
+		return "", "", "", false
 	}
 	dir := filepath.Dir(abs)
 	if filepath.Base(dir) != "workflows" || filepath.Base(filepath.Dir(dir)) != ".github" {
-		return "", "", false
+		return "", "", "", false
 	}
-	return filepath.Join(filepath.Dir(path), Name), ".github/workflows/" + filepath.Base(abs), true
+	return filepath.Join(filepath.Dir(path), Name), ".github/workflows/" + filepath.Base(abs), filepath.Dir(filepath.Dir(dir)), true
 }
 
 // readFile reads and parses the lockfile at path. A missing file is no

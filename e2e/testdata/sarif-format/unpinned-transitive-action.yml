@@ -53,6 +53,13 @@ expected:
                   }
                 },
                 {
+                  "id": "unlocked-action",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/unlocked-action/README.md",
+                  "shortDescription": {
+                    "text": "GitHub runs a workflow listed in a dependency lockfile only with the actions the lockfile records for it. An unrecorded action keeps the workflow from starting or fails the job, and when the workflow's list is empty, actions inside composite actions of the same repository run unlocked"
+                  }
+                },
+                {
                   "id": "unpinned-container",
                   "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-container/README.md",
                   "shortDescription": {
@@ -188,6 +195,13 @@ expected:
                   "shortDescription": {
                     "text": "Even when your workflow pins an action to a commit SHA, that action may internally reference other actions using mutable tags or branches. A compromised transitive dependency undermines the security of your entire pinning strategy"
                   }
+                },
+                {
+                  "id": "unlocked-transitive-action",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/unlocked-transitive-action/README.md",
+                  "shortDescription": {
+                    "text": "GitHub resolves an action used inside a locked action from that action's entry in the lockfile or from the workflow's list, and fails the job when neither records it"
+                  }
                 }
               ]
             }
@@ -195,7 +209,7 @@ expected:
           "results": [
             {
               "ruleId": "unpinned-transitive-action",
-              "ruleIndex": 25,
+              "ruleIndex": 26,
               "level": "error",
               "message": {
                 "text": "\"owner/unpinned-depth1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" uses unpinned action \"other/action-b@v2\""

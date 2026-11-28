@@ -1,0 +1,53 @@
+# With --online, unlocked-transitive-action reads a locked action at the commit
+# the lockfile records and reports an action inside it that neither the locked
+# action's entry nor the workflow's list records, which GitHub fails the job on.
+# unpinned-transitive-action still reports the docker:// step inside it.
+args: --online
+workflows:
+  - name: .github/workflows/ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: octo-org/locked-action@v1
+lockfile: |
+  version: v0.0.3
+  workflows:
+    .github/workflows/ci.yml:
+      - octo-org/locked-action@v1
+  dependencies:
+    octo-org/locked-action@v1:
+      ref: v1
+      commit: sha1-dddddddddddddddddddddddddddddddddddddddd
+      owner_id: 1
+      repo_id: 1
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/.github/workflows/ci.yml:8:15
+    ...
+    3 | jobs:
+    4 |   test:
+    ...
+    7 |     steps:
+    8 |       - uses: octo-org/locked-action@v1
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^ "octo-org/locked-action@v1" uses unpinned Docker action "docker://alpine:latest" (unpinned-transitive-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-transitive-action/README.md
+
+    --> {{.Dir}}/.github/workflows/ci.yml:8:15
+    ...
+    3 | jobs:
+    4 |   test:
+    ...
+    7 |     steps:
+    8 |       - uses: octo-org/locked-action@v1
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^ "octo-org/locked-action@v1" uses unlocked action "octo-org/inner-action@v2" (unlocked-transitive-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unlocked-transitive-action/README.md
+
+    ✗ 2 errors found in 1 of 1 file

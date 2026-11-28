@@ -48,6 +48,18 @@ expected:
     ...
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-container/README.md
 
+    --> {{.Dir}}/.github/workflows/ci.yml:13:15
+    ...
+     3 | jobs:
+     4 |   test:
+    ...
+     9 |     steps:
+    ...
+    13 |       - uses: actions/setup-go@v6.5.0
+       |               ^^^^^^^^^^^^^^^^^^^^^^^ "actions/setup-go@v6.5.0" must be locked for this workflow in actions.lock (unlocked-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unlocked-action/README.md
+
     --> {{.Dir}}/.github/workflows/ci.yml:14:15
     ...
      3 | jobs:
@@ -69,4 +81,4 @@ expected:
        |                                                         ^^ "octo-org/shared/.github/workflows/release.yml@v1" must be pinned to a full length commit SHA (unpinned-reusable-workflow)
       Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-reusable-workflow/README.md
 
-    ✗ 3 errors found in 1 of 1 file
+    ✗ 4 errors found in 1 of 1 file

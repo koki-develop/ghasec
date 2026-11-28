@@ -17,4 +17,4 @@ expected:
   stdout: ""
   stderr: |
     ✓ 1 file checked, no errors found
-    ⚠ 4 online rules skipped; use --online to enable them
+    ⚠ 5 online rules skipped; use --online to enable them
