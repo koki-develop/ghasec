@@ -47,7 +47,8 @@ expected:
 
 - `args` (optional): space-separated CLI flags passed to ghasec (e.g. `--online`, `--format markdown`). Parsed with `strings.Fields`.
 - `env` (optional): map of environment variables set for the ghasec process, applied last so they override defaults (e.g. `PATH: ""` to hide the `shellcheck` binary for missing-binary tests).
-- `workflows`: list of objects with `name` (filename) and `content` (workflow YAML as block scalar). Files are written to `{{.Dir}}/`.
+- `workflows`: list of objects with `name` (file path relative to `{{.Dir}}`) and `content` (workflow YAML as block scalar). Files are written to `{{.Dir}}/<name>`.
+- `lockfile` (optional): contents of a dependency lockfile, written to `{{.Dir}}/.github/workflows/actions.lock` and not passed to ghasec as an argument. A lockfile only applies to workflows directly under `.github/workflows/`, so name those workflows with that path (e.g. `.github/workflows/ci.yml`); the runner creates the directories a name contains. To pass the lockfile as an argument instead, list it under `workflows` with that name.
 - `actions`: list of objects with `name` (filename, e.g. `action.yml`) and `content` (action YAML as block scalar). Files are written to the temp directory root (`{{.Dir}}/`), not `.github/workflows/`.
 - `expected`: exit_code, stdout, stderr.
 - `{{.Dir}}` is a Go template variable replaced with the temp directory path at test time.

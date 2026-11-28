@@ -39,7 +39,7 @@ expected:
     - **Rule**: unpinned-action
     - **Message**: "actions/checkout@v6" must be pinned to a full length commit SHA
     - **Why**: Git tags and branches are mutable. A compromised upstream can move a tag to point to malicious code, executing it silently on the next run
-    - **Fix**: Pin to the full 40-character commit SHA. Add the version as an inline comment to keep it human-readable
+    - **Fix**: Pin to the full 40-character commit SHA. Add the version as an inline comment to keep it human-readable. Alternatively, lock the workflow's actions in .github/workflows/actions.lock
     - **Ref**: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
 
     ---

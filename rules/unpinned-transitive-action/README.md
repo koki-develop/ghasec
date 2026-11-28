@@ -8,6 +8,8 @@ Even when your workflow pins an action to a commit SHA, that action may internal
 
 The check is fully recursive: if action A uses pinned action B, and B uses pinned action C that has an unpinned dependency, it will be detected. A self-repository reference (`$/...`) inside a remote action resolves to that action's own repository at the same commit, so it is treated as pinned and its dependencies are checked in turn.
 
+In a workflow locked by a [dependency lockfile](https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles) (`.github/workflows/actions.lock`), actions are checked at the commits the lockfile records, including those referenced by tag.
+
 ## Examples
 
 **Bad** :x:

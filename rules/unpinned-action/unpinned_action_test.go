@@ -6,6 +6,7 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	yamlparser "github.com/goccy/go-yaml/parser"
+	"github.com/koki-develop/ghasec/lockfile"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	"github.com/koki-develop/ghasec/workflow"
 	"github.com/stretchr/testify/assert"
@@ -168,4 +169,59 @@ func TestRule_CheckAction_NonComposite(t *testing.T) {
 	m := parseActionMapping(t, src)
 	errs := r.CheckAction(m)
 	assert.Empty(t, errs)
+}
+
+// ciLock locks .github/workflows/ci.yml to checkout alone, and lists
+// .github/workflows/empty.yml with no dependencies.
+const ciLock = `version: v0.0.3
+workflows:
+  .github/workflows/ci.yml:
+    - actions/checkout@v6.0.2
+  .github/workflows/empty.yml: []
+dependencies:
+  actions/checkout@v6.0.2:
+    ref: v6.0.2
+    commit: sha1-de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    owner_id: 44036562
+    repo_id: 197814629
+`
+
+func lockedMapping(t *testing.T, key, src string) workflow.WorkflowMapping {
+	t.Helper()
+	f, err := lockfile.Parse([]byte(ciLock))
+	require.NoError(t, err)
+	m := parseMapping(t, src)
+	m.Lock = f.Workflow(key)
+	return m
+}
+
+func TestRule_LockedWorkflow(t *testing.T) {
+	tests := []struct {
+		name    string
+		key     string
+		on      string
+		uses    string
+		message string
+	}{
+		{name: "locked tag (U1)", key: ".github/workflows/ci.yml", on: "push", uses: "actions/checkout@v6.0.2"},
+		{name: "ref the lockfile does not list (U2)", key: ".github/workflows/ci.yml", on: "push", uses: "actions/setup-go@v6.5.0"},
+		{name: "sub-path ref", key: ".github/workflows/ci.yml", on: "push", uses: "actions/cache/restore@v4"},
+		{name: "docker image (U3)", key: ".github/workflows/ci.yml", on: "push", uses: "docker://alpine:3.22", message: `"docker://alpine:3.22" must be pinned to a digest`},
+		{name: "workflow the lockfile does not list (U5)", key: ".github/workflows/other.yml", on: "push", uses: "actions/checkout@v6.0.2", message: `"actions/checkout@v6.0.2" must be pinned to a full length commit SHA`},
+		{name: "workflow with an empty list (U6)", key: ".github/workflows/empty.yml", on: "push", uses: "actions/checkout@v6"},
+		{name: "called workflow with its own entry (U8)", key: ".github/workflows/ci.yml", on: "workflow_call", uses: "actions/checkout@v6.0.2"},
+	}
+	r := &unpinnedaction.Rule{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			src := fmt.Sprintf("on: %s\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: %s\n", tt.on, tt.uses)
+			errs := r.CheckWorkflow(lockedMapping(t, tt.key, src))
+			if tt.message == "" {
+				assert.Empty(t, errs)
+				return
+			}
+			require.Len(t, errs, 1)
+			assert.Equal(t, tt.message, errs[0].Message)
+		})
+	}
 }

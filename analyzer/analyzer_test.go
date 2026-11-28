@@ -8,6 +8,7 @@ import (
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/analyzer"
 	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/lockfile"
 	"github.com/koki-develop/ghasec/progress"
 	"github.com/koki-develop/ghasec/workflow"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func TestAnalyzeWorkflow_EmptyDocument(t *testing.T) {
 	f, err := yamlparser.ParseBytes([]byte(""), 0)
 	require.NoError(t, err)
 	a := analyzer.New(1)
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "workflow")
 	assert.Contains(t, errs[0].Message, "mapping")
@@ -60,7 +61,7 @@ func TestAnalyzeWorkflow_EmptyDocument(t *testing.T) {
 func TestAnalyzeWorkflow_NonMappingDocument(t *testing.T) {
 	f := parseYAML(t, "- item1\n- item2\n")
 	a := analyzer.New(1)
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "mapping")
 }
@@ -76,7 +77,7 @@ func TestAnalyzeWorkflow_RequiredRuleError_SkipsNonRequired(t *testing.T) {
 	}}
 	a := analyzer.New(1, reqRule, lintRule)
 	f := parseYAML(t, "key: value")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Equal(t, "required error", errs[0].Message)
 	assert.Equal(t, "req", errs[0].RuleID)
@@ -92,7 +93,7 @@ func TestAnalyzeWorkflow_RequiredRulePass_RunsNonRequired(t *testing.T) {
 	}}
 	a := analyzer.New(1, reqRule, lintRule)
 	f := parseYAML(t, "key: value")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Equal(t, "lint error", errs[0].Message)
 	assert.Equal(t, "lint", errs[0].RuleID)
@@ -101,7 +102,7 @@ func TestAnalyzeWorkflow_RequiredRulePass_RunsNonRequired(t *testing.T) {
 func TestAnalyzeWorkflow_NoRules(t *testing.T) {
 	a := analyzer.New(1)
 	f := parseYAML(t, "key: value")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	assert.Empty(t, errs)
 }
 
@@ -112,7 +113,7 @@ func TestAnalyzeWorkflow_AllPass(t *testing.T) {
 		&mockWorkflowRule{id: "lint", required: false, check: noErr},
 	)
 	f := parseYAML(t, "key: value")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	assert.Empty(t, errs)
 }
 
@@ -137,7 +138,7 @@ func TestAnalyzeWorkflow_IgnoreSuppressesDiagnostic(t *testing.T) {
 	}}
 	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:lint")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	assert.Empty(t, errs)
 }
 
@@ -161,7 +162,7 @@ func TestAnalyzeWorkflow_IgnoreSuppressesDiagnosticInBlockScalar(t *testing.T) {
 	}}
 	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, src)
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	assert.Empty(t, errs, "block-covering directive should suppress the diagnostic and not fire unused-ignore")
 }
 
@@ -174,7 +175,7 @@ func TestAnalyzeWorkflow_IgnorePreviousLineCoversBlockScalar(t *testing.T) {
 	}}
 	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, src)
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	assert.Empty(t, errs)
 }
 
@@ -188,7 +189,7 @@ func TestAnalyzeWorkflow_IgnoreBlockScalarDoesNotLeakBeyondBlock(t *testing.T) {
 	}}
 	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, src)
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 2)
 	// Sorted by position: the unused directive (line 2) precedes the leaked
 	// diagnostic (line 5).
@@ -205,7 +206,7 @@ func TestAnalyzeWorkflow_IgnoreDoesNotSuppressRequiredRule(t *testing.T) {
 	}}
 	a := analyzer.New(1, reqRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:req")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 2)
 	assert.Equal(t, "required error", errs[0].Message)
 	assert.Contains(t, errs[1].Message, "required rule")
@@ -218,7 +219,7 @@ func TestAnalyzeWorkflow_RequiredIgnoreError_WhenRequiredRulePasses(t *testing.T
 	}}
 	a := analyzer.New(1, reqRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:req")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "required rule")
 	assert.Equal(t, "unused-ignore", errs[0].RuleID)
@@ -233,7 +234,7 @@ func TestAnalyzeWorkflow_AllRulesIgnore_SkipsRequiredSilently(t *testing.T) {
 	}}
 	a := analyzer.New(1, reqRule)
 	f := parseYAML(t, "key: value # ghasec-ignore")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	// All-rules ignore must NOT suppress required rule errors and must NOT
 	// produce "required rule cannot be ignored" errors.
 	require.Len(t, errs, 1)
@@ -253,7 +254,7 @@ func TestAnalyzeWorkflow_PreservesPresetRuleID(t *testing.T) {
 	}}
 	a := analyzer.New(1, scRule)
 	f := parseYAML(t, "key: value")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Equal(t, "shellcheck/SC2086", errs[0].RuleID)
 }
@@ -270,7 +271,7 @@ func TestAnalyzeWorkflow_IgnoreNamespacePrefixSuppresses(t *testing.T) {
 	}}
 	a := analyzer.New(1, scRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:shellcheck")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	assert.Empty(t, errs)
 }
 
@@ -286,7 +287,7 @@ func TestAnalyzeWorkflow_IgnoreSpecificShellcheckCode(t *testing.T) {
 	}}
 	a := analyzer.New(1, scRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:shellcheck/SC2086")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Equal(t, "shellcheck/SC2046", errs[0].RuleID)
 }
@@ -296,7 +297,7 @@ func TestAnalyzeWorkflow_UnusedIgnore_ShellcheckCodeIsKnown(t *testing.T) {
 	// "unused" (a syntactically valid per-code ID), not "unknown rule".
 	a := analyzer.New(1)
 	f := parseYAML(t, "key: value # ghasec-ignore:shellcheck/SC9999")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `unused ignore directive for "shellcheck/SC9999"`)
 	assert.Equal(t, "unused-ignore", errs[0].RuleID)
@@ -305,7 +306,7 @@ func TestAnalyzeWorkflow_UnusedIgnore_ShellcheckCodeIsKnown(t *testing.T) {
 func TestAnalyzeWorkflow_UnusedIgnore_UnknownRule(t *testing.T) {
 	a := analyzer.New(1)
 	f := parseYAML(t, "key: value # ghasec-ignore:nonexistent")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `unknown rule "nonexistent"`)
 	assert.Equal(t, "unused-ignore", errs[0].RuleID)
@@ -317,7 +318,7 @@ func TestAnalyzeWorkflow_UnusedIgnore_NotFired(t *testing.T) {
 	}}
 	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:lint")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `unused ignore directive for "lint"`)
 	assert.Equal(t, "unused-ignore", errs[0].RuleID)
@@ -332,14 +333,14 @@ func TestAnalyzeWorkflow_IgnoreAllRules(t *testing.T) {
 	}}
 	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, "key: value # ghasec-ignore")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	assert.Empty(t, errs)
 }
 
 func TestAnalyzeWorkflow_UnusedIgnoreAllRules(t *testing.T) {
 	a := analyzer.New(1)
 	f := parseYAML(t, "key: value # ghasec-ignore")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Equal(t, "unused ignore directive", errs[0].Message)
 	assert.Equal(t, "unused-ignore", errs[0].RuleID)
@@ -348,7 +349,7 @@ func TestAnalyzeWorkflow_UnusedIgnoreAllRules(t *testing.T) {
 func TestAnalyzeWorkflow_TopLevelMappingError_NotSuppressed(t *testing.T) {
 	a := analyzer.New(1)
 	f := parseYAML(t, "- item1 # ghasec-ignore")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "mapping")
 }
@@ -362,7 +363,7 @@ func TestAnalyzeWorkflow_IgnoreMixedValidAndInvalid(t *testing.T) {
 	}}
 	a := analyzer.New(1, lintRule)
 	f := parseYAML(t, "key: value # ghasec-ignore:lint,nonexistent")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	// lint error suppressed, but "nonexistent" produces unknown-rule error
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, `unknown rule "nonexistent"`)
@@ -423,7 +424,7 @@ func TestAnalyzeWorkflow_ParallelRuleOrdering(t *testing.T) {
 
 	a := analyzer.New(4, noopReq, ruleA, ruleB, ruleC)
 	f := parseYAML(t, "key: value")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 
 	require.Len(t, errs, 3)
 	assert.Equal(t, "rule-a", errs[0].RuleID)
@@ -454,7 +455,7 @@ func TestAnalyzeWorkflow_SortByPositionThenRuleOrder(t *testing.T) {
 	}}
 
 	a := analyzer.New(1, noopReq, ruleA, ruleB)
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 
 	require.Len(t, errs, 3)
 	// line 1: rule-b
@@ -510,7 +511,7 @@ func TestAnalyzeWorkflow_ProgressCallback_AllPass(t *testing.T) {
 	a.InitProgress(2)
 	a.SetProgressCallback(cb)
 	f := parseYAML(t, "key: value")
-	a.AnalyzeWorkflow(f)
+	a.AnalyzeWorkflow(f, lockfile.Workflow{})
 
 	require.Len(t, statuses, 2)
 	assert.Equal(t, 1, statuses[0].Completed)
@@ -537,7 +538,7 @@ func TestAnalyzeWorkflow_ProgressCallback_RequiredEarlyExit(t *testing.T) {
 	a.InitProgress(2)
 	a.SetProgressCallback(cb)
 	f := parseYAML(t, "key: value")
-	a.AnalyzeWorkflow(f)
+	a.AnalyzeWorkflow(f, lockfile.Workflow{})
 
 	// required rule completes (1 callback) + early exit adjusts total (1 callback)
 	require.Len(t, statuses, 2)
@@ -553,7 +554,7 @@ func TestAnalyzeWorkflow_ProgressCallback_NilIsNoop(t *testing.T) {
 	}})
 	// No SetProgressCallback call — should not panic
 	f := parseYAML(t, "key: value")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 	assert.Empty(t, errs)
 }
 
@@ -625,7 +626,7 @@ func TestAnalyzeWorkflow_ProgressCallback_BadMapping(t *testing.T) {
 
 	// Non-mapping document triggers early return from AnalyzeWorkflow
 	f := parseYAML(t, "- item1\n- item2\n")
-	errs := a.AnalyzeWorkflow(f)
+	errs := a.AnalyzeWorkflow(f, lockfile.Workflow{})
 
 	require.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Message, "mapping")

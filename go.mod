@@ -4,6 +4,7 @@ go 1.26.1
 
 require (
 	github.com/alecthomas/chroma/v2 v2.24.1
+	github.com/github/actions-lockfile/go v0.0.6
 	github.com/goccy/go-yaml v1.19.2
 	github.com/koki-develop/annotate-go v0.4.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2

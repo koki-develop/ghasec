@@ -18,6 +18,7 @@ import (
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/discover"
 	ghclient "github.com/koki-develop/ghasec/github"
+	"github.com/koki-develop/ghasec/lockfile"
 	"github.com/koki-develop/ghasec/parser"
 	"github.com/koki-develop/ghasec/progress"
 	"github.com/koki-develop/ghasec/renderer"
@@ -104,6 +105,7 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		locks, lockErrs := lockfile.Load(workflowPaths)
 
 		activeRules, skippedOnline, ghClient, shellcheckRule := buildRules(online)
 		if _, disabled := os.LookupEnv("GHASEC_DISABLE_OFFLINE_WARNING"); disabled {
@@ -211,7 +213,7 @@ var rootCmd = &cobra.Command{
 					if isAction {
 						errs = a.AnalyzeAction(asts[i])
 					} else {
-						errs = a.AnalyzeWorkflow(asts[i])
+						errs = a.AnalyzeWorkflow(asts[i], locks[paths[i]])
 					}
 					res[i] = fileResult{path: paths[i], diagErrs: errs}
 				}(i)
@@ -324,6 +326,12 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
+		for _, lockErr := range lockErrs {
+			if err := rdr.PrintHint(lockErr.Error()); err != nil {
+				return err
+			}
+		}
+
 		if ghClient.RateLimitHit() && !ghClient.HasToken() {
 			if err := rdr.PrintHint("set the GHASEC_GITHUB_TOKEN or GITHUB_TOKEN environment variable to increase the GitHub API rate limit"); err != nil {
 				return err
@@ -413,6 +421,11 @@ func resolveFiles(args []string) (workflows []string, actions func() []string, e
 			}
 			if info.IsDir() {
 				return nil, nil, fmt.Errorf("%s is a directory; specify files directly", path)
+			}
+			// A lockfile sits beside the workflows, so a glob over them passes
+			// it too. It is read for the workflows it locks, not linted.
+			if filepath.Base(path) == lockfile.Name {
+				continue
 			}
 			switch classifyFile(path) {
 			case "action":

@@ -12,6 +12,7 @@ import (
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/diagnostic"
 	"github.com/koki-develop/ghasec/ignore"
+	"github.com/koki-develop/ghasec/lockfile"
 	"github.com/koki-develop/ghasec/progress"
 	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
@@ -94,12 +95,15 @@ func (a *Analyzer) completeRule() {
 	}
 }
 
-func (a *Analyzer) AnalyzeWorkflow(f *ast.File) []*diagnostic.Error {
+// AnalyzeWorkflow runs the workflow rules over f. lock is what the workflow's
+// lockfile records for it, the zero value when no lockfile lists it.
+func (a *Analyzer) AnalyzeWorkflow(f *ast.File, lock lockfile.Workflow) []*diagnostic.Error {
 	mapping, errs := workflowTopLevelMapping(f)
 	if errs != nil {
 		a.AdjustTotal(-len(a.workflowRules))
 		return errs
 	}
+	mapping.Lock = lock
 	return runRules(a, a.workflowRules, func(r rules.WorkflowRule) []*diagnostic.Error {
 		return r.CheckWorkflow(mapping)
 	}, f)

@@ -1,0 +1,84 @@
+# A lockfile ghasec cannot read locks nothing, and a hint says why.
+workflows:
+  - name: .github/workflows/ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          container:
+            image: node:24
+          steps:
+            - uses: actions/checkout@v6.0.2
+              with:
+                persist-credentials: false
+            - uses: actions/setup-go@v6.5.0
+            - uses: docker://alpine:3.22
+        release:
+          uses: octo-org/shared/.github/workflows/release.yml@v1
+lockfile: |
+  version: [
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/.github/workflows/ci.yml:8:14
+    ...
+    3 | jobs:
+    4 |   test:
+    ...
+    7 |     container:
+    8 |       image: node:24
+      |              ^^^^^^^ "image" must be pinned to a digest (unpinned-container)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-container/README.md
+
+    --> {{.Dir}}/.github/workflows/ci.yml:10:32
+    ...
+     3 | jobs:
+     4 |   test:
+    ...
+     9 |     steps:
+    10 |       - uses: actions/checkout@v6.0.2
+       |                                ^^^^^^ "actions/checkout@v6.0.2" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/.github/workflows/ci.yml:13:32
+    ...
+     3 | jobs:
+     4 |   test:
+    ...
+     9 |     steps:
+    ...
+    13 |       - uses: actions/setup-go@v6.5.0
+       |                                ^^^^^^ "actions/setup-go@v6.5.0" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/.github/workflows/ci.yml:14:15
+    ...
+     3 | jobs:
+     4 |   test:
+    ...
+     9 |     steps:
+    ...
+    14 |       - uses: docker://alpine:3.22
+       |               ^^^^^^^^^^^^^^^^^^^^ "docker://alpine:3.22" must be pinned to a digest (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/.github/workflows/ci.yml:16:57
+    ...
+     3 | jobs:
+    ...
+    15 |   release:
+    16 |     uses: octo-org/shared/.github/workflows/release.yml@v1
+       |                                                         ^^ "octo-org/shared/.github/workflows/release.yml@v1" must be pinned to a full length commit SHA (unpinned-reusable-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-reusable-workflow/README.md
+
+    ✗ 5 errors found in 1 of 1 file
+    ℹ could not read {{.Dir}}/.github/workflows/actions.lock: line 1: did not find expected node content
