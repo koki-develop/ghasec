@@ -1,0 +1,89 @@
+# The lockfile locks ci.yml, so unlocked-action reads the composite actions of
+# the same repository it uses and reports each action inside them
+# that the workflow's list does not record, naming the actions it went through.
+# An action file is linted on its own and does not know the lockfile, so
+# unpinned-action still reports the tag inside it.
+workflows:
+  - name: .github/workflows/ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - uses: actions/checkout@v6.0.2
+              with:
+                persist-credentials: false
+            - uses: $/.github/actions/setup
+actions:
+  - name: .github/actions/setup/action.yml
+    content: |
+      name: Setup
+      description: Set up the toolchain
+      runs:
+        using: composite
+        steps:
+          - uses: actions/checkout@v6.0.2
+            with:
+              persist-credentials: false
+          - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+          - uses: $/.github/actions/cache
+  - name: .github/actions/cache/action.yml
+    content: |
+      name: Cache
+      description: Restore the cache
+      runs:
+        using: composite
+        steps:
+          - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+lockfile: |
+  version: v0.0.3
+  workflows:
+    .github/workflows/ci.yml:
+      - actions/checkout@v6.0.2
+  dependencies:
+    actions/checkout@v6.0.2:
+      ref: v6.0.2
+      commit: sha1-de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      owner_id: 44036562
+      repo_id: 197814629
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/.github/workflows/ci.yml:11:15
+    ...
+     3 | jobs:
+     4 |   test:
+    ...
+     7 |     steps:
+    ...
+    11 |       - uses: $/.github/actions/setup
+       |               ^^^^^^^^^^^^^^^^^^^^^^^ "$/.github/actions/setup" uses unlocked action "actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903" (unlocked-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unlocked-action/README.md
+
+    --> {{.Dir}}/.github/workflows/ci.yml:11:15
+    ...
+     3 | jobs:
+     4 |   test:
+    ...
+     7 |     steps:
+    ...
+    11 |       - uses: $/.github/actions/setup
+       |               ^^^^^^^^^^^^^^^^^^^^^^^ "$/.github/actions/setup" uses unlocked action "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830" via "$/.github/actions/cache" (unlocked-action)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unlocked-action/README.md
+
+    --> {{.Dir}}/.github/actions/setup/action.yml:6:30
+    ...
+    3 | runs:
+    ...
+    5 |   steps:
+    6 |     - uses: actions/checkout@v6.0.2
+      |                              ^^^^^^ "actions/checkout@v6.0.2" must be pinned to a full length commit SHA (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    ✗ 3 errors found in 2 of 3 files

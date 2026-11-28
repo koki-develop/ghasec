@@ -22,8 +22,8 @@ const (
 // sampleLock locks ci.yml and other.yml. Its entries cover the shapes a
 // lookup has to tell apart: a tag, a sub-path action's repository, a SHA as
 // the workflow wrote it, an entry another workflow lists, an entry listed with
-// no record, a record reached only through a parent's uses, and a record
-// locked to a SHA-256 commit.
+// no record, a record reached only through a parent's uses, a record locked to
+// a SHA-256 commit, and one whose algorithm is written in upper case.
 var sampleLock = `version: v0.0.3
 workflows:
   .github/workflows/ci.yml:
@@ -34,6 +34,7 @@ workflows:
     - octo/listed-inner@v1
     - octo/unrecorded@v1
     - octo/sha256@v1
+    - octo/upper-algo@v1
   .github/workflows/other.yml:
     - octo/elsewhere@v1
 dependencies:
@@ -84,6 +85,11 @@ dependencies:
     commit: sha1-` + sharedSHA + `
     owner_id: 1
     repo_id: 8
+  octo/upper-algo@v1:
+    ref: v1
+    commit: SHA1-` + sharedSHA + `
+    owner_id: 1
+    repo_id: 9
 `
 
 // newRepo creates a repository root holding a .github/workflows directory with
@@ -449,4 +455,87 @@ func TestWorkflow_zeroValueIsNotLocked(t *testing.T) {
 	assert.False(t, ok)
 	_, ok = w.LookupFrom(Dependency{}, "actions/checkout@v6.0.2")
 	assert.False(t, ok)
+	assert.False(t, w.Listed("actions/checkout@v6.0.2"))
+	assert.False(t, w.ListedFrom(Dependency{}, "actions/checkout@v6.0.2"))
+	assert.Empty(t, w.Root())
+}
+
+func TestWorkflow_Listed(t *testing.T) {
+	w := ciWorkflow(t)
+	tests := []struct {
+		name string
+		uses string
+		want bool
+	}{
+		{name: "listed and recorded", uses: "actions/checkout@v6.0.2", want: true},
+		{name: "owner and repository in another case", uses: "Actions/Checkout@v6.0.2", want: true},
+		{name: "sub-path of a listed repository", uses: "actions/cache/save@v4", want: true},
+		{name: "SHA as the workflow wrote it", uses: "octo/upper@" + upperSHA, want: true},
+		{name: "locked to a SHA-256 commit", uses: "octo/sha256@v1", want: true},
+		{name: "algorithm in upper case", uses: "octo/upper-algo@v1", want: true},
+		{name: "listed with no record", uses: "octo/unrecorded@v1"},
+		{name: "SHA in another case than the key", uses: "octo/upper@" + strings.ToLower(upperSHA)},
+		{name: "another ref of a listed action", uses: "actions/checkout@v6"},
+		{name: "recorded but listed nowhere", uses: "octo/unlisted-inner@v1"},
+		{name: "listed only for another workflow", uses: "octo/elsewhere@v1"},
+		{name: "docker image", uses: "docker://alpine:3.22"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, w.Listed(tt.uses))
+		})
+	}
+}
+
+func TestWorkflow_ListedFrom(t *testing.T) {
+	w := ciWorkflow(t)
+	parent, ok := w.Lookup("octo/parent@v1")
+	require.True(t, ok)
+
+	tests := []struct {
+		name string
+		uses string
+		want bool
+	}{
+		{name: "in the parent's uses", uses: "octo/child@v2", want: true},
+		{name: "in the workflow's list", uses: "octo/listed-inner@v1", want: true},
+		{name: "in the workflow's list, locked to a SHA-256 commit", uses: "octo/sha256@v1", want: true},
+		{name: "in the workflow's list with no record", uses: "octo/unrecorded@v1"},
+		{name: "in neither", uses: "octo/unlisted-inner@v1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, w.ListedFrom(parent, tt.uses))
+		})
+	}
+}
+
+func TestLoad_recordsTheRepositoryRoot(t *testing.T) {
+	t.Run("absolute path", func(t *testing.T) {
+		root := newRepo(t, map[string]string{
+			".github/workflows/ci.yml":       workflowContent,
+			".github/workflows/actions.lock": sampleLock,
+		})
+		path := filepath.Join(root, ".github/workflows/ci.yml")
+
+		locks, errs := Load([]string{path})
+		require.Empty(t, errs)
+		assert.Equal(t, root, locks[path].Root())
+	})
+
+	t.Run("relative path from inside the directory", func(t *testing.T) {
+		root := newRepo(t, map[string]string{
+			".github/workflows/ci.yml":       workflowContent,
+			".github/workflows/actions.lock": sampleLock,
+		})
+		t.Chdir(filepath.Join(root, ".github/workflows"))
+
+		locks, errs := Load([]string{"ci.yml"})
+		require.Empty(t, errs)
+		got, err := filepath.EvalSymlinks(locks["ci.yml"].Root())
+		require.NoError(t, err)
+		want, err := filepath.EvalSymlinks(root)
+		require.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
 }

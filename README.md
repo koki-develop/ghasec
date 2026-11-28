@@ -93,7 +93,7 @@ $ GHASEC_GITHUB_TOKEN=ghp_... ghasec --online
 
 ### Dependency Lockfiles
 
-ghasec reads [workflow dependency lockfiles](https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles) (`.github/workflows/actions.lock`). For a workflow listed in the lockfile, `unpinned-action` does not report action references, and `unpinned-transitive-action` checks each action at the commit the lockfile records.
+ghasec reads [workflow dependency lockfiles](https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles) (`.github/workflows/actions.lock`). For a workflow listed in the lockfile, `unpinned-action` does not report action references, and `unpinned-transitive-action` checks each action at the commit the lockfile records. `unlocked-action` and `unlocked-transitive-action` report actions the lockfile does not record for the workflow.
 
 ### Markdown Format
 

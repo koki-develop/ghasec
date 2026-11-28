@@ -42,6 +42,8 @@ import (
 	scriptinjection "github.com/koki-develop/ghasec/rules/script-injection"
 	secretsinherit "github.com/koki-develop/ghasec/rules/secrets-inherit"
 	shellcheckrule "github.com/koki-develop/ghasec/rules/shellcheck"
+	unlockedaction "github.com/koki-develop/ghasec/rules/unlocked-action"
+	unlockedtransitiveaction "github.com/koki-develop/ghasec/rules/unlocked-transitive-action"
 	unpinnedaction "github.com/koki-develop/ghasec/rules/unpinned-action"
 	unpinnedcontainer "github.com/koki-develop/ghasec/rules/unpinned-container"
 	unpinnedreusableworkflow "github.com/koki-develop/ghasec/rules/unpinned-reusable-workflow"
@@ -370,6 +372,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&invalidaction.Rule{},
 		&invalidexpression.Rule{},
 		&unpinnedaction.Rule{},
+		&unlockedaction.Rule{},
 		&unpinnedcontainer.Rule{},
 		&unpinnedreusableworkflow.Rule{},
 		&workspacerelativeaction.Rule{},
@@ -390,6 +393,7 @@ func buildRules(onlineEnabled bool) (active []rules.Rule, skippedOnline int, cli
 		&impostorcommit.Rule{Verifier: client},
 		&mismatchedshatag.Rule{Resolver: client},
 		&unpinnedtransitiveaction.Rule{Fetcher: client},
+		&unlockedtransitiveaction.Rule{Fetcher: client},
 	}
 	for _, r := range all {
 		if r.Online() && !onlineEnabled {

@@ -156,6 +156,7 @@ var mockGitHubHandler = map[string]http.HandlerFunc{
 	"markdown-format/unpinned-transitive-action":       unpinnedTransitiveActionHandler,
 	"sarif-format/unpinned-transitive-action":          unpinnedTransitiveActionHandler,
 	"lockfile/online":                                  lockfileOnlineHandler,
+	"lockfile/online-unlocked-inner":                   lockfileOnlineHandler,
 }
 
 // nodeActionContent is a base64-encoded action.yml for a non-composite (node20)
@@ -611,7 +612,7 @@ func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
 }
 
-// lockfileOnlineHandler serves the actions the lockfile/online case locks, and
+// lockfileOnlineHandler serves the actions the lockfile/online cases lock, and
 // only at the commits its lockfile records, so a fetch at the tag fails.
 func lockfileOnlineHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

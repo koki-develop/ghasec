@@ -53,6 +53,13 @@ expected:
                   }
                 },
                 {
+                  "id": "unlocked-action",
+                  "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/unlocked-action/README.md",
+                  "shortDescription": {
+                    "text": "GitHub runs a workflow listed in a dependency lockfile only with the actions the lockfile records for it. An unrecorded action keeps the workflow from starting or fails the job, and when the workflow's list is empty, actions inside composite actions of the same repository run unlocked"
+                  }
+                },
+                {
                   "id": "unpinned-container",
                   "helpUri": "https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-container/README.md",
                   "shortDescription": {
