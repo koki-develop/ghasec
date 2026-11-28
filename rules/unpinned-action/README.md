@@ -2,6 +2,8 @@
 
 Checks that third-party action references are pinned to a full-length commit SHA, and Docker action references are pinned to a digest.
 
+In a workflow locked by a [dependency lockfile](https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles) (`.github/workflows/actions.lock`), only Docker action references are checked.
+
 ## Risk
 
 Git tags and branches are mutable. An attacker who compromises an action repository can move a tag (e.g., `v6`) to point to malicious code. If your workflow references that tag, it will silently execute the compromised version on the next run — a supply chain attack.
@@ -31,4 +33,4 @@ steps:
   - uses: docker://alpine:3.8@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
 ```
 
-Pin actions to the full 40-character commit SHA. Pin Docker actions to the image digest using the `@sha256:...` suffix. Adding the version/tag as a comment or keeping it in the reference keeps it human-readable.
+Pin actions to the full 40-character commit SHA, or lock them with a dependency lockfile. Pin Docker actions to the image digest using the `@sha256:...` suffix. Adding the version/tag as a comment or keeping it in the reference keeps it human-readable.

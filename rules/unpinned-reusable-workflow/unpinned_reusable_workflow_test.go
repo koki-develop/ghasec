@@ -6,6 +6,7 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	yamlparser "github.com/goccy/go-yaml/parser"
+	"github.com/koki-develop/ghasec/lockfile"
 	unpinnedreusableworkflow "github.com/koki-develop/ghasec/rules/unpinned-reusable-workflow"
 	"github.com/koki-develop/ghasec/workflow"
 	"github.com/stretchr/testify/assert"
@@ -150,4 +151,22 @@ func TestRule_TokenPosition(t *testing.T) {
 	assert.Equal(t, 4, errs[0].Token.Position.Line)
 	assert.Equal(t, 11+33+1, errs[0].Token.Position.Column)
 	assert.Equal(t, "main", errs[0].Token.Value)
+}
+
+// U7: a lockfile locks the actions a workflow's steps use, not the reusable
+// workflows its jobs call, so a listed workflow's calls are still reported.
+func TestRule_LockedWorkflowStillReportsCalls(t *testing.T) {
+	f, err := lockfile.Parse([]byte(`version: v0.0.3
+workflows:
+  .github/workflows/ci.yml: []
+dependencies: {}
+`))
+	require.NoError(t, err)
+	m := parseMapping(t, "on: push\njobs:\n  call:\n    uses: octo/shared/.github/workflows/r.yml@v1\n")
+	m.Lock = f.Workflow(".github/workflows/ci.yml")
+	require.True(t, m.Lock.Locked())
+
+	errs := (&unpinnedreusableworkflow.Rule{}).CheckWorkflow(m)
+	require.Len(t, errs, 1)
+	assert.Equal(t, `"octo/shared/.github/workflows/r.yml@v1" must be pinned to a full length commit SHA`, errs[0].Message)
 }

@@ -1,0 +1,71 @@
+# actions.lock passed as an argument, as `ghasec .github/workflows/*` does,
+# is skipped rather than linted as a workflow.
+workflows:
+  - name: .github/workflows/ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          container:
+            image: node:24
+          steps:
+            - uses: actions/checkout@v6.0.2
+              with:
+                persist-credentials: false
+            - uses: actions/setup-go@v6.5.0
+            - uses: docker://alpine:3.22
+        release:
+          uses: octo-org/shared/.github/workflows/release.yml@v1
+  - name: .github/workflows/actions.lock
+    content: |
+      version: v0.0.3
+      workflows:
+        .github/workflows/ci.yml:
+          - actions/checkout@v6.0.2
+      dependencies:
+        actions/checkout@v6.0.2:
+          ref: v6.0.2
+          commit: sha1-de0fac2e4500dabe0009e67214ff5f5447ce83dd
+          owner_id: 44036562
+          repo_id: 197814629
+
+expected:
+  exit_code: 1
+  stdout: ""
+  stderr: |
+    --> {{.Dir}}/.github/workflows/ci.yml:8:14
+    ...
+    3 | jobs:
+    4 |   test:
+    ...
+    7 |     container:
+    8 |       image: node:24
+      |              ^^^^^^^ "image" must be pinned to a digest (unpinned-container)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-container/README.md
+
+    --> {{.Dir}}/.github/workflows/ci.yml:14:15
+    ...
+     3 | jobs:
+     4 |   test:
+    ...
+     9 |     steps:
+    ...
+    14 |       - uses: docker://alpine:3.22
+       |               ^^^^^^^^^^^^^^^^^^^^ "docker://alpine:3.22" must be pinned to a digest (unpinned-action)
+    ...
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-action/README.md
+
+    --> {{.Dir}}/.github/workflows/ci.yml:16:57
+    ...
+     3 | jobs:
+    ...
+    15 |   release:
+    16 |     uses: octo-org/shared/.github/workflows/release.yml@v1
+       |                                                         ^^ "octo-org/shared/.github/workflows/release.yml@v1" must be pinned to a full length commit SHA (unpinned-reusable-workflow)
+      Ref: https://github.com/koki-develop/ghasec/blob/main/rules/unpinned-reusable-workflow/README.md
+
+    ✗ 3 errors found in 1 of 1 file

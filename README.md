@@ -91,6 +91,10 @@ The GitHub API is subject to [rate limiting](https://docs.github.com/en/rest/usi
 $ GHASEC_GITHUB_TOKEN=ghp_... ghasec --online
 ```
 
+### Dependency Lockfiles
+
+ghasec reads [workflow dependency lockfiles](https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles) (`.github/workflows/actions.lock`). For a workflow listed in the lockfile, `unpinned-action` does not report action references, and `unpinned-transitive-action` checks each action at the commit the lockfile records.
+
 ### Markdown Format
 
 Use `--format markdown` to produce Markdown output. Each diagnostic includes the source line, a description of why the issue matters, and how to fix it:

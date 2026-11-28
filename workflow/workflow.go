@@ -6,6 +6,7 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
 	"github.com/koki-develop/ghasec/git"
+	"github.com/koki-develop/ghasec/lockfile"
 )
 
 // Mapping wraps *ast.MappingNode with common navigation methods.
@@ -51,7 +52,12 @@ func (m Mapping) FirstToken() *token.Token {
 }
 
 // WorkflowMapping represents the top-level workflow mapping.
-type WorkflowMapping struct{ Mapping }
+type WorkflowMapping struct {
+	Mapping
+	// Lock is what the workflow's dependency lockfile records for it. The zero
+	// value means no lockfile lists the workflow.
+	Lock lockfile.Workflow
+}
 
 // ActionMapping represents the top-level action metadata mapping.
 type ActionMapping struct{ Mapping }

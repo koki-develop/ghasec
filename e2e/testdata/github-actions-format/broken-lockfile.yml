@@ -1,0 +1,33 @@
+args: --format github-actions
+workflows:
+  - name: .github/workflows/ci.yml
+    content: |
+      on: push
+      permissions: {}
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          container:
+            image: node:24
+          steps:
+            - uses: actions/checkout@v6.0.2
+              with:
+                persist-credentials: false
+            - uses: actions/setup-go@v6.5.0
+            - uses: docker://alpine:3.22
+        release:
+          uses: octo-org/shared/.github/workflows/release.yml@v1
+lockfile: |
+  version: [
+
+expected:
+  exit_code: 1
+  stdout: |
+    ::error title=unpinned-container,file={{.Dir}}/.github/workflows/ci.yml,line=8::{{.Dir}}/.github/workflows/ci.yml:8:14: "image" must be pinned to a digest
+    ::error title=unpinned-action,file={{.Dir}}/.github/workflows/ci.yml,line=10::{{.Dir}}/.github/workflows/ci.yml:10:32: "actions/checkout@v6.0.2" must be pinned to a full length commit SHA
+    ::error title=unpinned-action,file={{.Dir}}/.github/workflows/ci.yml,line=13::{{.Dir}}/.github/workflows/ci.yml:13:32: "actions/setup-go@v6.5.0" must be pinned to a full length commit SHA
+    ::error title=unpinned-action,file={{.Dir}}/.github/workflows/ci.yml,line=14::{{.Dir}}/.github/workflows/ci.yml:14:15: "docker://alpine:3.22" must be pinned to a digest
+    ::error title=unpinned-reusable-workflow,file={{.Dir}}/.github/workflows/ci.yml,line=16::{{.Dir}}/.github/workflows/ci.yml:16:57: "octo-org/shared/.github/workflows/release.yml@v1" must be pinned to a full length commit SHA
+    ::warning::could not read {{.Dir}}/.github/workflows/actions.lock: line 1: did not find expected node content
+  stderr: ""

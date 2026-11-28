@@ -40,6 +40,6 @@ The analyzer supports optional progress reporting via a callback. `cmd/root.go` 
 ## Key API
 
 - `New(concurrency int, rules ...rules.Rule) *Analyzer` — constructor. Rules are classified into `WorkflowRule` and `ActionRule` lists by interface assertion.
-- `AnalyzeWorkflow(f *ast.File) []*diagnostic.Error` — run workflow rules.
+- `AnalyzeWorkflow(f *ast.File, lock lockfile.Workflow) []*diagnostic.Error` — run workflow rules. `lock` is set on the `WorkflowMapping` the rules receive; pass `lockfile.Workflow{}` for a workflow no lockfile lists.
 - `AnalyzeAction(f *ast.File) []*diagnostic.Error` — run action rules.
 - `WorkflowRuleCount() int` / `ActionRuleCount() int` — rule counts by file type (used for progress total computation).

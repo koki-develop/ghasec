@@ -8,6 +8,7 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/koki-develop/ghasec/diagnostic"
+	"github.com/koki-develop/ghasec/lockfile"
 	"github.com/koki-develop/ghasec/rules"
 	"github.com/koki-develop/ghasec/workflow"
 )
@@ -25,7 +26,8 @@ type ActionFileFetcher interface {
 	FetchActionFile(ctx context.Context, owner, repo, subPath, ref string) (*ast.File, error)
 }
 
-// Rule checks whether SHA-pinned remote actions transitively use unpinned dependencies.
+// Rule checks whether SHA-pinned or locked remote actions transitively use
+// unpinned dependencies.
 type Rule struct {
 	Fetcher ActionFileFetcher
 }
@@ -43,14 +45,37 @@ func (r *Rule) Fix() string {
 }
 
 func (r *Rule) CheckWorkflow(mapping workflow.WorkflowMapping) []*diagnostic.Error {
-	return rules.CollectStepErrors(mapping.EachStep, r.checkStep)
+	return rules.CollectStepErrors(mapping.EachStep, func(step workflow.StepMapping) []*diagnostic.Error {
+		return r.checkStep(step, mapping.Lock)
+	})
 }
 
 func (r *Rule) CheckAction(mapping workflow.ActionMapping) []*diagnostic.Error {
-	return rules.CollectStepErrors(mapping.EachStep, r.checkStep)
+	return rules.CollectStepErrors(mapping.EachStep, func(step workflow.StepMapping) []*diagnostic.Error {
+		return r.checkStep(step, lockfile.Workflow{})
+	})
 }
 
-func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
+// target is an action file to inspect: the action as a uses value names it,
+// and the commit GitHub runs it at.
+type target struct {
+	owner, repo, subPath string
+	// ref is the ref the uses value names, which is how the action is shown.
+	ref string
+	// commit is the commit the action is fetched at: ref itself when ref is a
+	// full SHA, or the commit a lockfile records for it.
+	commit string
+	// dep is the lockfile's entry for the action, in a locked workflow.
+	dep lockfile.Dependency
+}
+
+func (t target) String() string { return actionKey(t.owner, t.repo, t.subPath, t.ref) }
+
+// checkStep inspects the action a step uses. In a workflow a lockfile locks,
+// GitHub runs each action at the commit the lockfile records for it, so the
+// action is inspected at that commit whatever its ref; otherwise only an action
+// pinned to a full SHA has a fixed commit to inspect.
+func (r *Rule) checkStep(step workflow.StepMapping, lock lockfile.Workflow) []*diagnostic.Error {
 	ref, ok := step.Uses()
 	if !ok {
 		return nil
@@ -58,17 +83,27 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 	if !ref.IsRemote() {
 		return nil
 	}
-	if !ref.Ref().IsFullSHA() {
-		return nil
-	}
-
 	owner, repo := ref.OwnerRepo()
 	if owner == "" {
 		return nil
 	}
 
+	t := target{owner: owner, repo: repo, subPath: ref.SubPath(), ref: string(ref.Ref())}
+	if lock.Locked() {
+		dep, ok := lock.Lookup(ref.String())
+		if !ok {
+			return nil
+		}
+		t.commit, t.dep = dep.Commit, dep
+	} else {
+		if !ref.Ref().IsFullSHA() {
+			return nil
+		}
+		t.commit = t.ref
+	}
+
 	visited := map[string]bool{}
-	return r.checkTransitive(ref, owner, repo, ref.SubPath(), string(ref.Ref()), visited, nil)
+	return r.checkTransitive(ref, t, lock, visited, nil)
 }
 
 // checkTransitive recursively inspects a remote action's transitive dependencies.
@@ -76,11 +111,12 @@ func (r *Rule) checkStep(step workflow.StepMapping) []*diagnostic.Error {
 // The distinction ensures the root action is excluded from the "via" chain.
 func (r *Rule) checkTransitive(
 	rootRef workflow.ActionRef,
-	owner, repo, subPath, ref string,
+	t target,
+	lock lockfile.Workflow,
 	visited map[string]bool,
 	path []string,
 ) []*diagnostic.Error {
-	key := actionKey(owner, repo, subPath, ref)
+	key := actionKey(t.owner, t.repo, t.subPath, t.commit)
 	if visited[key] {
 		return nil
 	}
@@ -93,14 +129,20 @@ func (r *Rule) checkTransitive(
 	if path != nil {
 		via = make([]string, len(path)+1)
 		copy(via, path)
-		via[len(path)] = key
+		via[len(path)] = t.String()
 	}
 
-	f, err := r.Fetcher.FetchActionFile(context.Background(), owner, repo, subPath, ref)
+	f, err := r.Fetcher.FetchActionFile(context.Background(), t.owner, t.repo, t.subPath, t.commit)
 	if err != nil {
+		message := err.Error()
+		if lock.Locked() {
+			// The fetcher names the locked commit it requested, which the
+			// workflow does not show, so name the action as it is written too.
+			message = fmt.Sprintf("%q is locked: %s", t.String(), message)
+		}
 		return []*diagnostic.Error{{
 			Token:   rootRef.Token(),
-			Message: err.Error(),
+			Message: message,
 		}}
 	}
 
@@ -138,9 +180,9 @@ func (r *Rule) checkTransitive(
 			if strings.Contains(innerRef.String(), "@") {
 				return
 			}
-			errs = append(errs, r.checkTransitive(
-				rootRef, owner, repo, innerRef.SelfRepositoryPath(), ref, visited, childPath,
-			)...)
+			self := t
+			self.subPath = innerRef.SelfRepositoryPath()
+			errs = append(errs, r.checkTransitive(rootRef, self, lock, visited, childPath)...)
 			return
 		}
 
@@ -154,21 +196,33 @@ func (r *Rule) checkTransitive(
 			return
 		}
 
-		if !innerRef.Ref().IsFullSHA() {
-			errs = append(errs, &diagnostic.Error{
-				Token:   rootRef.Token(),
-				Message: buildMessage(rootRef, innerRef.String(), via, false),
-			})
-			return
+		innerOwner, innerRepo := innerRef.OwnerRepo()
+		inner := target{owner: innerOwner, repo: innerRepo, subPath: innerRef.SubPath(), ref: string(innerRef.Ref())}
+		if lock.Locked() {
+			// GitHub runs an action inside a locked one at the commit the
+			// lockfile records for it, from the parent's entry or the
+			// workflow's list. One neither records fails the job when it
+			// runs, so there is nothing to follow.
+			dep, ok := lock.LookupFrom(t.dep, innerRef.String())
+			if !ok {
+				return
+			}
+			inner.commit, inner.dep = dep.Commit, dep
+		} else {
+			if !innerRef.Ref().IsFullSHA() {
+				errs = append(errs, &diagnostic.Error{
+					Token:   rootRef.Token(),
+					Message: buildMessage(rootRef, innerRef.String(), via, false),
+				})
+				return
+			}
+			inner.commit = inner.ref
 		}
 
-		innerOwner, innerRepo := innerRef.OwnerRepo()
 		if innerOwner == "" {
 			return
 		}
-		errs = append(errs, r.checkTransitive(
-			rootRef, innerOwner, innerRepo, innerRef.SubPath(), string(innerRef.Ref()), visited, childPath,
-		)...)
+		errs = append(errs, r.checkTransitive(rootRef, inner, lock, visited, childPath)...)
 	})
 
 	return errs

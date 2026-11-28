@@ -39,6 +39,7 @@ The pipeline flows: **discover -> parse -> analyze (rules) -> diagnostic output*
 - `cmd/formula/` — Homebrew formula generator. Downloads release archives from GitHub, computes sha256, outputs `ghasec.rb` to stdout.
 - `analyzer/` — Rule execution and diagnostic filtering. See `analyzer/AGENTS.md`.
 - `renderer/` — Diagnostic error rendering with source annotation. See `renderer/AGENTS.md`.
+- `lockfile/` — Reads workflow dependency lockfiles (`.github/workflows/actions.lock`) with GitHub's parser (`github/actions-lockfile`) and answers what one locks for a workflow. `cmd/root.go` reads them once per directory before analysis and passes each workflow's entry to the analyzer.
 - `workflow/` — Typed AST wrappers for workflow/action navigation. See `workflow/AGENTS.md`.
 - `expression/` — Lexer and parser for `${{ }}` expression syntax. See `expression/AGENTS.md`.
 - `progress/` — Single-line progress bar for TTY output. Ticker-based spinner animation, ANSI color support, terminal width adaptation.

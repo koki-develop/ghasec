@@ -68,6 +68,7 @@ type testCase struct {
 	Env       map[string]string `yaml:"env"`
 	Workflows []testWorkflow    `yaml:"workflows"`
 	Actions   []testAction      `yaml:"actions"`
+	Lockfile  string            `yaml:"lockfile"`
 	Expected  expected          `yaml:"expected"`
 }
 
@@ -154,6 +155,7 @@ var mockGitHubHandler = map[string]http.HandlerFunc{
 	"github-actions-format/unpinned-transitive-action": unpinnedTransitiveActionHandler,
 	"markdown-format/unpinned-transitive-action":       unpinnedTransitiveActionHandler,
 	"sarif-format/unpinned-transitive-action":          unpinnedTransitiveActionHandler,
+	"lockfile/online":                                  lockfileOnlineHandler,
 }
 
 // nodeActionContent is a base64-encoded action.yml for a non-composite (node20)
@@ -609,6 +611,30 @@ func unpinnedTransitiveActionHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
 }
 
+// lockfileOnlineHandler serves the actions the lockfile/online case locks, and
+// only at the commits its lockfile records, so a fetch at the tag fails.
+func lockfileOnlineHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	actions := map[string]string{
+		"/repos/octo-org/locked-action/contents/action.yml?ref=dddddddddddddddddddddddddddddddddddddddd": "name: Locked\nruns:\n  using: composite\n  steps:\n    - uses: octo-org/inner-action@v2\n    - uses: docker://alpine:latest\n",
+		"/repos/octo-org/inner-action/contents/action.yml?ref=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee":  "name: Inner\nruns:\n  using: node24\n  main: index.js\n",
+	}
+	if content, ok := actions[r.URL.Path+"?"+r.URL.RawQuery]; ok {
+		_ = json.NewEncoder(w).Encode(map[string]string{"content": base64.StdEncoding.EncodeToString([]byte(content))})
+		return
+	}
+
+	// Repo metadata, for archived-action.
+	if r.URL.Path == "/repos/octo-org/locked-action" {
+		_ = json.NewEncoder(w).Encode(map[string]any{"archived": false})
+		return
+	}
+
+	w.WriteHeader(http.StatusNotFound)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "Not Found"})
+}
+
 func runTestCase(t *testing.T, name string) {
 	t.Helper()
 
@@ -617,6 +643,7 @@ func runTestCase(t *testing.T, name string) {
 	tmpDir := t.TempDir()
 	files := writeWorkflows(t, tc.Workflows, tmpDir)
 	actionFiles := writeActions(t, tc.Actions, tmpDir)
+	writeLockfile(t, tc.Lockfile, tmpDir)
 	files = append(files, actionFiles...)
 	sort.Strings(files)
 
@@ -684,6 +711,7 @@ func writeWorkflows(t *testing.T, workflows []testWorkflow, tmpDir string) []str
 	var files []string
 	for _, w := range workflows {
 		dst := filepath.Join(tmpDir, w.Name)
+		require.NoError(t, os.MkdirAll(filepath.Dir(dst), 0o755))
 		require.NoError(t, os.WriteFile(dst, []byte(w.Content), 0o644))
 		files = append(files, dst)
 	}
@@ -703,6 +731,19 @@ func writeActions(t *testing.T, actions []testAction, tmpDir string) []string {
 	}
 	sort.Strings(files)
 	return files
+}
+
+// writeLockfile writes content as {{.Dir}}/.github/workflows/actions.lock. The
+// lockfile is not passed to ghasec as an argument: ghasec finds it beside the
+// workflows it lints.
+func writeLockfile(t *testing.T, content, tmpDir string) {
+	t.Helper()
+	if content == "" {
+		return
+	}
+	dst := filepath.Join(tmpDir, ".github", "workflows", "actions.lock")
+	require.NoError(t, os.MkdirAll(filepath.Dir(dst), 0o755))
+	require.NoError(t, os.WriteFile(dst, []byte(content), 0o644))
 }
 
 func runGhasec(t *testing.T, files []string, extraArgs []string, extraEnv ...string) (stdout, stderr string, exitCode int) {

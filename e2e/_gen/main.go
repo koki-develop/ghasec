@@ -30,6 +30,7 @@ type spec struct {
 	Env       map[string]string `yaml:"env"`
 	Workflows []file            `yaml:"workflows"`
 	Actions   []file            `yaml:"actions"`
+	Lockfile  string            `yaml:"lockfile"`
 }
 
 type file struct {
@@ -109,6 +110,11 @@ func run(bin string, sp spec) (int, string, string) {
 	writeAll(sp.Workflows)
 	writeAll(sp.Actions)
 	sort.Strings(paths)
+	if sp.Lockfile != "" {
+		dst := filepath.Join(dir, ".github", "workflows", "actions.lock")
+		must(os.MkdirAll(filepath.Dir(dst), 0o755))
+		must(os.WriteFile(dst, []byte(sp.Lockfile), 0o644))
+	}
 
 	var args []string
 	if sp.Args != "" {
